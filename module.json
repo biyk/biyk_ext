@@ -1,0 +1,22 @@
+{
+  "id": "biyk_ext",
+  "title": "Biyk Extensions Framework",
+  "description": "Modular extension loader with dynamic activation.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11"
+  },
+  "scripts": [
+    "main.js",
+    "settings.js"
+  ],
+  "esmodules": [],
+  "authors": [
+    {
+      "name": "ChatGPT"
+    }
+  ],
+  "url": "https://example.com",
+  "manifest": "module.json"
+}

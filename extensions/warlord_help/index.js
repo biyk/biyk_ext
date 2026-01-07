@@ -12,6 +12,7 @@ export function init() {
     const attacker = workflow.actor;
     const attackToken = workflow.token;
     const currentRound = game.combat?.round ?? 0;
+    console.log(attacker);
 
 
     // Поиск союзников в радиусе 15 футов

@@ -24,10 +24,11 @@ Hooks.on("dnd5e.useItem", async (item, config, options) => {
 
     // Если эффект найден
     if (targetEffect) {
+        console.log(targetEffect)
         // 3. Проверяем, выключен ли он (disabled: true)
         if (targetEffect.disabled) {
             // Включаем его
-            await targetEffect.update({disabled: false});
+            //await targetEffect.update({disabled: false});
             
             // Сообщение для ГМа/Игрока
             ui.notifications.info(`Автоматически активирован эффект: "${targetEffect.name}"`);

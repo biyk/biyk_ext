@@ -1,31 +1,32 @@
 /**
- * Функция для отображения диалога и обработки выбора ячеек "Магического восстановления"
+ * Функция для отображения диалога и обработки выбора ячеек "Праведного восстановления"
  * @param {Actor5e} actor - Актер, использующий способность.
- * @param {Item5e} abilityItem - Предмет способности "Магическое восстановление".
+ * @param {Item5e} abilityItem - Предмет способности "Праведное восстановление".
  */
-async function _showArcaneRecoveryDialog(actor, abilityItem) {
-    // 1. Определяем уровень волшебника и максимальный восстанавливаемый круг
-    const wizardClass = actor.items.find(i => i.type === "class" && i.name.toLowerCase().includes("волшебник"));
-    
-    // Если класс "Волшебник" не найден, выходим
-    if (!wizardClass) {
-        return ui.notifications.warn(`${actor.name} не имеет класса Волшебник для использования этой способности.`);
+async function _showDivineRecoveryDialog(actor, abilityItem) {
+    // 1. Определяем уровень жреца и максимальный восстанавливаемый круг
+    const clericClass = actor.items.find(i => i.type === "class" && i.name.toLowerCase().includes("жрец"));
+
+    // Если класс "Жрец" не найден, выходим
+    if (!clericClass) {
+        return ui.notifications.warn(`${actor.name} не имеет класса Жрец для использования этой способности.`);
     }
 
-    const wizardLevel = wizardClass.system.levels;
-    // Максимальный суммарный круг: половина уровня, округленная вверх
-    const maxRecoveryLevel = Math.ceil(wizardLevel / 2);
+    const clericLevel = clericClass.system.levels;
+    const wisdomBonus = actor.system.abilities.wis.mod; // Бонус мудрости жреца
+    // Максимальный суммарный круг: половина уровня, округленная вверх, с ограничением по бонусу мудрости
+    const maxRecoveryLevel = Math.min(Math.ceil(clericLevel / 2), wisdomBonus);
 
     // 2. Получаем текущие данные о ячейках заклинаний
     const spellSlots = actor.system.spells;
     const availableSlots = [];
-    
+
     // Перебираем ячейки с 1-го по 5-й круг (6-й и выше запрещены)
     for (let i = 1; i <= 5; i++) {
         const slotKey = `spell${i}`; // Например, 'spell1', 'spell2', ...
         const slotsUsed = spellSlots[slotKey]?.value || 0;
         const slotsTotal = spellSlots[slotKey]?.max || 0;
-        
+
         // Добавляем только те ячейки, которые были использованы (value < max)
         if (slotsUsed < slotsTotal) {
             availableSlots.push({
@@ -42,16 +43,17 @@ async function _showArcaneRecoveryDialog(actor, abilityItem) {
     }
 
     // 3. Создаем HTML-контент для диалога
-    let slotOptionsHtml = `<p>Уровень Волшебника: <b>${wizardLevel}</b>.</p>`;
+    let slotOptionsHtml = `<p>Уровень Жреца: <b>${clericLevel}</b>.</p>`;
+    slotOptionsHtml += `<p>Бонус мудрости: <b>${wisdomBonus}</b>.</p>`;
     slotOptionsHtml += `<p>Максимальный суммарный круг для восстановления: <b>${maxRecoveryLevel}</b>.</p>`;
     slotOptionsHtml += `<hr/>`;
 
-    slotOptionsHtml += `<div id="arcane-recovery-slots">`;
+    slotOptionsHtml += `<div id="divine-recovery-slots">`;
     slotOptionsHtml += `<h3>Выберите ячейки для восстановления (макс. ${maxRecoveryLevel} суммарного круга):</h3>`;
-    
+
     availableSlots.forEach(slot => {
         const maxRecoverable = slot.used;
-        
+
         slotOptionsHtml += `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <label for="slot-level-${slot.level}">
@@ -71,10 +73,9 @@ async function _showArcaneRecoveryDialog(actor, abilityItem) {
         `;
     });
     slotOptionsHtml += `</div>`;
-    
+
     // Элемент для вывода текущей суммы выбранных кругов
     slotOptionsHtml += `<hr/><b><p id="recovery-sum-output">Выбрано суммарно: 0 (из ${maxRecoveryLevel})</p></b>`;
-
 
     // 4. Показываем диалог
     new Dialog({
@@ -85,20 +86,20 @@ async function _showArcaneRecoveryDialog(actor, abilityItem) {
                 icon: '<i class="fas fa-magic"></i>',
                 label: "Восстановить",
                 callback: (html) => {
-                    _handleArcaneRecovery(html, actor, maxRecoveryLevel, abilityItem);
+                    _handleDivineRecovery(html, actor, maxRecoveryLevel, abilityItem);
                 }
             },
             cancel: {
                 icon: '<i class="fas fa-times"></i>',
                 label: "Отмена",
-                callback: () => console.log("Магическое восстановление отменено")
+                callback: () => console.log("Праведное восстановление отменено")
             }
         },
         default: "cancel",
         // Добавляем слушателя событий для обновления суммы выбранных кругов
         render: (html) => {
-            const inputs = html.find('#arcane-recovery-slots input[type="number"]');
-            
+            const inputs = html.find('#divine-recovery-slots input[type="number"]');
+
             // Функция для расчета и отображения текущей суммы
             const updateSum = () => {
                 let currentSum = 0;
@@ -107,7 +108,7 @@ async function _showArcaneRecoveryDialog(actor, abilityItem) {
                     const count = parseInt($(input).val());
                     currentSum += level * count;
                 });
-                
+
                 const output = html.find('#recovery-sum-output');
                 output.html(`Выбрано суммарно: <b>${currentSum}</b> (из ${maxRecoveryLevel})`);
 
@@ -124,15 +125,15 @@ async function _showArcaneRecoveryDialog(actor, abilityItem) {
             // Запускаем один раз при открытии диалога
             updateSum();
         },
-        close: () => console.log("Магическое восстановление закрыто")
+        close: () => console.log("Праведное восстановление закрыто")
     }).render(true);
 }
 
 /**
  * Обработка результата диалога и обновление ячеек актера
  */
-async function _handleArcaneRecovery(html, actor, maxRecoveryLevel, abilityItem) {
-    const inputs = html.find('#arcane-recovery-slots input[type="number"]');
+async function _handleDivineRecovery(html, actor, maxRecoveryLevel, abilityItem) {
+    const inputs = html.find('#divine-recovery-slots input[type="number"]');
     const updates = {}; // Объект для обновления ячеек актера
     let currentSum = 0;
 
@@ -141,14 +142,14 @@ async function _handleArcaneRecovery(html, actor, maxRecoveryLevel, abilityItem)
         const level = parseInt($(input).data('level'));
         const key = $(input).data('key');
         const count = parseInt($(input).val());
-        
+
         currentSum += level * count;
 
         // Если выбрано количество > 0, подготавливаем обновление
         if (count > 0) {
             const currentUsed = actor.system.spells[key].value;
             const newUsed = Math.max(0, currentUsed + count);
-            
+
             updates[`system.spells.${key}.value`] = newUsed;
         }
     });
@@ -156,15 +157,14 @@ async function _handleArcaneRecovery(html, actor, maxRecoveryLevel, abilityItem)
     // 2. Финальная проверка лимита
     if (currentSum > maxRecoveryLevel) {
         ui.notifications.error(`Ошибка: Суммарный круг выбранных ячеек (${currentSum}) превышает лимит (${maxRecoveryLevel}).`);
-        // Возвращаем использование способности актеру, так как она не была применена
-        // (Это потребует настройки ресурса способности, если она расходуется!)
-        return false; 
+        return false;
     }
 
     // 3. Выполняем обновление актера (восстанавливаем ячейки)
     if (Object.keys(updates).length > 0) {
+        console.log('biyk_ext | DivineRecovery | update',actor, updates)
         await actor.update(updates);
-        
+
         // 4. Отправляем сообщение в чат
         ChatMessage.create({
             speaker: ChatMessage.getSpeaker({actor}),
@@ -187,15 +187,13 @@ async function _handleArcaneRecovery(html, actor, maxRecoveryLevel, abilityItem)
     }
 }
 
-
 export function init() {
     // Регистрируем хук, который срабатывает после успешного использования предмета
     Hooks.on("dnd5e.useItem", (item, config, result) => {
-        // Проверяем, что способность называется "Магическое восстановление" 
-        // и что она была успешно использована (result.has.roll обычно означает успех).
-        if (item.name === "Магическое восстановление" && item.actor && result) {
+        // Проверяем, что способность называется "Праведное восстановление"
+        if (item.name.includes('Праведное восстановление') && item.actor && result) {
             // Запускаем диалог
-            _showArcaneRecoveryDialog(item.actor, item);
+            _showDivineRecoveryDialog(item.actor, item);
         }
     });
 }

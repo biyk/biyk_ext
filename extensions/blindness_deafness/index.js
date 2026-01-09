@@ -1,5 +1,6 @@
 export function init() {
     Hooks.on("dnd5e.useItem", async (item, config, options) => {
+        console.log(item, config, options);
         // Проверяем, является ли предмет заклинанием Blindness/Deafness (регистр не важен)
         if (!item.name.toLowerCase().includes("blindness/deafness")) return;
 
@@ -62,6 +63,11 @@ export function init() {
             return;
         }
 
+        let result = game.messages.contents.slice(-1)[0].rolls[0].total;
+        let check = item.system.save.dc
+
+        console.log(check , result);
+        if (check < result) return console.log('успешно прошел проверку!');
         // Применяем эффект к каждой цели
         for (const target of targets) {
             const token = target;

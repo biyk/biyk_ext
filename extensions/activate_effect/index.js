@@ -1,6 +1,6 @@
 export function init() {
 // Хук срабатывает при использовании любого предмета
-Hooks.on("dnd5e.useItem", async (item, config, options) => {
+Hooks.on("dnd5e.useItem", async (item) => {
     // Нам нужен актер, владеющий предметом
     const actor = item.actor;
     if (!actor) return;

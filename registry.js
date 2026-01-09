@@ -87,5 +87,13 @@ export const EXTENSIONS = {
     "blindness_deafness": {
         label: "Глухота Слепота",
         reload: true
+    },
+    "EnhanceAbility": {
+        label: "Усиление характеристики",
+        reload: true
+    },
+    "PackTacticsCheck": {
+        label: "Тактика стаи",
+        reload: true
     }
 };

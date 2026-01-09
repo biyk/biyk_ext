@@ -1,5 +1,5 @@
 // Хук срабатывающий ДО броска инициативы
-Hooks.on('createCombat', async (tokenOrActor, formula) => {
+Hooks.on('createCombat', async () => {
     // Получаем текущего активного игрока
     let player = game.user;
 

@@ -34,6 +34,7 @@ export function init() {
 
     Hooks.on("updateToken", async (tokenDoc, change) => {
         if (!isDM()) return;
+        if (!game.combat || !game.combat.isActive) return;
 
         if (!("x" in change) && !("y" in change)) return;
         const token = canvas.tokens.get(tokenDoc.id);

@@ -1,5 +1,5 @@
 export function init() {
-    Hooks.on("renderActorSheetV2", (app, element, context, options) => {
+    Hooks.on("renderActorSheetV2", (app) => {
         // Проверяем, что это именно лист персонажа
         const actor = app.actor;
 

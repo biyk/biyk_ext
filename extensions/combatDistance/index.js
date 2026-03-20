@@ -1,103 +1,101 @@
-// === Movement Tracker — green decreases first, yellow = normalRemaining + dashBonus ===
-// Foundry v11, D&D5e — ТОЛЬКО ДЛЯ DM
-// Без визуальных кругов, только сообщения в чат
-
 export function init() {
+    const getSpeed = actor => actor?.system?.attributes?.movement?.walk || 0;
 
-    let getSpeed = actor => actor?.system?.attributes?.movement?.walk || 0;
+    // === Проверка, является ли пользователь DM ===
+    const isDM = () => game.user.isGM;
 
-// === Проверка, является ли пользователь DM ===
-    const isDM = () => {
-        return game.user.isGM;
-    };
-
-// === Хуки ===
+    // === Хуки ===
     Hooks.on("combatTurn", async (combat, combatant) => {
         if (!isDM()) return;
 
-        let token = canvas.tokens.objects.children.filter(token=>token.id===game.combat.nextCombatant.tokenId)[0];
+        // Берем активного токена текущего комбатанта
+        const tokenDoc = combatant.token;
+        if (!tokenDoc) return;
 
-        if (!token) return;
-        let baseSpeed = getSpeed(token.actor);
+        const baseSpeed = getSpeed(tokenDoc.actor);
 
-        // Устанавливаем новый запас движения для текущего хода
-        await token.document.setFlag("world", "normalRemaining", baseSpeed);
-        await token.document.setFlag("world", "dashBonus", baseSpeed);
+        // Устанавливаем новый запас движения
+        await tokenDoc.setFlag("world", "normalRemaining", baseSpeed);
+        await tokenDoc.setFlag("world", "dashBonus", baseSpeed);
 
-        // Сообщение только для DM (whisper)
         ChatMessage.create({
-            content: `<b>${token.name}</b> начинает ход. Скорость: <b>${baseSpeed} фт.</b> (Рывок даёт +${baseSpeed} фт.)`,
-            whisper: [game.user.id],
-            speaker: { alias: token.name }
+            content: `<b>${tokenDoc.name}</b> начинает ход. Скорость: <b>${baseSpeed} фт.</b> (Рывок даёт +${baseSpeed} фт.)`,
+            whisper: [game.user.id]
         });
     });
 
-    Hooks.on("updateToken", async (tokenDoc, change) => {
+    Hooks.on("preUpdateToken", async (tokenDoc, change, options, userId) => {
         if (!isDM()) return;
         if (!game.combat || !game.combat.isActive) return;
 
+        // Проверяем, было ли движение
         if (!("x" in change) && !("y" in change)) return;
-        const token = canvas.tokens.get(tokenDoc.id);
-        if (!token) return;
-        const actor = token.actor;
-        if (!actor) return;
 
-        const prevX = token.x;
-        const prevY = token.y;
-        const newX = change.x ?? prevX;
-        const newY = change.y ?? prevY;
-        const grid = canvas.scene.grid;
-        const movedDist = Math.hypot(newX - prevX, newY - prevY) / grid.size * grid.distance;
+        // Текущие координаты (до перемещения)
+        const prevPos = { x: tokenDoc.x, y: tokenDoc.y };
+        // Новые координаты
+        const nextPos = {
+            x: change.x ?? tokenDoc.x,
+            y: change.y ?? tokenDoc.y
+        };
 
-        // Получаем текущие запасы
-        let normalRemaining = tokenDoc.getFlag("world", "normalRemaining");
-        let dashBonus = tokenDoc.getFlag("world", "dashBonus");
-        const baseSpeed = getSpeed(actor);
+        // --- Использование алгоритма Ray для подсчета клеток ---
+        // Создаем луч от старой позиции к новой
+        const ray = new Ray(prevPos, nextPos);
 
-        if (normalRemaining === undefined || normalRemaining === null) normalRemaining = baseSpeed;
-        if (dashBonus === undefined || dashBonus === null) dashBonus = baseSpeed;
+        // Измеряем дистанцию с учетом сетки сцены (gridSpaces: true)
+        // [0] берем первый элемент, так как measureDistances возвращает массив
+        const movedDist = canvas.grid.measureDistances([{ ray }], { gridSpaces: true })[0];
+
+        if (movedDist === 0) return;
+
+        // Получаем текущие запасы из флагов
+        let normalRemaining = tokenDoc.getFlag("world", "normalRemaining") ?? getSpeed(tokenDoc.actor);
+        let dashBonus = tokenDoc.getFlag("world", "dashBonus") ?? getSpeed(tokenDoc.actor);
 
         let leftToSpend = movedDist;
 
-        // Сначала забираем из обычного движения
-        if (leftToSpend > 0) {
-            const takeFromNormal = Math.min(normalRemaining, leftToSpend);
-            normalRemaining -= takeFromNormal;
-            leftToSpend -= takeFromNormal;
-        }
+        // 1. Тратим обычное движение
+        const takeFromNormal = Math.min(normalRemaining, leftToSpend);
+        normalRemaining -= takeFromNormal;
+        leftToSpend -= takeFromNormal;
 
-        // Если ещё осталось — берём из бонуса рывка
+        // 2. Тратим бонус рывка
         if (leftToSpend > 0) {
             const takeFromDash = Math.min(dashBonus, leftToSpend);
             dashBonus -= takeFromDash;
             leftToSpend -= takeFromDash;
         }
 
-        // Защита от отрицательных значений
-        normalRemaining = Math.max(normalRemaining, 0);
-        dashBonus = Math.max(dashBonus, 0);
+        // Сохраняем обновленные значения
+        await tokenDoc.setFlag("world", "normalRemaining", Math.max(normalRemaining, 0));
+        await tokenDoc.setFlag("world", "dashBonus", Math.max(dashBonus, 0));
 
-        await tokenDoc.setFlag("world", "normalRemaining", normalRemaining);
-        await tokenDoc.setFlag("world", "dashBonus", dashBonus);
-
-        // Сообщение только для DM (whisper)
+        // Сообщение в чат
         ChatMessage.create({
-            content: `${actor.name} прошёл ${movedDist.toFixed(1)} фт. осталось: <b>${normalRemaining.toFixed(1)} фт.</b>, бонус рывка: <b>${dashBonus.toFixed(1)} фт.</b>`,
-            whisper: [game.user.id],
-            speaker: { alias: actor.name }
+            content: `👣 <b>${tokenDoc.name}</b>: пройдено ${movedDist} фт.<br>
+                      Осталось: <b>${normalRemaining.toFixed(0)}</b> фт.<br>
+                      Рывок: <b>${dashBonus.toFixed(0)}</b> фт.`,
+            whisper: [game.user.id]
         });
 
         if (normalRemaining <= 0 && dashBonus <= 0) {
-            ui.notifications.warn(`${actor.name} исчерпал весь запас движения (включая рывок).`);
+            ui.notifications.warn(`${tokenDoc.name} исчерпал запас движения!`);
         }
     });
 
-    Hooks.on("preUpdateCombat", async (combat, combatant) => {
+    // Очистка при завершении боя или смене раунда
+    Hooks.on("preUpdateCombat", async (combat, change) => {
         if (!isDM()) return;
-        // Очищаем флаги при смене раунда/хода
-        for (let token of canvas.tokens.placeables){
-            await token.document.unsetFlag("world", "normalRemaining");
-            await token.document.unsetFlag("world", "dashBonus");
+        // Если меняется раунд или бой заканчивается
+        if (change.round || change.active === false) {
+            for (let combatant of combat.combatants) {
+                const tokenDoc = combatant.token;
+                if (tokenDoc) {
+                    await tokenDoc.unsetFlag("world", "normalRemaining");
+                    await tokenDoc.unsetFlag("world", "dashBonus");
+                }
+            }
         }
     });
 }

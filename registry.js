@@ -95,5 +95,17 @@ export const EXTENSIONS = {
     "PackTacticsCheck": {
         label: "Тактика стаи",
         reload: true
+    },
+    "removeInvisible": {
+        label: "Удаление невидимости",
+        reload: true
+    },
+    "sharp_shooter": {
+        label: "способность Меткий стрелок",
+        reload: true
+    },
+    "deepVoyager": {
+        label: "Интеграция с DeppVoyager",
+        reload: true
     }
 };

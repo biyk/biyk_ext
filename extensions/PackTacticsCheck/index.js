@@ -200,7 +200,7 @@ export function init() {
     Hooks.on("combatTurn", async (combat, combatant) => {
         if (!combatant?.token) return;
 
-        console.log(`Pack Tactics | Начало хода ${combatant.name}`);
+        //console.log(`Pack Tactics | Начало хода ${combatant.name}`);
 
         const token = canvas.tokens.get(combatant.token.id);
         if (!token) return;
@@ -212,9 +212,9 @@ export function init() {
     // Хук: После перемещения токена
     Hooks.on("updateToken", async (tokenData, updateData, options, userId) => {
         // Проверяем, что это перемещение (изменились координаты)
-        console.info(tokenData, updateData, options, userId);
+        //console.info(tokenData, updateData, options, userId);
         const positionChanged = updateData.x !== undefined || updateData.y !== undefined;
-        if (!positionChanged) return console.log('Токен не двигался');
+        if (!positionChanged) return;// console.log('Токен не двигался');
 
         // Проверяем, что это наш пользователь (чтобы не срабатывало многократно)
         if (userId !== game.userId && !game.user.isGM) return console.log('Запрет на использование');

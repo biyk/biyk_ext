@@ -27,7 +27,7 @@ export function init() {
 
         // Если это враг - выходим
         if (attackToken.document.disposition !== 1) {
-            console.log("Атакующий - враг");
+            //console.log("Атакующий - враг");
             return;
         }
 

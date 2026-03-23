@@ -105,7 +105,11 @@ export const EXTENSIONS = {
         reload: true
     },
     "deepVoyager": {
-        label: "Интеграция с DeppVoyager",
+        label: "Интеграция с DeppVoyager. управление НПС в бою через нейросеть",
+        reload: true
+    },
+    "possessed-items": {
+        label: " кастомное заклинание Власть над предметом",
         reload: true
     }
 };

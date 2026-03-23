@@ -111,5 +111,9 @@ export const EXTENSIONS = {
     "possessed-items": {
         label: " кастомное заклинание Власть над предметом",
         reload: true
+    },
+    "rage-extender": {
+        label: "Продление ярости",
+        reload: true
     }
 };

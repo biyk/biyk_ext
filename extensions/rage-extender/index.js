@@ -100,18 +100,32 @@ export function init() {
         await extendRageDuration(workflow.actor, "атака");
     });
 
-    Hooks.on("dnd5e.preRollAbilityCheck", async (actor, ability) => {
-        log("dnd5e.preRollAbilityCheck: начало", { actor: actor?.name, ability });
+    Hooks.on("dnd5e.rollAbilityTest", async (actor, ability, abilityId) => {
+        log("dnd5e.rollAbilityTest: начало", { actor: actor?.name, ability ,abilityId});
         
         if (!actor) {
-            log("dnd5e.preRollAbilityCheck: нет actor");
+            log("dnd5e.rollAbilityTest: нет actor");
             return;
         }
-        if (ability !== "str") {
-            log(`dnd5e.preRollAbilityCheck: ability = "${ability}", не "str" - пропускаем`);
+        if (abilityId !== "str") {
+            log(`dnd5e.rollAbilityTest: ability = "${abilityId}", не "str" - пропускаем`);
             return;
         }
         
+        await extendRageDuration(actor, "проверка силы");
+    });
+    Hooks.on("dnd5e.rollSkill", async (actor, ability, abilityId) => {
+        log("dnd5e.rollSkill: начало", { actor: actor?.name, ability ,abilityId});
+
+        if (!actor) {
+            log("dnd5e.rollSkill: нет actor");
+            return;
+        }
+        if (abilityId !== "ath") {
+            log(`dnd5e.rollSkill: ability = "${abilityId}", не "ath" - пропускаем`);
+            return;
+        }
+
         await extendRageDuration(actor, "проверка силы");
     });
 

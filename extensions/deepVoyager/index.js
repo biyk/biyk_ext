@@ -1,6 +1,7 @@
 import {move} from "./actions/move.js";
 import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
+import {getAction} from "./actions/api.js";
 export function init() {
 
     let getSpeed = actor => actor?.system?.attributes?.movement?.walk || 0;
@@ -25,7 +26,8 @@ export function init() {
         //Расход ресурсов
         
         //выполняем действия
-        let {action, conf} = getAction();//TODO
+        let {action, conf} = getAction(combatant);//TODO получить от нейросети текущие действия для текущего НПС
+
         //перемещение/упасть ничком
         if (action==='move') {
             move(token, conf)

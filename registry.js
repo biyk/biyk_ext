@@ -115,5 +115,9 @@ export const EXTENSIONS = {
     "rage-extender": {
         label: "Продление ярости",
         reload: true
+    },
+    "sleep_spell": {
+        label: "Заклинание Сон",
+        reload: true
     }
 };

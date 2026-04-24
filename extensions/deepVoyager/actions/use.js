@@ -22,6 +22,7 @@ export async function use(token, conf) {
     // Используем предмет
     try {
         await item.use();
+        console.log(`use: использую предмет ${conf.item || conf.itemId}`);
         return true;
     } catch (err) {
         console.error("use: ошибка при использовании:", err);

@@ -3,6 +3,52 @@ import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
 
+function getStatus(actor) {
+    const hp = actor?.system?.attributes?.hp;
+    const hpValue = hp?.value ?? 0;
+    const hpMax = hp?.max ?? 1;
+    const hpPercent = hpMax > 0 ? (hpValue / hpMax) * 100 : 0;
+    
+    if (hpValue === 0) return "мертв";
+    if (hpPercent < 33) return "при смерти";
+    if (hpPercent < 66) return "ранен";
+    return "здоров";
+}
+
+function buildItemAction(item) {
+    const description = item.system.description?.value
+        ?.replace(/<[^>]+>/g, "")
+        ?.replace(/@Compendium\[[^\]]+\]\{[^}]+\}/g, "")
+        ?.replace(/\[\/[^\]]+\]/g, "")
+        ?.replace(/[\n\r]+/g, " ")
+        ?.trim()
+        ?.substring(0, 200) || "";
+    
+    const action = {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        uses: item.system.uses?.value || null,
+        maxUses: item.system.uses?.max || null,
+        recharge: item.system.recharge?.value || null,
+        range: item.system.range?.long || 5,
+        damage: item.system.damage?.parts?.[0]?.[0] || null,
+        description: description
+    };
+
+    if (item.type === "weapon") {
+        action.attackBonus = item.system.attackBonus || 0;
+        action.properties = item.system.properties || {};
+    }
+
+    if (item.type === "spell") {
+        action.level = item.system.level || 0;
+        action.school = item.system.school || "";
+    }
+
+    return action;
+}
+
 export function init() {
 
     let getSpeed = actor => actor?.system?.attributes?.movement?.walk || 0;
@@ -11,10 +57,11 @@ export function init() {
 
     // === Хуки ===
     Hooks.on("combatTurn", async (combat, combatant) => {
-        console.log(combat, combatant, game);
-        if (!isDM()) return;
 
-        let token = canvas.tokens.objects.children.filter(token=>token.id===game.combat.nextCombatant.tokenId)[0];
+        if (!isDM()) return;
+        await new Promise(resolve => setTimeout(resolve, 500)); // синхронизация
+
+        let token = canvas.tokens.objects.children.filter(token=>token.id===game.combat.current.tokenId)[0];
         if (!token) return console.log('no tokens');
 
         console.log(token);
@@ -24,6 +71,10 @@ export function init() {
         data.y = token.y;
         data.speed = getSpeed(token.actor);
         data.step = canvas.grid.size;
+        data.status = getStatus(token.actor);
+        if (token.actor?.system?.attributes?.hp==0 ) console.log('Актер мертв');
+
+
         data.disposition = token.document?.disposition ?? 0;
 
         // ---------- 1. Персонажи, которых видит токен ----------
@@ -58,21 +109,14 @@ export function init() {
             const actorData = otherToken.actor;
             if (!actorData) continue;
 
-            // Статус по HP
-            const hp = actorData.system.attributes.hp?.value || 0;
-            const maxHp = actorData.system.attributes.hp?.max || 1;
-            const hpPercent = (hp / maxHp) * 100;
-            let status = "здоров";
-            if (hpPercent < 1) status = "мертв";
-            else if (hpPercent < 33) status = "при смерти";
-            else if (hpPercent < 66) status = "ран";
-
             //TODO оружия в руках может быть два
             let equippedWeapon = null;
             const weapon = actorData.items.find(i => i.type === "weapon" && i.system.equipped);
             if (weapon) equippedWeapon = {name:weapon.name, id:weapon.id};
 
             const ac = actorData.system.attributes.ac?.value || 10;
+
+            const status = getStatus(actorData);
 
             visibleTokens.push({
                 id: otherToken.id,
@@ -82,8 +126,6 @@ export function init() {
                 y: otherToken.y,
                 weapon: equippedWeapon,
                 ac: ac,
-                hp: hp,
-                maxHp: maxHp,
                 status: status
             });
         }
@@ -114,32 +156,7 @@ export function init() {
         for (let item of token.actor.items) {
             // Типы предметов, которые могут быть использованы в бою
             if (item.type === "weapon" || item.type === "spell" || item.type === "feat" || item.type === "consumable") {
-                // Базовая информация
-                const action = {
-                    id: item.id,
-                    name: item.name,
-                    type: item.type,
-                    uses: item.system.uses?.value || null,
-                    maxUses: item.system.uses?.max || null,
-                    recharge: item.system.recharge?.value || null,
-                    range: item.system.range?.value || null,
-                    damage: item.system.damage?.parts?.[0]?.[0] || null,
-                    description: item.system.description?.value?.substring(0, 200) || ""
-                };
-
-                // Для оружия добавим тип броска и бонус атаки
-                if (item.type === "weapon") {
-                    action.attackBonus = item.system.attackBonus || 0;
-                    action.properties = item.system.properties || {};
-                }
-
-                // Для заклинаний - уровень и школу
-                if (item.type === "spell") {
-                    action.level = item.system.level || 0;
-                    action.school = item.system.school || "";
-                }
-
-                availableActions.push(action);
+                availableActions.push(buildItemAction(item));
             }
         }
         // Можно отсортировать по значимости (оружие ближнего боя, затем заклинания)

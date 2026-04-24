@@ -198,11 +198,9 @@ export function init() {
 
     // Хук: Начало хода в комбате
     Hooks.on("combatTurn", async (combat, combatant) => {
-        if (!combatant?.token) return;
+        await new Promise(resolve => setTimeout(resolve, 500)); // синхронизация
 
-        //console.log(`Pack Tactics | Начало хода ${combatant.name}`);
-
-        const token = canvas.tokens.get(combatant.token.id);
+        let token = canvas.tokens.objects.children.filter(token=>token.id===game.combat.current.tokenId)[0];
         if (!token) return;
 
         // Небольшая задержка для гарантии загрузки всех данных

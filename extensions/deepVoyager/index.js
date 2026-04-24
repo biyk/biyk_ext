@@ -10,7 +10,7 @@ function getStatus(actor) {
     const hpPercent = hpMax > 0 ? (hpValue / hpMax) * 100 : 0;
     
     if (hpValue === 0) return "мертв";
-    if (hpPercent < 33) return "при смерти";
+    if (hpPercent < 33) return "тяжело ранен";
     if (hpPercent < 66) return "ранен";
     return "здоров";
 }
@@ -180,9 +180,10 @@ export function init() {
                 target(token, conf);
             }
             if (action === 'use') {
-                use(token, conf);
+                await use(token, conf);
             }
         }
-
+        ui.notifications.warn(`Ход завершен!`);
+        game.combat.nextTurn();
     });
 }

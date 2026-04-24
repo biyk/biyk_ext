@@ -19,6 +19,10 @@ export async function move(token = null, conf) {
         case "down":  dy =  step; break;
         case "left":  dx = -step; break;
         case "right": dx =  step; break;
+        case "upleft":    dx = -step; dy = -step; break;
+        case "upright":   dx =  step; dy = -step; break;
+        case "downleft":  dx = -step; dy =  step; break;
+        case "downright": dx =  step; dy =  step; break;
         default:
             console.warn("move: неизвестное направление", direction);
             return false;
@@ -27,12 +31,15 @@ export async function move(token = null, conf) {
     const newX = token.x + dx;
     const newY = token.y + dy;
 
-    // --- Проверка: занят ли целевой токен ---
+    // --- Проверка: занят ли целевой токен (только живой) ---
     const occupiedToken = canvas.tokens.placeables.find(t => 
-        t.id !== token.id && t.x === newX && t.y === newY
+        t.id !== token.id && 
+        t.x === newX && 
+        t.y === newY &&
+        (t.actor?.system?.attributes?.hp?.value ?? 0) > 0
     );
     if (occupiedToken) {
-        console.log(`move: клетка занята ${occupiedToken.name}`);
+        console.log(`move: клетка занята живым ${occupiedToken.name}`);
         return false;
     }
 

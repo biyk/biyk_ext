@@ -19,7 +19,7 @@ function buildPrompt(data) {
 
     let actionsList = data.availableActions.map(a => {
         let info = `[${a.name}] тип:${a.type} id_оружия ${a.id}`;
-        if (a.range) info += ` Дистанция:${a.range} фт`;
+        if (a.range) info += ` Дистанция:${a.rangeAll}фт уверенно (${a.range} фт с помехой)`;
         if (a.uses) info += ` заряды:${a.uses}/${a.maxUses}`;
         if (a.damage) info += ` урон:${a.damage}`;
         //if (a.description) info += ` Описание:${a.description}`;
@@ -54,13 +54,13 @@ message/draconic/Я кобольд!!!
 
 ## Формат ответа
 Выведи последовательность действий, по одному на строке:
-- move/направление - перемещение (up/down/left/right)
+- move/направление - перемещение по прямой (up/down/left/right) по диагонали (upleft, upright, downleft,downright)
 - use/имя_предмета - использовать предмет/заклинание
 - target/имя_цели - выбрать цель
 
 Шаблон ответа (Отвечай ТОЛЬКО так):
 move/up
-move/right
+move/upright
 //я буду атаковать мечем
 target/id_цели
 //я атакую гоблина т.к. он мне не нравится
@@ -75,8 +75,8 @@ message/язык_сообщения/текст сообщения
     move/up
     move/up
     move/right
-    move/right
-    move/right
+    move/upright
+    move/upright
     //я хочу атаковать Стражника 0pVt9lJTubIk7bBZ из лука т.к. я далеко а у него копье
     
     Пример 3
@@ -84,9 +84,9 @@ message/язык_сообщения/текст сообщения
     move/down
     move/down
     move/down
+    move/downleft
     move/down
-    move/down
-    move/down
+    move/downleft
     message/common/За императора!
 
     // Теперь я на (3060,1350). До кобольда осталось 9 шагов (810 px). Атака пока невозможна.
@@ -101,7 +101,11 @@ right - увеличить координату x на ${data.step}
 left - уменьшить координату x на ${data.step}
 up - уменьшает координату y на ${data.step}
 down - увеличивает координату y на ${data.step}
-все персонажи являются препятствием через них пройти нельзя только обойти
+upright - x+${data.step}, y-${data.step}
+upleft - x-${data.step}, y-${data.step}
+downright - x+${data.step}, y+${data.step}
+downleft - x-${data.step}, y+${data.step}
+все персонажи кроме мертвых являются препятствием через них пройти нельзя только обойти
 нельзя зайти в ячейку в которой уже есть кто-то
 
 
@@ -154,7 +158,8 @@ function parseResponse(response) {
         const param = match[2].trim();
         
         if (action === 'move') {
-            if (['up','down','left','right'].includes(param)) {
+            const validDirs = ['up','down','left','right','upleft','upright','downleft','downright'];
+            if (validDirs.includes(param)) {
                 actions.push({action: 'move', conf: {direction: param}});
             }
         } else if (action === 'use') {

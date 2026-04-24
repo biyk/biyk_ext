@@ -31,6 +31,7 @@ function buildPrompt(data) {
     Я игровая программа которая ждет от тебя ответа о твоих действиях в мире
     Используй все доступные тебе знания о своих способностях и способностях врагов для достижения своих целей
     Ты можешь выбрать любое действие исходя из твоих интересов
+    Ты владеешь языками ${data.languages}
 Ты находишься на позиции (${data.x || 0},${data.y || 0}), размер клетки: ${data.step} px - это 5 футов, скорость: ${data.speed} футов за ход
 у тебя есть движение  ${data.speed/5} шагов
 также у тебя есть одно действие из списка Доступные действия
@@ -70,7 +71,7 @@ message/язык_сообщения/текст сообщения
     Пример 2 
     target/0pVt9lJTubIk7bBZ
     use/Hy3EM9cm9BsDvYHq
-    message/draconic/Умри ничтожество
+    message/draconic/Умри ничтожество!
     move/up
     move/up
     move/right
@@ -86,7 +87,7 @@ message/язык_сообщения/текст сообщения
     move/down
     move/down
     move/down
-    message/common/Сдавайся или умри!
+    message/common/За императора!
 
     // Теперь я на (3060,1350). До кобольда осталось 9 шагов (810 px). Атака пока невозможна.
     
@@ -139,24 +140,18 @@ export async function getAction(data) {
 function parseResponse(response) {
     if (!response) return [];
     
-    // Поддерживаем строку или объект {response: "...", text: "...", content: "...", answer: "..."}
     let text = typeof response === 'string' ? response : (response.response || response.text || response.content || response.answer || "");
     if (!text) return [];
     
     const actions = [];
-    const lines = text.split('\n');
     
-    for (const line of lines) {
-        // Очистка: убираем комментарии (всё после //) и пустые строки
-        let cleaned = line.split('//')[0].trim();
-        if (!cleaned) continue;
-        
-        // Парсим формат action/param
-        let parts = cleaned.split('/');
-        if (parts.length < 2) continue;
-        
-        let action = parts[0].trim().toLowerCase();
-        let param = parts[1].trim();
+    // Ищем все команды через regex (action может быть в любой части строки)
+    const regex = /(move|use|target|message)\/([^\n]+)$/gm;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+        const action = match[1].trim().toLowerCase();
+        const param = match[2].trim();
         
         if (action === 'move') {
             if (['up','down','left','right'].includes(param)) {
@@ -166,8 +161,17 @@ function parseResponse(response) {
             actions.push({action: 'use', conf: {itemId: param}});
         } else if (action === 'target') {
             actions.push({action: 'target', conf: {id: param}});
+        } else if (action === 'message') {
+            const msgParts = param.split('/');
+            if (msgParts.length >= 2) {
+                const language = msgParts[0].trim();
+                const msgText = msgParts.slice(1).join('/').trim();
+                if (language && msgText) {
+                    actions.push({action: 'message', conf: {language, text: msgText}});
+                }
+            }
         }
     }
     
-    return actions;
+return actions;
 }

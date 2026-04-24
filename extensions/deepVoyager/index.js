@@ -2,6 +2,7 @@ import {move} from "./actions/move.js";
 import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
+import {sendMessage} from "./actions/message.js";
 
 function getStatus(actor) {
     const hp = actor?.system?.attributes?.hp;
@@ -72,6 +73,10 @@ export function init() {
         data.speed = getSpeed(token.actor);
         data.step = canvas.grid.size;
         data.status = getStatus(token.actor);
+        
+        const languagesSet = token.actor?.system?.traits?.languages?.value;
+        const languages = languagesSet ? [...languagesSet].join(", ") : "common";
+        data.languages = languages;
         if (token.actor?.system?.attributes?.hp==0 ) console.log('Актер мертв');
 
 
@@ -181,6 +186,9 @@ export function init() {
             }
             if (action === 'use') {
                 await use(token, conf);
+            }
+            if (action === 'message') {
+                await sendMessage(token, conf);
             }
         }
         ui.notifications.warn(`Ход завершен!`);

@@ -58,6 +58,15 @@ export function init() {
             const actorData = otherToken.actor;
             if (!actorData) continue;
 
+            // Статус по HP
+            const hp = actorData.system.attributes.hp?.value || 0;
+            const maxHp = actorData.system.attributes.hp?.max || 1;
+            const hpPercent = (hp / maxHp) * 100;
+            let status = "здоров";
+            if (hpPercent < 1) status = "мертв";
+            else if (hpPercent < 33) status = "при смерти";
+            else if (hpPercent < 66) status = "ран";
+
             //TODO оружия в руках может быть два
             let equippedWeapon = null;
             const weapon = actorData.items.find(i => i.type === "weapon" && i.system.equipped);
@@ -72,7 +81,10 @@ export function init() {
                 x: otherToken.x,
                 y: otherToken.y,
                 weapon: equippedWeapon,
-                ac: ac
+                ac: ac,
+                hp: hp,
+                maxHp: maxHp,
+                status: status
             });
         }
 

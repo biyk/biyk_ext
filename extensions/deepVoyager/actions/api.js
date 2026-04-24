@@ -5,8 +5,16 @@
 function buildPrompt(data) {
     let disposition = { 1: "союзник", "-1": "враг", "0": "нейтральный" };
     
-    let friendsList = data.friends.length 
-        ? data.friends.map(t => `${t.name} AC:${t.ac || "?"} оружие:${t.weapon.name || "нет"}(id_оружия: ${t.weapon.id}) позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
+let friendsList = data.friends.length 
+        ? data.friends.map(t => `${t.name} AC:${t.ac || "?"} HP:${t.hp}/${t.maxHp} статус:${t.status} оружие:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y})`).join(", ")
+        : "нет";
+    
+    let enemiesList = data.enemies.length
+        ? data.enemies.map(t => `${t.name} AC:${t.ac || "?"} HP:${t.hp}/${t.maxHp} статус:${t.status} оружие:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y})`).join(", ")
+        : "нет";
+
+    let neutralsList = data.neutrals.length
+        ? data.neutrals.map(t => `${t.name} AC:${t.ac || "?"} HP:${t.hp}/${t.maxHp} статус:${t.status} оружие:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y})`).join(", ")
         : "нет";
     
     let enemiesList = data.enemies.length

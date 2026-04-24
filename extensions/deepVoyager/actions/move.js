@@ -27,6 +27,15 @@ export async function move(token = null, conf) {
     const newX = token.x + dx;
     const newY = token.y + dy;
 
+    // --- Проверка: занят ли целевой токен ---
+    const occupiedToken = canvas.tokens.placeables.find(t => 
+        t.id !== token.id && t.x === newX && t.y === newY
+    );
+    if (occupiedToken) {
+        console.log(`move: клетка занята ${occupiedToken.name}`);
+        return false;
+    }
+
     // --- Проверка столкновений (современный API V11+) ---
     let movementAllowed = false;
 
@@ -61,17 +70,18 @@ export async function move(token = null, conf) {
 
     // Если ни один метод не сработал, выдаём ошибку
     if (!movementAllowed && movementAllowed !== false) {
-        ui.notifications.error("Нет метода проверки столкновений");
+        //ui.notifications.error("Нет метода проверки столкновений");
         return false;
     }
 
     if (!movementAllowed) {
-        ui.notifications.warn(`Путь заблокирован! ${token.name} не может пройти.`);
+        //ui.notifications.warn(`Путь заблокирован! ${token.name} не может пройти.`);
         return false;
     }
 
     // Перемещаем с анимацией
     await token.document.update({ x: newX, y: newY }, { animate: true });
-    ui.notifications.info(`${token.name} переместился на ${step}px ${direction}.`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // синхронизация
+    //ui.notifications.info(`${token.name} переместился на ${step}px ${direction}.`);
     return true;
 }

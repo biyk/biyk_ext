@@ -19,6 +19,9 @@ export function init() {
 
         console.log(token);
         let data = {};
+        data.name = token.name;
+        data.x = token.x;
+        data.y = token.y;
         data.speed = getSpeed(token.actor);
         data.step = canvas.grid.size;
         data.disposition = token.document?.disposition ?? 0;
@@ -55,9 +58,10 @@ export function init() {
             const actorData = otherToken.actor;
             if (!actorData) continue;
 
+            //TODO оружия в руках может быть два
             let equippedWeapon = null;
             const weapon = actorData.items.find(i => i.type === "weapon" && i.system.equipped);
-            if (weapon) equippedWeapon = weapon.name;
+            if (weapon) equippedWeapon = {name:weapon.name, id:weapon.id};
 
             const ac = actorData.system.attributes.ac?.value || 10;
 
@@ -133,7 +137,7 @@ export function init() {
         // ---------- 3. Передаём данные нейросети ----------
 
         console.log(data);
-        let actions = getAction(data);
+        let actions = await getAction(data);
 
         for (const item of actions) {
             let action = item.action;

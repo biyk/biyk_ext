@@ -3,60 +3,13 @@ import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
 import {sendMessage} from "./actions/message.js";
-
-function getStatus(actor) {
-    const hp = actor?.system?.attributes?.hp;
-    const hpValue = hp?.value ?? 0;
-    const hpMax = hp?.max ?? 1;
-    const hpPercent = hpMax > 0 ? (hpValue / hpMax) * 100 : 0;
-    
-    if (hpValue === 0) return "мертв";
-    if (hpPercent < 33) return "тяжело ранен";
-    if (hpPercent < 66) return "ранен";
-    return "здоров";
-}
-
-function buildItemAction(item) {
-    const description = item.system.description?.value
-        ?.replace(/<[^>]+>/g, "")
-        ?.replace(/@Compendium\[[^\]]+\]\{[^}]+\}/g, "")
-        ?.replace(/\[\/[^\]]+\]/g, "")
-        ?.replace(/[\n\r]+/g, " ")
-        ?.trim()
-        ?.substring(0, 200) || "";
-    
-    const action = {
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        uses: item.system.uses?.value || null,
-        maxUses: item.system.uses?.max || null,
-        recharge: item.system.recharge?.value || null,
-        range: item.system.range?.long || 5,
-        rangeAll: item.system.range?.value || 5,
-        damage: item.system.damage?.parts?.[0]?.[0] || null,
-        description: description
-    };
-
-    if (item.type === "weapon") {
-        action.attackBonus = item.system.attackBonus || 0;
-        action.properties = item.system.properties || {};
-    }
-
-    if (item.type === "spell") {
-        action.level = item.system.level || 0;
-        action.school = item.system.school || "";
-    }
-
-    return action;
-}
+import {getStatus, buildItemAction} from "./utils/help.js";
 
 export function init() {
 
     let getSpeed = actor => actor?.system?.attributes?.movement?.walk || 0;
 
     const isDM = () => game.user.isGM;
-
 
      async function combatTurn() {
          if (!isDM()) return;
@@ -66,19 +19,20 @@ export function init() {
          if (!token) return console.log('no tokens');
 
          console.log(token);
+         if (token.actor?.system?.attributes?.hp == 0) return console.log('Актер мертв');
+         if (token.actor?.type !== 'npc') return console.log('это не НПС');
          let data = {};
          data.name = token.name;
          data.x = token.x;
          data.y = token.y;
          data.speed = getSpeed(token.actor);
          data.step = canvas.grid.size;
+         data.baseMove =  data.speed / 5;
          data.status = getStatus(token.actor);
 
          const languagesSet = token.actor?.system?.traits?.languages?.value;
          const languages = languagesSet ? [...languagesSet].join(", ") : "common";
          data.languages = languages;
-         if (token.actor?.system?.attributes?.hp == 0) console.log('Актер мертв');
-
 
          data.disposition = token.document?.disposition ?? 0;
 
@@ -173,6 +127,13 @@ export function init() {
          console.log(data);
          let actions = await getAction(data);
 
+
+         let limit = {
+             move: data.baseMove,
+             use: 1,
+             bonus: 1,
+             target: 1
+         }
          for (const item of actions) {
              let action = item.action;
              let conf = item.conf;
@@ -200,6 +161,6 @@ export function init() {
         await combatTurn()
     });
      Hooks.on("combatRound", async (combat, combatant) => {
-        await combatTurn()
+       await combatTurn()
     });
 }

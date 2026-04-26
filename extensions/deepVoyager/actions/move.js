@@ -4,6 +4,8 @@
  * @param {Object} conf - { direction: "up"/"down"/"left"/"right" }
  * @returns {Promise<boolean>}
  */
+import {log} from "../utils/logger.js";
+
 export async function move(token = null, conf) {
     if (!token) {
         ui.notifications.warn("Токен не передан");
@@ -24,7 +26,7 @@ export async function move(token = null, conf) {
         case "downleft":  dx = -step; dy =  step; break;
         case "downright": dx =  step; dy =  step; break;
         default:
-            console.warn("move: неизвестное направление", direction);
+            log.warn("неизвестное направление", direction);
             return false;
     }
 
@@ -39,7 +41,7 @@ export async function move(token = null, conf) {
         (t.actor?.system?.attributes?.hp?.value ?? 0) > 0
     );
     if (occupiedToken) {
-        console.log(`move: клетка занята живым ${occupiedToken.name}`);
+        log.info(`move: клетка занята живым ${occupiedToken.name}`);
         return false;
     }
 
@@ -59,7 +61,7 @@ export async function move(token = null, conf) {
             });
             movementAllowed = !collision;
         } catch (err) {
-            console.warn("Ошибка при modern collision check:", err);
+            log.warn("Ошибка при modern collision check:", err);
         }
     }
 

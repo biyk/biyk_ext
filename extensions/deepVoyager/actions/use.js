@@ -1,3 +1,5 @@
+import {log} from "../utils/logger.js";
+
 export async function use(token, conf) {
     // Ищем предмет по имени (conf.item) или ID (conf.itemId)
     let item = null;
@@ -22,10 +24,10 @@ export async function use(token, conf) {
     // Используем предмет
     try {
         await item.use();
-        console.log(`use: использую предмет ${conf.item || conf.itemId}`);
+        log.info(`использую предмет ${conf.item || conf.itemId}`);
         return true;
     } catch (err) {
-        console.error("use: ошибка при использовании:", err);
+        log.error("ошибка при использовании:", err);
         ui.notifications.error("Не удалось использовать предмет");
         return false;
     }

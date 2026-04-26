@@ -2,24 +2,26 @@
  * Формирование промпта для ИИ
  * @param data информация о текущем положении, о союзниках, о врагах, доступных действиях
  */
+import {log} from "../utils/logger.js";
+
 function buildPrompt(data) {
     let disposition = { 1: "союзник", "-1": "враг", "0": "нейтральный" };
     
     let friendsList = data.friends.length 
-        ? data.friends.map(t => `${t.name} AC:${t.ac || "?"} статус:${t.status} оружие:${t.weapon?.name || "нет"}(id_оружия: ${t.weapon?.id}) позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
+        ? data.friends.map(t => `${t.name} AC:${t.ac || "?"} статус:${t.status} экипировка:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
         : "нет";
     
     let enemiesList = data.enemies.length
-        ? data.enemies.map(t => `${t.name} AC:${t.ac || "?"} статус:${t.status} оружие:${t.weapon?.name || "нет"}(id_оружия: ${t.weapon?.id}) позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
+        ? data.enemies.map(t => `${t.name} AC:${t.ac || "?"} статус:${t.status} экипировка:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
         : "нет";
 
     let neutralsList = data.neutrals.length
-        ? data.neutrals.map(t => `${t.name}  AC:${t.ac || "?"} статус:${t.status} оружие:${t.weapon?.name || "нет"}(id_оружия: ${t.weapon?.id}) позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
+        ? data.neutrals.map(t => `${t.name}  AC:${t.ac || "?"} статус:${t.status} экипировка:${t.weapon?.name || "нет"} позиция:(${t.x},${t.y}) id: ${t.id}`).join(", ")
         : "нет";
 
     let actionsList = data.availableActions.map(a => {
         let info = `[${a.name}] тип:${a.type} id_оружия ${a.id}`;
-        if (a.range) info += ` Дистанция:${a.rangeAll}фт уверенно (${a.range} фт с помехой)`;
+        if (a.range && a.rangeAll) info += ` Дистанция:${a.rangeAll}фт уверенно (${a.range} фт с помехой)`;
         if (a.uses) info += ` заряды:${a.uses}/${a.maxUses}`;
         if (a.damage) info += ` урон:${a.damage}`;
         //if (a.description) info += ` Описание:${a.description}`;
@@ -27,10 +29,17 @@ function buildPrompt(data) {
         return info;
     }).join("\n");
 
+    let featsList = data.availableFeats.map(a => {
+        let info = `[${a.name}] активно:${a.enabled}`;
+
+
+        return info;
+    }).join("\n");
+
     let prompt = `Ты персонаж в D&D кампании: ${data.name} Ты сейчас в бою, Ты ${data.status} 
     Я игровая программа которая ждет от тебя ответа о твоих действиях в мире
-    Используй все доступные тебе знания о своих способностях и способностях врагов для достижения своих целей
-    Ты можешь выбрать любое действие исходя из твоих интересов
+    Используй все доступные тебе знания из D&D  о своих способностях и способностях врагов для достижения своих целей
+    Ты можешь выбрать любое действие исходя из твоих интересов, как если бы ты был настоящим ${data.name}
     Ты владеешь языками ${data.languages}
 Ты находишься на позиции (${data.x || 0},${data.y || 0}), размер клетки: ${data.step} px - это 5 футов, скорость: ${data.speed} футов за ход
 у тебя есть движение  ${data.speed/5} шагов
@@ -47,6 +56,9 @@ ${neutralsList}
 
 ## Доступные действия
 ${actionsList}
+
+## Текущие эффекты
+${featsList}
 
 ## Общение
 В качестве свободного действия ты можешь передать сообщение союзникам или врагам, одно за раз
@@ -118,7 +130,7 @@ downleft - x-${data.step}, y+${data.step}
 const AI_API_URL = 'http://localhost:9999/ask';
 
 export async function getAction(data) {
-    console.log('getAction', data);
+    log.info('getAction', data);
     
     let prompt = buildPrompt(data);
 
@@ -129,9 +141,9 @@ export async function getAction(data) {
         body: JSON.stringify({ text: prompt })
     }).then(r => r.json());
     
-    console.log('AI Response:', response);
+    log.info('AI Response:', response);
     let actions = parseResponse(response);
-    console.log('Parsed actions:', actions);
+    log.info('Parsed actions:', actions);
     
     return actions.length ? actions : [];
 }

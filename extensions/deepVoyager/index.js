@@ -5,6 +5,7 @@ import {getAction} from "./actions/api.js";
 import {sendMessage} from "./actions/message.js";
 import {getStatus, buildItemAction} from "./utils/help.js";
 import {getCurrentTokenData, getVisibleCombatTokens, groupTokensByDisposition} from "./utils/combat.js";
+import {log} from "./utils/logger.js";
 
 export function init() {
 
@@ -15,13 +16,15 @@ export function init() {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const currentTokenDoc = game.combat.current;
-        if (!currentTokenDoc) return console.log('no current combatant');
+        if (!currentTokenDoc) return log.info('no current combatant');
 
         const token = canvas.tokens.get(currentTokenDoc.tokenId);
-        if (!token) return console.log('no token');
+        if (!token) return log.info('no token');
 
-        if (token.actor?.system?.attributes?.hp == 0) return console.log('Актер мертв');
-        if (token.actor?.type !== 'npc') return console.log('это не НПС');
+        if (token.actor?.system?.attributes?.hp == 0) return log.info('Актер мертв');
+        if (token.actor?.type !== 'npc') return log.info('это не НПС');
+        if (game.paused) return log.info('игра на паузе');
+        log.info(token);
 
         // ---------- 1. Данные текущего токена ----------
         const currentData = getCurrentTokenData(game.combat, currentTokenDoc);
@@ -47,16 +50,28 @@ export function init() {
 
         // ---------- 3. Доступные действия ----------
         const availableActions = [];
+        const availableFeats = [];
+
         for (let item of token.actor.items) {
-            if (item.type === "weapon" || item.type === "spell" || item.type === "feat" || item.type === "consumable") {
+            if (
+                ((item.type === "weapon"  || item.type === "equipment") && item.system.equipped) ||
+                item.type === "spell"||
+                item.type === "consumable") {
                 availableActions.push(buildItemAction(item));
+            }
+
+            if (item.type === "feat" && item.effects?.size){
+                for (let effect of item.effects) {
+                    availableFeats.push({name:effect.name, enabled:!effect.disabled});
+                }
             }
         }
         availableActions.sort((a, b) => (a.type === "weapon" && b.type !== "weapon") ? -1 : 1);
         data.availableActions = availableActions;
+        data.availableFeats = availableFeats;
 
         // ---------- 4. Запрос к ИИ ----------
-        console.log(data);
+        log.info(data);
         let actions = await getAction(data);
 
         let limit = {
@@ -66,6 +81,7 @@ export function init() {
             target: 1
         };
 
+        log.info(actions);
         // ---------- 5. Выполнение действий ----------
         for (const item of actions) {
             const action = item.action;
@@ -73,7 +89,15 @@ export function init() {
 
             if (action === 'move') await move(token, conf);
             if (action === 'target') target(token, conf);
-            if (action === 'use') await use(token, conf);
+            if (action === 'use') {
+                if (conf){
+                    let item = token.actor.items.get(conf.itemId)
+                    if (item.name.toLowerCase().includes("рывок")){
+                        limit.move+=data.baseMove
+                    }
+                }
+                await use(token, conf);
+            }
             if (action === 'message') await sendMessage(token, conf);
         }
 

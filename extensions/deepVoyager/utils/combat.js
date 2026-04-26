@@ -69,8 +69,10 @@ export function getVisibleCombatTokens(currentToken) {
 
         // Оружие в руках
         let equippedWeapon = null;
-        const weapon = actorData.items.find(i => i.type === "weapon" && i.system.equipped);
-        if (weapon) equippedWeapon = { name: weapon.name, id: weapon.id };
+        const weapons = actorData.items.filter(i => (i.type === "weapon" || i.type === "equipment") && i.system.equipped);
+        if (weapons.length) {
+            equippedWeapon = { name: weapons.map(w => w.name).join(", "), id: weapons.map(w => w.id).join(", ") };
+        }
 
         const ac = actorData.system.attributes.ac?.value || 10;
         const status = getStatus(actorData);

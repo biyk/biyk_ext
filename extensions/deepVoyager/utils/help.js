@@ -27,7 +27,7 @@ export function buildItemAction(item) {
         maxUses: item.system.uses?.max || null,
         recharge: item.system.recharge?.value || null,
         range: item.system.range?.long || 5,
-        rangeAll: item.system.range?.value || 5,
+        rangeAll: item.system.range?.value || null,
         damage: item.system.damage?.parts?.[0]?.[0] || null,
         description: description
     };

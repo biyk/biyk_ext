@@ -6,6 +6,7 @@ import {sendMessage} from "./actions/message.js";
 import {getStatus, buildItemAction} from "./utils/help.js";
 import {getCurrentTokenData, getVisibleCombatTokens, groupTokensByDisposition} from "./utils/combat.js";
 import {log} from "./utils/logger.js";
+import {addGMButton} from "./utils/messageBox.js";
 
 export function init() {
 
@@ -19,6 +20,7 @@ export function init() {
         if (!currentTokenDoc) return log.info('no current combatant');
 
         const token = canvas.tokens.get(currentTokenDoc.tokenId);
+
         if (!token) return log.info('no token');
 
         if (token.actor?.system?.attributes?.hp == 0) return log.info('Актер мертв');
@@ -83,33 +85,90 @@ export function init() {
 
         log.info(actions);
         // ---------- 5. Выполнение действий ----------
-        for (const item of actions) {
-            const action = item.action;
-            const conf = item.conf;
 
-            if (action === 'move') await move(token, conf);
-            if (action === 'target') target(token, conf);
-            if (action === 'use') {
-                if (conf){
-                    let item = token.actor.items.get(conf.itemId)
-                    if (item.name.toLowerCase().includes("рывок")){
-                        limit.move+=data.baseMove
+        if (data.disposition===-2) {//это или босс или ДМский персонаж
+            //генерируем и показываем для ДМ окошко с советом от Нейросети
+            let message = JSON.stringify(actions);
+
+            for (const item of actions) {
+                const action = item.action;
+                const conf = item.conf;
+
+                try {
+                    if (action === 'target') {
+                        target(token, conf);
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
+
+                }catch (e) {
+                    return console.error(e);
                 }
-                await use(token, conf);
             }
-            if (action === 'message') await sendMessage(token, conf);
+            if (game.user.isGM) {
+                new Dialog({
+                    title: "Сообщение для ГМ",
+                    content: `<p>${message}</p>`,
+                    buttons: {
+                        ok: {
+                            icon: '<i class="fas fa-check"></i>',
+                            label: "OK",
+                            callback: () => console.log("Окно закрыто")
+                        }
+                    },
+                    default: "ok"
+                }).render(true);
+            }
+        }else {
+            for (const item of actions) {
+                const action = item.action;
+                const conf = item.conf;
+
+                try {
+                    if (action === 'move') {
+                        if(!limit.move) continue
+                        await move(token, conf);
+                        limit.move--;
+                    }
+                    if (action === 'target') {
+                        target(token, conf);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    if (action === 'use') {
+                        if(!limit.use) continue
+                        if (conf){
+                            for (let item of token.actor.items) {
+                                if (item['_id']===conf.itemId && item.name.toLowerCase().includes("рывок")){
+                                    limit.move+=data.baseMove
+                                }
+                            }
+                        }
+                        await use(token, conf);
+                        limit.use--;
+                    }
+                    if (action === 'message') await sendMessage(token, conf);
+                }catch (e) {
+                    return console.error(e);
+                }
+            }
+            game.combat.nextTurn();
         }
 
         ui.notifications.warn(`Ход завершен!`);
-        game.combat.nextTurn();
     }
 
     // === Хуки ===
-    Hooks.on("combatTurn", async (combat, combatant) => {
+    Hooks.on("updateCombat", async (combat, combatant) => {
         await combatTurn()
     });
     Hooks.on("combatRound", async (combat, combatant) => {
         await combatTurn()
+    });
+
+    addGMButton();
+
+    Hooks.on("renderCombatTracker", (app, html, data) => {
+        // Ваша функция addGMButton, но с поиском кнопки внутри текущего html
+        if (html.find("#custom-text-save-btn").length) return;
+        addGMButton();
     });
 }

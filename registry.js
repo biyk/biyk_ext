@@ -119,5 +119,9 @@ export const EXTENSIONS = {
     "sleep_spell": {
         label: "Заклинание Сон",
         reload: true
+    },
+    "attack-of-opportunity": {
+        label: "Атака по возможности",
+        reload: true
     }
 };

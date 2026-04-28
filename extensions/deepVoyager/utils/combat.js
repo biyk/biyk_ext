@@ -104,13 +104,24 @@ export function groupTokensByDisposition(visibleTokens, currentDisposition) {
     const neutrals = [];
 
     for (const t of visibleTokens) {
-        if (t.disposition === 0) {
-            neutrals.push(t);
-        } else if (t.disposition === currentDisposition) {
-            friends.push(t);
-        } else {
-            enemies.push(t);
+        if (currentDisposition===-2){
+            if (t.disposition === 0) {
+                neutrals.push(t);
+            } else if (t.disposition === -1) {
+                friends.push(t);
+            } else {
+                enemies.push(t);
+            }
+        }else {
+            if (t.disposition === 0) {
+                neutrals.push(t);
+            } else if (t.disposition === currentDisposition) {
+                friends.push(t);
+            } else {
+                enemies.push(t);
+            }
         }
+
     }
 
     return { friends, enemies, neutrals };

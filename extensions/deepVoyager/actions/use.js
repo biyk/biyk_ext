@@ -1,23 +1,32 @@
 import {log} from "../utils/logger.js";
+import {similarity} from "../utils/help.js"
 
 export async function use(token, conf) {
     // Ищем предмет по имени (conf.item) или ID (conf.itemId)
     let item = null;
-    
+    await token.actor?.appliedEffects;
+    await game.actors.get(token.actor.id);
     if (conf.itemId) {
         // Поиск по ID
-        item = token.actor.items.get(conf.itemId);
+        for (let _item of token.actor.items) {
+            let my_similarity = similarity(_item.id,conf.itemId);
+
+            if (my_similarity > 0.87){
+                item = _item;
+            }
+        }
     } else if (conf.item) {
         // Поиск по имени (точное совпадение или содержит)
-        item = token.actor.items.find(i => 
-            i.id === conf.item || 
+        item = token.actor.items.find(i =>
+            i.id === conf.item ||
             i.name === conf.item ||
             i.name.toLowerCase().includes(conf.item.toLowerCase())
         );
     }
-    
+
     if (!item) {
-        ui.notifications.warn(`Предмет "${conf.item || conf.itemId}" не найден`);
+        console.error(token.actor.items, item)
+        throw new Error(`Предмет "${conf.item || conf.itemId}" не найден`);
         return false;
     }
 

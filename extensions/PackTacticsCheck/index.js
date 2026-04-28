@@ -37,7 +37,7 @@ export function init() {
         const attackerDisposition = attackerToken.document.disposition;
         console.log(`Pack Tactics | Disposition атакующего (${attackerToken.name}): ${attackerDisposition}`);
 
-        const rangeFeet = 5; // 1 клетка
+        const rangeFeet = 7.5; // 1 клетка
         let alliesCount = 0;
 
         for (let token of canvas.tokens.placeables) {

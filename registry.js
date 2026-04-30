@@ -116,12 +116,13 @@ export const EXTENSIONS = {
         label: "Продление ярости",
         reload: true
     },
-    "sleep_spell": {
-        label: "Заклинание Сон",
+    "guardian-shield": {
+    label: "Щит хранителя",
         reload: true
     },
     "attack-of-opportunity": {
         label: "Атака по возможности",
         reload: true
     }
+
 };

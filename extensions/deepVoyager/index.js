@@ -12,8 +12,19 @@ export function init() {
 
     const isDM = () => game.user.isGM;
 
+    let lastCombatTurnTime = 0;
+    const COMBAT_TURN_THROTTLE = 5000; // 5 секунд
+
     async function combatTurn() {
         if (!isDM()) return;
+
+        const now = Date.now();
+        if (now - lastCombatTurnTime < COMBAT_TURN_THROTTLE) {
+            log.info('CombatTurn заблокирован (throttle)');
+            return;
+        }
+        lastCombatTurnTime = now;
+
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const currentTokenDoc = game.combat.current;
@@ -41,6 +52,7 @@ export function init() {
             languages: currentData.languages,
             disposition: currentData.disposition
         };
+
 
         // ---------- 2. Видимые токены из боя ----------
         const visibleTokens = getVisibleCombatTokens(token);
@@ -73,7 +85,7 @@ export function init() {
         data.availableFeats = availableFeats;
 
         // ---------- 4. Запрос к ИИ ----------
-        log.info(data);
+        log.info('============>Отправляю запрос',data.name);
         let actions = await getAction(data);
 
         let limit = {
@@ -118,7 +130,7 @@ export function init() {
                     default: "ok"
                 }).render(true);
             }
-        }else {
+        } else {
             for (const item of actions) {
                 const action = item.action;
                 const conf = item.conf;
@@ -150,6 +162,7 @@ export function init() {
                     return console.error(e);
                 }
             }
+            await new Promise(resolve => setTimeout(resolve, 5000));
             game.combat.nextTurn();
         }
 

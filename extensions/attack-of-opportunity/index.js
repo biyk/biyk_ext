@@ -14,9 +14,7 @@ export function init() {
     }
 
     function getMeleeWeapons(actor) {
-
         if (!actor?.items) return [];
-        console.log(actor.items);
         return actor.items.filter(item =>
             item.type === 'weapon');
     }

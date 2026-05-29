@@ -120,6 +120,14 @@ export const EXTENSIONS = {
     label: "Щит хранителя",
         reload: true
     },
+    "dead_or_alive": {
+    label: "Обработка смерти у персонажей",
+        reload: true
+    },
+    "enemy_spoted": {
+    label: "Обнаружение врага и атака",
+        reload: true
+    },
     "attack-of-opportunity": {
         label: "Атака по возможности",
         reload: true

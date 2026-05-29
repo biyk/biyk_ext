@@ -7,6 +7,7 @@ import {getStatus, buildItemAction} from "./utils/help.js";
 import {getCurrentTokenData, getVisibleCombatTokens, groupTokensByDisposition} from "./utils/combat.js";
 import {log} from "./utils/logger.js";
 import {addGMButton} from "./utils/messageBox.js";
+import {getMovementRose} from "./utils/tokenInfo.js";
 
 export function init() {
 
@@ -83,6 +84,8 @@ export function init() {
         availableActions.sort((a, b) => (a.type === "weapon" && b.type !== "weapon") ? -1 : 1);
         data.availableActions = availableActions;
         data.availableFeats = availableFeats;
+        data.movement = await getMovementRose(token);
+        //console.log(data);return ;
 
         // ---------- 4. Запрос к ИИ ----------
         log.info('============>Отправляю запрос',data.name);
@@ -136,9 +139,50 @@ export function init() {
                 const conf = item.conf;
 
                 try {
+                    //log.info('do action - ' + action);
                     if (action === 'move') {
-                        if(!limit.move) continue
-                        await move(token, conf);
+                        if(limit.move <=0) continue
+                        let moving = await move(token, conf);
+                        if(moving!==true){//если ИИ затупил двигаем в сторону последней цели
+                            log.info(moving);
+                            log.info("ИИшка затупила сами");
+                            let currentToken = token;
+                            
+                            let using = actions.filter(e=>e.action==='use').length;
+                            if (!using) {
+                                for (let item of token.actor.items) {
+                                    if (item.name.toLowerCase().includes("рывок")){
+                                        await item.use();
+                                        limit.move+=data.baseMove
+                                    }
+                                }
+                            }
+                            const targets = Array.from(game.user.targets);
+                            if (targets.length > 0) {
+                                let targetToken = targets[0];
+                                let response = await api.sendRequest(currentToken, targetToken)
+
+                                let path = response.direct || []
+
+                                log.info(path);
+                                if (path.length > 0) {
+                                    for (const direction of path) {
+                                        let moving = await move(currentToken, {direction})
+                                        log.info('Двигаюсь', direction);
+                                        limit.move--;
+                                        if (moving!==true  || limit.move <=0) {
+                                            log.info(`Дальнейшее передвижение невозможно ${limit.move}`);
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    //return ui.notifications.warn(`ДМ - нужно ходить за НПС`);
+                                }
+
+                            } else {
+                                log.info("Нет целей");
+                            }
+                        }
                         limit.move--;
                     }
                     if (action === 'target') {
@@ -159,7 +203,7 @@ export function init() {
                     }
                     if (action === 'message') await sendMessage(token, conf);
                 }catch (e) {
-                    return console.error(e);
+                    console.error(e);
                 }
             }
             await new Promise(resolve => setTimeout(resolve, 5000));
@@ -184,4 +228,169 @@ export function init() {
         if (html.find("#custom-text-save-btn").length) return;
         addGMButton();
     });
+
+
+
+    // Создаём API объект
+    const api = {
+        testPath: async () => {
+            const selected = canvas.tokens.controlled;
+            let currentToken = null;
+            let targetToken = null;
+
+            if (selected.length >= 2) {
+                // Если выбрано 2+ токенов: первый – текущий, второй – целевой
+                currentToken = selected[0];
+                targetToken = selected[1];
+            } else if (selected.length === 1) {
+                // Если выбран один токен – он текущий, цель берём из game.user.targets
+                currentToken = selected[0];
+                const targets = Array.from(game.user.targets);
+                if (targets.length === 0) {
+                    throw new Error("Не выбран целевой токен: либо выберите два токена, либо выберите цель после выбора своего токена");
+                }
+                targetToken = targets[0];
+            } else {
+                throw new Error("Не выбран текущий токен (выделите хотя бы один токен)");
+            }
+
+            if (!currentToken || !targetToken) {
+                throw new Error("Не удалось определить текущий или целевой токен");
+            }
+            let response = await api.sendRequest(currentToken, targetToken)
+
+            let path = response.direct || []
+
+            console.log(path);
+            for (const direction of path) {
+                let moving = await move(currentToken, {direction})
+                console.log('Двигаюсь', direction);
+                if (moving!==true) {
+                    console.error('Дальнейшее передвижение невозможно');
+                    break;
+                }
+            }
+
+        },
+        move: move,
+        sendRequest: async (src, token) => {
+
+            const AI_API_URL = 'http://localhost:9999/path'
+            //получение данных
+            let data = api.getAllData();
+            let response = await fetch(AI_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                body: JSON.stringify({ src:src.id, token:token.id, data }),
+            }).then(r => r.json());
+
+            return response;
+
+
+
+        },
+        getAllData: () => {
+            const scene = canvas.scene;
+            if (!scene) {
+                console.error("Нет активной сцены");
+                return;
+            }
+
+            // 1. Сбор NPC токенов
+            const npcs = [];
+            for (let token of canvas.tokens.placeables) {
+                const actor = token.actor;
+                // считаем NPC: если актёр существует и его тип !== 'character' (или === 'npc')
+                if (actor && (actor.type !== 'character' || actor.type === 'npc')) {
+                    // Уточнение: в D&D 5e тип может быть 'npc', 'character' – игроки обычно 'character' и имеют владельца-игрока
+                    // Для большей точности: считаем NPC, если актёр не имеет владельца-игрока (или имеет владельца с ролью GM)
+                    const isPlayer = actor.hasPlayerOwner && !actor.owners?.filter?.(o => o.role === 4).length ? false : true; // проще: не используем hasPlayerOwner, а проверяем наличие игроков-владельцев
+                    // Лучше: если у актёра есть хотя бы один владелец с ролью < GM (игрок), то это игрок
+                    let isPlayerControlled = false;
+                    for (let user of game.users) {
+                        if (user.isGM) continue;
+                        if (actor.testUserPermission(user, "OWNER")) {
+                            isPlayerControlled = true;
+                            break;
+                        }
+                    }
+                    if (!isPlayerControlled) {
+                        // Это NPC
+                        const hp = actor.system.attributes?.hp || {};
+                        npcs.push({
+                            id: token.id,
+                            name: token.name,
+                            x: token.x,
+                            y: token.y,
+                            width: token.w,
+                            height: token.h,
+                            center: { x: token.center.x, y: token.center.y },
+                            disposition: token.document.disposition,
+                            hp: {
+                                current: hp.value,
+                                max: hp.max,
+                                temp: hp.temp
+                            }
+                        });
+                    }
+                }
+            }
+
+            // 2. Сбор стен, дверей, окон
+            const walls = [];
+            for (let wall of canvas.walls.placeables) {
+                const wallData = {
+                    id: wall.id,
+                    points: {
+                        A: { x: wall.document.c[0], y: wall.document.c[1] },
+                        B: { x: wall.document.c[2], y: wall.document.c[3] }
+                    },
+                    type: "wall", // по умолчанию
+                    door: null,
+                    closed: false,
+                    locked: false
+                };
+                // Определяем тип: дверь (door) или окно (window)
+                if (wall.document.door) {
+                    wallData.type = "door";
+                    wallData.closed = wall.document.ds === 1; // 1 = closed? Нужно уточнить
+                    wallData.locked = wall.document.dl === true; // locked?
+                    // В Foundry v11: wall.document.doorState (0=closed, 1=open, 2=locked)
+                    if (wall.document.doorState !== undefined) {
+                        wallData.closed = wall.document.doorState === 0;
+                        wallData.locked = wall.document.doorState === 2;
+                    }
+                } else if (wall.document.window) {
+                    wallData.type = "window";
+                }
+                // Можно добавить информацию о движении и обзоре: move и sight
+                wallData.move = wall.document.move;
+                wallData.sight = wall.document.sight;
+                walls.push(wallData);
+            }
+
+            const result = {
+                scene: {
+                    id: scene.id,
+                    name: scene.name,
+                    width: scene.dimensions.width,
+                    height: scene.dimensions.height,
+                    gridSize: canvas.grid.size
+                },
+                npcs: npcs,
+                walls: walls
+            };
+
+            // Выводим в консоль удобно
+            //console.log("=== Собранные данные ===");
+            //console.log(JSON.stringify(result, null, 2));
+            // Также можно скопировать в буфер обмена (не обязательно)
+            //copy(JSON.stringify(result, null, 2));
+            return result;
+        },
+        // другие функции
+    };
+
+    // Сохраняем API в глобальный объект модуля
+    game.modules.get("biyk_ext").api = api;
 }

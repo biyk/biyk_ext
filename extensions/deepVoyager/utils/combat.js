@@ -29,45 +29,72 @@ export function getCurrentTokenData(combat, combatant) {
 
 /**
  * Получает информацию о всех видимых токенах боя (кроме текущего)
+ * С учётом распространения информации между союзниками в радиусе 30 футов.
  * @param {Token} currentToken - текущий токен
  * @returns {Array} массив данных о токенах
  */
 export function getVisibleCombatTokens(currentToken) {
     const visibleTokens = [];
-
     if (!game.combat?.combatants) return visibleTokens;
+
+    // Текущий disposition и радиус обмена информацией (30 футов)
+    const currentDisposition = currentToken.document?.disposition ?? 0;
+    const shareRadiusFeet = 30;
+    const shareRadiusPx = (shareRadiusFeet / 5) * canvas.grid.size;
+
+    // Собираем всех союзных токенов на сцене (с тем же disposition)
+    const allies = canvas.tokens.placeables.filter(t =>
+        t.id !== currentToken.id &&
+        (t.document?.disposition ?? 0) === currentDisposition
+    );
 
     for (const combatant of game.combat.combatants) {
         if (combatant.tokenId === currentToken.id) continue;
 
         const token = canvas.tokens.get(combatant.tokenId);
         if (!token) continue;
-
         const actorData = token.actor;
         if (!actorData) continue;
 
-        // Проверка видимости (line of sight)
+        // 1. Прямая видимость от текущего токена
         let hasLineOfSight = false;
         try {
-            const sightBackend = CONFIG.Canvas.polygonBackends?.sight;
-            if (sightBackend && typeof sightBackend.testCollision === "function") {
-                hasLineOfSight = !sightBackend.testCollision({
-                    type: "sight",
-                    source: currentToken.center,
-                    destination: token.center,
-                    mode: "any"
-                });
-            } else {
-                const ray = new Ray(currentToken.center, token.center);
-                hasLineOfSight = !canvas.walls.checkCollision(ray, { type: "sight", mode: "any" });
-            }
+            const ray = new Ray(currentToken.center, token.center);
+            const collision = canvas.walls.checkCollision(ray, { type: "sight", mode: "any" });
+            hasLineOfSight = !collision;
         } catch(e) {
-            hasLineOfSight = true;
+            console.error("[getVisibleCombatTokens] LOS direct check failed:", e);
+            hasLineOfSight = false;
         }
 
-        if (!hasLineOfSight) continue;
+        let isVisible = hasLineOfSight;
+        if (!isVisible) {
+            // 2. Проверка, есть ли союзник в радиусе 30 футов от currentToken,
+            // который видит этого кандидата
+            for (const ally of allies) {
+                // Расстояние между союзником и текущим токеном
+                const distToAlly = Math.hypot(ally.center.x - currentToken.center.x, ally.center.y - currentToken.center.y);
+                if (distToAlly > shareRadiusPx) continue;
 
-        // Оружие в руках
+                // Проверка прямой видимости от союзника к кандидату
+                let allySees = false;
+                try {
+                    const rayAlly = new Ray(ally.center, token.center);
+                    const collisionAlly = canvas.walls.checkCollision(rayAlly, { type: "sight", mode: "any" });
+                    allySees = !collisionAlly;
+                } catch(e) {
+                    allySees = false;
+                }
+                if (allySees) {
+                    isVisible = true;
+                    break;
+                }
+            }
+        }
+
+        if (!isVisible) continue;
+
+        // Оружие в руках, AC, статус и пр.
         let equippedWeapon = null;
         const weapons = actorData.items.filter(i => (i.type === "weapon" || i.type === "equipment") && i.system.equipped);
         if (weapons.length) {

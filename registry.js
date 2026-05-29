@@ -131,6 +131,10 @@ export const EXTENSIONS = {
     "attack-of-opportunity": {
         label: "Атака по возможности",
         reload: true
+    },
+    "weather_by_day_time": {
+        label: "Погода по времени суток",
+        reload: true
     }
 
 };

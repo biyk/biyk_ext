@@ -128,6 +128,20 @@ export function init() {
 
         console.log(`${LOG_PREFIX} Updating weather for day ${journeyDay}, time: ${tod} (${entry.calendar_date})`);
 
+        const todLabel = { morning: "Утро", day: "День", evening: "Вечер", night: "Ночь" }[tod] || tod;
+        ChatMessage.create({
+            speaker: { alias: "Погода и атмосфера" },
+            content: `<article>
+  <h3>${entry.calendar_date} — ${todLabel}</h3>
+  <p><strong>Локация:</strong> ${entry.location || "—"}</p>
+  <p><strong>Событие:</strong> ${entry.event || "—"}</p>
+  <p><strong>Погода:</strong> ${entry.weather || "—"}</p>
+  <hr>
+  <p><em>${(entry.notes || "").split("\n")[0]}</em></p>
+</article>`,
+            whisper: [game.user.id]
+        });
+
         const effects = entry.weather_object?.times?.[tod] || entry.weather_object?.particles || [];
         if (effects.length > 0) {
             console.log(`${LOG_PREFIX} Applying ${effects.length} particle effect(s)`);

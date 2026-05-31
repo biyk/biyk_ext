@@ -1,2 +1,4 @@
 graphify-out/
 extensions/weather_by_day_time/temp/*
+extensions/weather_by_day_time/data/downloads/*
+extensions/weather_by_day_time/data/music/*

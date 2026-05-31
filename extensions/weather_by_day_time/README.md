@@ -101,11 +101,12 @@ python scripts\gen_calendar.py
 ```
 
 ### `scripts/find_song.py`
-Поиск трека в `music.json` по названию. Устойчив к спецсимволам (—, «», и т.д.), использует токеновое и последовательное сравнение.
+Поиск трека в `music.json` по названию. Устойчив к спецсимволам (—, «», и т.д.), использует токеновое и последовательное сравнение. После выдачи результатов можно ввести номер трека для скачивания в `data/downloads/`.
 
 ```
 python scripts\find_song.py "Adrian von Ziegler — Forgotten Gods"     # топ-10 по умолчанию
 python scripts\find_song.py "Adrian von Ziegler — Forgotten Gods" 5   # топ-5
+# После выдачи: введите номер трека → скачивание в data/downloads/
 ```
 
 ## Данные

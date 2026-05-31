@@ -1,7 +1,8 @@
-import json, sys, os, re, difflib
+import json, sys, os, re, difflib, urllib.request
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUSIC_JSON = os.path.join(BASE, "data", "ydisk", "music.json")
+DOWNLOAD_DIR = os.path.join(BASE, "data", "downloads")
 
 def flatten(items, parent_path=""):
     files = []
@@ -112,10 +113,51 @@ def search(query, top=10):
 
     return results
 
+def download_file(url, dest_path):
+    try:
+        print(f"Downloading to {dest_path}...", end=" ", flush=True)
+        urllib.request.urlretrieve(url, dest_path)
+        print("OK", flush=True)
+        return True
+    except Exception as e:
+        print(f"FAILED: {e}", flush=True)
+        return False
+
+def prompt_download(results):
+    if not results:
+        return
+    print("-" * 40)
+    print("Enter number to download, or 'q' to quit:")
+    while True:
+        try:
+            choice = input("> ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if choice in ("q", ""):
+            break
+        if not choice.isdigit():
+            continue
+        idx = int(choice) - 1
+        if idx < 0 or idx >= len(results):
+            print(f"Enter 1-{len(results)} or 'q'")
+            continue
+        score, f = results[idx]
+        if not f.get("url"):
+            print(f"No download URL for [{idx+1}] {f['name']}")
+            continue
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+        dest = os.path.join(DOWNLOAD_DIR, f["name"])
+        if os.path.exists(dest):
+            print(f"Already exists: {dest}")
+            continue
+        download_file(f["url"], dest)
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python find_song.py \"<query>\" [top]")
         sys.exit(1)
     query = sys.argv[1]
     top = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-    search(query, top)
+    results = search(query, top)
+    prompt_download(results)

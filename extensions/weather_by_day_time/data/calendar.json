@@ -9,9 +9,9 @@
     "total_miles": 15,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - The Summoning of Cthulhu/Lord of Hatred.mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection/The Celtic Collection - 14 - Land of the Free.mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection III/The Celtic Collection III - 10 - Woodland Tales.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Lord of Hatred.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection - 14 - Land of the Free.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection III - 10 - Woodland Tales.mp3"
     ],
     "weather": "Солнечно, свежий утренний ветер, к полудню тепло.",
     "weather_object": {
@@ -83,10 +83,10 @@
     "total_miles": 30,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adrian von Ziegler - Fable/Adrian von Ziegler - Fable - 11 - Forgotten Gods (Celtic).mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection III/The Celtic Collection III - 14 - Forgotten Gods.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 9/18 - Place of Power.mp3",
-      "/Музыка/13th Age Soundtrack/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Adrian von Ziegler - Fable - 11 - Forgotten Gods (Celtic).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection III - 14 - Forgotten Gods.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/18 - Place of Power.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3"
     ],
     "weather": "Ясно, жарко, к вечеру — золотистый закат.",
     "weather_object": {
@@ -161,8 +161,8 @@
     "total_miles": 45,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Free Realms - The Journey/The Journey - 13 - Call of the Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 4/24_82 - Ambient Realms - Devasted Realm of the Elves.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Journey - 13 - Call of the Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/24_82 - Ambient Realms - Devasted Realm of the Elves.mp3"
     ],
     "weather": "Облачно, к вечеру морось, воздух влажный и прохладный.",
     "weather_object": {
@@ -251,10 +251,10 @@
     "total_miles": 60,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Darkwood - Game Soundtrack/Darkwood - 01 - Darkwood.mp3",
-      "/Музыка/Darkwood - Game Soundtrack/Darkwood - 02 - Intro.mp3",
-      "/Музыка/Fable Legends - The Rosewood/Fable_Legends_The_Rosewood_19_Don't_Go_Into_The_Woods.mp3",
-      "/Музыка/Dungeons & Dragons, Honour Among Thieves - Music from the Motion Picture/12 - Into The Floor.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Darkwood - 01 - Darkwood.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Darkwood - 02 - Intro.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fable_Legends_The_Rosewood_19_Don't_Go_Into_The_Woods.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/12 - Into The Floor.mp3"
     ],
     "weather": "Промозглый туман с утра, прохлада, под вечер — сырость.",
     "weather_object": {
@@ -371,10 +371,10 @@
     "total_miles": 75,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Bloodborne - Original Game Soundtrack/23 - The First Hunter.mp3",
-      "/Музыка/Adrian von Ziegler - For the Pack (Celtic Music)/Adrian von Ziegler - For the Pack - 13 - Forest Folk.mp3",
-      "/Музыка/Andrea Baroni - Tales in the Dark/Tales in the Dark - 17 - Tales in the Dark (Farewell).mp3",
-      "/Музыка/Bear McCreary - Black Sails Soundtrack (Pirates)/Black Sails  - 18 - The Parson's Farewell.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/23 - The First Hunter.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Adrian von Ziegler - For the Pack - 13 - Forest Folk.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Tales in the Dark - 17 - Tales in the Dark (Farewell).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Black Sails  - 18 - The Parson's Farewell.mp3"
     ],
     "weather": "Ветрено, порывы гонят сухие листья по земле, небо серое.",
     "weather_object": {
@@ -476,9 +476,9 @@
     "total_miles": 90,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adrian von Ziegler - The Celtic Collection/The Celtic Collection - 13 - Where I Belong.mp3",
-      "/Музыка/Middle-Earth - Shadow of Mordor (Original Game Soundtrack)/37 - I Don't Belong Here.mp3",
-      "/Музыка/Dreyma - Lumina (Viking Ambient Music)/Lumina - 03 - Windswept.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection - 13 - Where I Belong.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/37 - I Don't Belong Here.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Lumina - 03 - Windswept.mp3"
     ],
     "weather": "Прохладно, ясно, небо высокое и бледно-голубое.",
     "weather_object": {
@@ -550,10 +550,10 @@
     "total_miles": 90,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Scorewizard - Tavern Music/Tavern Music - 01 - Dungeons & Taverns.mp3",
-      "/Музыка/Scorewizard - Tavern Music/Tavern Music - 02 - The Deep Lioness Tavern.mp3",
-      "/Музыка/Realmcraft Audio - A Winter's Tale/A Winter's Tale - 1 - Realmcraft Audio - Winter Nights.mp3",
-      "/Музыка/Realmcraft Audio - A Winter's Tale/A Winter's Tale - 5 - Realmcraft Audio - Frozen Dreams.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Tavern Music - 01 - Dungeons & Taverns.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Tavern Music - 02 - The Deep Lioness Tavern.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/A Winter's Tale - 1 - Realmcraft Audio - Winter Nights.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/A Winter's Tale - 5 - Realmcraft Audio - Frozen Dreams.mp3"
     ],
     "weather": "Хмуро, к ночи гроза с ливнем и молниями.",
     "weather_object": {
@@ -669,10 +669,10 @@
     "total_miles": 105,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adventure Music - Second Level/Second_Level_19_Adventure_Music_Rise_of_the_Pumpkin_King.mp3",
-      "/Музыка/Antti Martikainen - The Heart of Avalon/The Heart of Avalon - 05 - The Rise of Pendragons.mp3",
-      "/Музыка/Austin Wintory - The Pathless/The Pathless  - 20 - The Path to Salvation.mp3",
-      "/Музыка/Gabriel Garrido García - A Journey Across the Deep/A Journey Across the Deep - 06 - Path to the Mountains.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Second_Level_19_Adventure_Music_Rise_of_the_Pumpkin_King.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Heart of Avalon - 05 - The Rise of Pendragons.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Pathless  - 20 - The Path to Salvation.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/A Journey Across the Deep - 06 - Path to the Mountains.mp3"
     ],
     "weather": "Свежесть после грозы, радуга, лёгкий ветер.",
     "weather_object": {
@@ -771,10 +771,10 @@
     "total_miles": 120,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Inon Zur - Sword Coast Legends (Original Game Soundtrack)/08 - Ruins of Illusk.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 12/16 - Ruins of Myth.mp3",
-      "/Музыка/Abandoned Toys - The Witch's Garden/The Witch's Garden - 08 - Flowering Ashes.mp3",
-      "/Музыка/Arondight Studios - The Unholy (Brian Estes)/The Unholy - 01 - Ashes to Ashes.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/08 - Ruins of Illusk.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/16 - Ruins of Myth.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Witch's Garden - 08 - Flowering Ashes.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Unholy - 01 - Ashes to Ashes.mp3"
     ],
     "weather": "Тяжёлые тучи, давящая тишина, ни дуновения.",
     "weather_object": {
@@ -883,10 +883,10 @@
     "total_miles": 135,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Exoplanet (Mothership, Spelljammer. All sfx, and other audio in the zip file.)/The Void No Bass.mp3",
-      "/Музыка/Monument Studios - Exoplanet (Mothership, Spelljammer. All sfx, and other audio in the zip file.)/The Void.mp3",
-      "/Музыка/Arondight Studios - The Unholy (Brian Estes)/The Unholy - 02 - Midnight Necropolis.mp3",
-      "/Музыка/McRo Music - Ambient Adventures/Ambient Adventures - 04 - Cursed Necropolis.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Void No Bass.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Void.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Unholy - 02 - Midnight Necropolis.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Ambient Adventures - 04 - Cursed Necropolis.mp3"
     ],
     "weather": "Промозглый туман, видимость 100 футов, холодная сырость.",
     "weather_object": {
@@ -995,10 +995,10 @@
     "total_miles": 150,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Peter Gundry - Salem's Heir/Salem's Heir - 01 - She Cometh.mp3",
-      "/Музыка/Enaïd - Avalon, A Celtic Legend/05 - Merlin's Secret.mp3",
-      "/Музыка/Adventure Music - Third Level/Third Level - 04 - Adventure Music - In Awe of the Ancients.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 3/66_82 - Ambient Realms - The Ancients.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Salem's Heir - 01 - She Cometh.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/05 - Merlin's Secret.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Third Level - 04 - Adventure Music - In Awe of the Ancients.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/66_82 - Ambient Realms - The Ancients.mp3"
     ],
     "weather": "Мрачно, безветренно, серое марево.",
     "weather_object": {
@@ -1107,10 +1107,10 @@
     "total_miles": 165,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Exoplanet (Mothership, Spelljammer. All sfx, and other audio in the zip file.)/The Void No Bass.mp3",
-      "/Музыка/Monument Studios - Exoplanet (Mothership, Spelljammer. All sfx, and other audio in the zip file.)/The Void.mp3",
-      "/Музыка/Arondight Studios - The Unholy (Brian Estes)/The Unholy - 02 - Midnight Necropolis.mp3",
-      "/Музыка/McRo Music - Ambient Adventures/Ambient Adventures - 04 - Cursed Necropolis.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Void No Bass.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Void.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Unholy - 02 - Midnight Necropolis.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Ambient Adventures - 04 - Cursed Necropolis.mp3"
     ],
     "weather": "Промозглый туман, видимость 100 футов, холодная сырость.",
     "weather_object": {
@@ -1217,10 +1217,10 @@
     "total_miles": 180,
     "is_rest_day": false,
     "music": [
-      "/Музыка/FaboMusic - Music inspired by Curse of Strahd - Part III (Ravenloft)/Curse_of_Strahd_Part_III_05_Sir_Godfrey's_Undying_Love.mp3",
-      "/Музыка/FaboMusic - Music inspired by Curse of Strahd - Part III (Ravenloft)/Curse_of_Strahd_Part_III_27_Sir_Godfrey's_Undying_Love_1h_Loop.mp3",
-      "/Музыка/Assassin's Creed IV, Black Flag (Original Game Soundtrack)/24 - A Merry Life and a Short One.mp3",
-      "/Музыка/Dark Fantasy Studio - Superheroes/Superheroes - 02 - Between life and death.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Curse_of_Strahd_Part_III_05_Sir_Godfrey's_Undying_Love.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Curse_of_Strahd_Part_III_27_Sir_Godfrey's_Undying_Love_1h_Loop.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/24 - A Merry Life and a Short One.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Superheroes - 02 - Between life and death.mp3"
     ],
     "weather": "Серое небо, холодная и быстрая вода, ветер с реки.",
     "weather_object": {
@@ -1324,9 +1324,9 @@
     "total_miles": 195,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Daniel Ran - Black Marsh (Original Game Soundtrack)/Black_Marsh_Original_Game_Soundtrack_10_Marshland_Warrior.mp3",
-      "/Музыка/Martin Egger - Of Gamblers And Heroes/Of Gamblers And Heroes - 01 - Marshland Tavern.mp3",
-      "/Музыка/Monument Studios - The Summoning of Cthulhu/Organ & Strings.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Black_Marsh_Original_Game_Soundtrack_10_Marshland_Warrior.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Of Gamblers And Heroes - 01 - Marshland Tavern.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Organ & Strings.mp3"
     ],
     "weather": "Ливень стеной весь день, к ночи затихает.",
     "weather_object": {
@@ -1472,8 +1472,8 @@
     "total_miles": 195,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Martin Egger - Of Gamblers And Heroes/Of Gamblers And Heroes - 05 - Laketown Tavern (Extended).mp3",
-      "/Музыка/Valkyrion - Medieval Tavern/Medieval Tavern - 1 - Tavern of Heroes.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Of Gamblers And Heroes - 05 - Laketown Tavern (Extended).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Medieval Tavern - 1 - Tavern of Heroes.mp3"
     ],
     "weather": "Солнечно, тепло, ясное небо.",
     "weather_object": {
@@ -1545,9 +1545,28 @@
     "total_miles": 210,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adrian von Ziegler - The Celtic Collection II/The Celtic Collection II - 01 - Wolf Blood.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 6/08 - Heart of the Mountain.mp3",
-      "/Музыка/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God.zip"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection II - 01 - Wolf Blood.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/08 - Heart of the Mountain.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 01 - Into the Feywild.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 02 - Mysteries Unbound.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 03 - The 13th Battalion.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 04 - Final Stand.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 05 - The Wizard's Hubris.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 06 - Dreamers of the Cosmos.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 07 - Left Hand of the God.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 08 - Dance of Darkness and Light.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 09 - Soulharvest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Vecna, The Last Vestige of the Fallen God - 10 - The Dream.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 01 - Into the Feywild.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 02 - Mysteries Unbound.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 03 - The 13th Battalion.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 04 - Final Stand.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 05 - The Wizard's Hubris.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 06 - Dreamers of the Cosmos.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 07 - Left Hand of the God.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 08 - Dance of Darkness and Light.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 09 - Soulharvest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Anast Agakides - Vecna, The Last Vestige of the Fallen God/__MACOSX/Anast Agakides - Vecna, The Last Vestige of the Fallen God/._Vecna, The Last Vestige of the Fallen God - 10 - The Dream.mp3"
     ],
     "weather": "Ветер, несущий запах гари с севера, прохладно.",
     "weather_object": {
@@ -1645,8 +1664,8 @@
     "total_miles": 225,
     "is_rest_day": false,
     "music": [
-      "/Музыка/The Elder Scrolls V Skyrim Original Game Soundtrack/47_53 - Jeremy Soule - The Gathering Storm.mp3",
-      "/Музыка/Epic Fantasy Adventurers - For The Emperor (Oriental Adventures)/For the Emperor - 01 - Gathering Storm.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/47_53 - Jeremy Soule - The Gathering Storm.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/For the Emperor - 01 - Gathering Storm.mp3"
     ],
     "weather": "Пронизывающий ветер, снежные заряды, видимость снижена.",
     "weather_object": {
@@ -1758,8 +1777,8 @@
     "total_miles": 240,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Beyond Skyrim： Bruma/Beyond Skyrim - Bruma - 05 - Of Storms and Half-light.mp3",
-      "/Музыка/Beyond Skyrim： Bruma/Beyond Skyrim - Bruma - 20 - Moon and Scars.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Bruma - 05 - Of Storms and Half-light.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Bruma - 20 - Moon and Scars.mp3"
     ],
     "weather": "Низкие облака, туман цепляется за вершины, сырость.",
     "weather_object": {
@@ -1865,10 +1884,10 @@
     "total_miles": 255,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Sanguine Venture.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Call to Adventure.mp3",
-      "/Музыка/Mountain Realm - Frostfall/Frostfall - 01 - Whitebark Forest.mp3",
-      "/Музыка/Mountain Realm - Frostfall/Frostfall - 02 - Dungeon Stairs.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sanguine Venture.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Call to Adventure.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Frostfall - 01 - Whitebark Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Frostfall - 02 - Dungeon Stairs.mp3"
     ],
     "weather": "Мокрый снег, скользко, промозгло.",
     "weather_object": {
@@ -1982,10 +2001,10 @@
     "total_miles": 270,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Fable Legends - A Tale of Two Sides/Fable Legends - A Tale of Two Sides - 01 - Title Theme.mp3",
-      "/Музыка/Fable Legends - A Tale of Two Sides/Fable_Legends_A_Tale_of_Two_Sides_02_The_Lady_of_Rosewood_Will_You.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 8/11 - Dark Tower.mp3",
-      "/Музыка/Cthulhu - At The Mountains Of Madness Soundtrack/Cthulhu_At_The_Mountains_Of_Madness_Soundtrack_20_The_Dark_Tower.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fable Legends - A Tale of Two Sides - 01 - Title Theme.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fable_Legends_A_Tale_of_Two_Sides_02_The_Lady_of_Rosewood_Will_You.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/11 - Dark Tower.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Cthulhu_At_The_Mountains_Of_Madness_Soundtrack_20_The_Dark_Tower.mp3"
     ],
     "weather": "Снег сменяется дождём, мрачно, запах мокрой коры.",
     "weather_object": {
@@ -2111,9 +2130,9 @@
     "total_miles": 285,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Moonlynx - Seraphia, Celtic Fantasy Harp/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
-      "/Музыка/13th Age Soundtrack/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
-      "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
     "weather_object": {
@@ -2199,8 +2218,8 @@
     "total_miles": 285,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Gea Wildwood - Timeless Tales/Timeless Tales - 01 - Vie Senza Fine.mp3",
-      "/Музыка/Gea Wildwood - Timeless Tales/Timeless Tales - 02 - In The Blackness Of A Moonless Night.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Timeless Tales - 01 - Vie Senza Fine.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Timeless Tales - 02 - In The Blackness Of A Moonless Night.mp3"
     ],
     "weather": "Мрачно, но без осадков, прохлада.",
     "weather_object": {
@@ -2293,9 +2312,9 @@
     "total_miles": 300,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Moonlynx - Seraphia, Celtic Fantasy Harp/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
-      "/Музыка/13th Age Soundtrack/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
-      "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
     "weather_object": {
@@ -2400,10 +2419,10 @@
     "total_miles": 315,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adrian von Ziegler - The Celtic Collection/The Celtic Collection - 04 - Fairy Forest.mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection IV/The Celtic Collection IV - 09 - Fairy Tale.mp3",
-      "/Музыка/Dark Fantasy Studio - Paranormal Evening (Curse of Strahd)/Paranormal Evening - 10 - Prophecy.mp3",
-      "/Музыка/James Dooley - Trinity (Orchestra Series, Vol.2)/Trinity  - 13 - Prophecy.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection - 04 - Fairy Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection IV - 09 - Fairy Tale.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Paranormal Evening - 10 - Prophecy.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Trinity  - 13 - Prophecy.mp3"
     ],
     "weather": "Прояснение, робкое солнце сквозь облака.",
     "weather_object": {
@@ -2493,10 +2512,10 @@
     "total_miles": 330,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Dark Harp.mp3",
-      "/Музыка/Monument Studios - The Summoning of Cthulhu/Dark Piano.mp3",
-      "/Музыка/Blades of Fire - 2025 Original Game Soundtrack/Blades of Fire - 09 - The Solitude Within.mp3",
-      "/Музыка/Castle Zagyx/Oath_of_the_Dark_Chivalry_03_Gules_The_Dream_Quest_of_Fortress_Nolkur.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Dark Harp.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Dark Piano.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Blades of Fire - 09 - The Solitude Within.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Oath_of_the_Dark_Chivalry_03_Gules_The_Dream_Quest_of_Fortress_Nolkur.mp3"
     ],
     "weather": "Промозглый холод, ветер воет в бойницах, низкие тучи.",
     "weather_object": {
@@ -2605,9 +2624,9 @@
     "total_miles": 345,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Moonlynx - Seraphia, Celtic Fantasy Harp/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
-      "/Музыка/13th Age Soundtrack/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
-      "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Seraphia, Celtic Fantasy Harp - 05 - Mistveil.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
     "weather_object": {
@@ -2712,10 +2731,10 @@
     "total_miles": 360,
     "is_rest_day": false,
     "music": [
-      "/Музыка/The Legend of Vox Machina (Amazon Original Series Soundtrack)/35 - The Legend is Back.mp3",
-      "/Музыка/ASKII - Hegelburg at Dusk/Hegelburg at Dusk - 06 - The Legend of Falkenfels.mp3",
-      "/Музыка/Adrian von Ziegler - Fable/Adrian von Ziegler - Fable - 01 - Freedom (Celtic).mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection III/The Celtic Collection III - 13 - Freedom.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/35 - The Legend is Back.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Hegelburg at Dusk - 06 - The Legend of Falkenfels.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Adrian von Ziegler - Fable - 01 - Freedom (Celtic).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection III - 13 - Freedom.mp3"
     ],
     "weather": "Ветрено, порывы гнут вереск, небо затянуто облаками.",
     "weather_object": {
@@ -2811,10 +2830,10 @@
     "total_miles": 375,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Handalien and Olik Nesnah - The Whisperer (Lovecraftian, Cthulhu)/The Whisperer  - 01 - Handalien - Ancient Form of Worship.mp3",
-      "/Музыка/Handalien and Olik Nesnah - The Whisperer (Lovecraftian, Cthulhu)/The Whisperer  - 03 - Handalien - The Void.mp3",
-      "/Музыка/Nightfell RPG - Original Soundtrack/5. The World Below.mp3",
-      "/Музыка/Into the Wyrd and Wild - RPG Soundtrack/06 - The Wyrd and Wild.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Whisperer  - 01 - Handalien - Ancient Form of Worship.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Whisperer  - 03 - Handalien - The Void.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/5. The World Below.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/06 - The Wyrd and Wild.mp3"
     ],
     "weather": "Низкое небо, морось, ветер, свистящий в скалах.",
     "weather_object": {
@@ -2923,9 +2942,9 @@
     "total_miles": 375,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Derek & Brandon Fiechter - Night at the Carnival II/Night at the Carnival II - 02 - Forbidden Merry-Go-Round.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Marketplace Day II.mp3",
-      "/Музыка/Sword Coast Soundscapes - Villages & Towns, Vol.1/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Night at the Carnival II - 02 - Forbidden Merry-Go-Round.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Marketplace Day II.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
     ],
     "weather": "Ветрено, пыльно, прохладно.",
     "weather_object": {
@@ -3001,10 +3020,33 @@
     "total_miles": 390,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Mountains.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 9/14 - Mountain Pass.mp3",
-      "/Музыка/Antti Martikainen - Hymn of the High Seas, Vol. 1 (Pirate theme)/Hymn of the High Seas, Vol. 1 - 07 - Wild Iron.mp3",
-      "/Музыка/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter.zip"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Mountains.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/14 - Mountain Pass.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Hymn of the High Seas, Vol. 1 - 07 - Wild Iron.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 01 - Burning Fire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 02 - Prey Vs Predator.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 03 - In for the Kill.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 04 - The Hunger.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 05 - Serengeti Heat.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 06 - Raging Planet.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 07 - Enemy Territory.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 08 - Stampede.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 09 - Chasing Prey.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 10 - Tribal Rivarly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 11 - Killer Instinct.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Epic Nature Series, Fire (Spirit of the Hunter)  - 12 - Wildfire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 01 - Burning Fire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 02 - Prey Vs Predator.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 03 - In for the Kill.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 04 - The Hunger.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 05 - Serengeti Heat.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 06 - Raging Planet.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 07 - Enemy Territory.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 08 - Stampede.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 09 - Chasing Prey.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 10 - Tribal Rivarly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 11 - Killer Instinct.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter/__MACOSX/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/._Epic Nature Series, Fire (Spirit of the Hunter)  - 12 - Wildfire.mp3"
     ],
     "weather": "Ясно, прохладно, лёгкий ветерок.",
     "weather_object": {
@@ -3076,10 +3118,10 @@
     "total_miles": 405,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Everrune - Mistwoven Realms/Mistwoven Realms - 01 - Mistfall.mp3",
-      "/Музыка/Everrune - Mistwoven Realms/Mistwoven Realms - 02 - Deadlands.mp3",
-      "/Музыка/Borough Bound - Endless Reaches/Endless Reaches - 09 - Souls and Snuff (Ghost Town).mp3",
-      "/Музыка/Derek & Brandon Fiechter - Pumpkin Town II/Pumpkin Town II  - 03 - Ghost Pumpkins.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Mistwoven Realms - 01 - Mistfall.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Mistwoven Realms - 02 - Deadlands.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Endless Reaches - 09 - Souls and Snuff (Ghost Town).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Pumpkin Town II  - 03 - Ghost Pumpkins.mp3"
     ],
     "weather": "Сырой туман, морось, видимость 30 футов.",
     "weather_object": {
@@ -3181,9 +3223,9 @@
     "total_miles": 420,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Derek & Brandon Fiechter - Night at the Carnival II/Night at the Carnival II - 02 - Forbidden Merry-Go-Round.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Marketplace Day II.mp3",
-      "/Музыка/Sword Coast Soundscapes - Villages & Towns, Vol.1/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Night at the Carnival II - 02 - Forbidden Merry-Go-Round.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Marketplace Day II.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
     ],
     "weather": "Ветрено, пыльно, прохладно.",
     "weather_object": {
@@ -3247,10 +3289,39 @@
     "total_miles": 435,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 2/53_82 - Ambient Realms - Wanderer.mp3",
-      "/Музыка/Antti Martikainen - Creation of the World/Creation of the World - 12 - The Lone Wanderer.mp3",
-      "/Музыка/The Witcher - Season 1 - Original Series Soundtrack/The Witcher - Season 01 - 05 - They're Alive.mp3",
-      "/Музыка/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle.zip"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/53_82 - Ambient Realms - Wanderer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Creation of the World - 12 - The Lone Wanderer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Witcher - Season 01 - 05 - They're Alive.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 01 - Fight The Manticore.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 02 - All Or Nothing.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 03 - Evil Awakens.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 04 - The Ambush.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 05 - The Sea Battle.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 06 - Conquering The Harbour.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 07 - Facing the Demon.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 08 - Flight Or Fight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 09 - Pursuit.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 10 - Tavern Fight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 11 - The Assassin.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 12 - The Last Stand.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 13 - Gathering The Troops.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 14 - The Final Descision.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle/The Battle - 15 - The Last Enemy.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 01 - Fight The Manticore.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 02 - All Or Nothing.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 03 - Evil Awakens.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 04 - The Ambush.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 05 - The Sea Battle.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 06 - Conquering The Harbour.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 07 - Facing the Demon.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 08 - Flight Or Fight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 09 - Pursuit.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 10 - Tavern Fight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 11 - The Assassin.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 12 - The Last Stand.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 13 - Gathering The Troops.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 14 - The Final Descision.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/DSA Soundtracks - The Battle/__MACOSX/DSA Soundtracks - The Battle/._The Battle - 15 - The Last Enemy.mp3"
     ],
     "weather": "Сильный ровный ветер, гнущий траву, небо затянуто.",
     "weather_object": {
@@ -3353,10 +3424,10 @@
     "total_miles": 450,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 11/15 - Forest of the Damned.mp3",
-      "/Музыка/Chris Thomas - Purgatio/Purgatio  - 20 - Lullaby of the Damned.mp3",
-      "/Музыка/Abandoned Toys - The Witch's Garden/The Witch's Garden - 01 - Within a Lilac Clutch.mp3",
-      "/Музыка/Abandoned Toys - The Witch's Garden/The Witch's Garden - 03 - Vermillion Reflections.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/15 - Forest of the Damned.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Purgatio  - 20 - Lullaby of the Damned.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Witch's Garden - 01 - Within a Lilac Clutch.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Witch's Garden - 03 - Vermillion Reflections.mp3"
     ],
     "weather": "Морось, серое небо, сырость.",
     "weather_object": {
@@ -3480,9 +3551,9 @@
     "total_miles": 465,
     "is_rest_day": false,
     "music": [
-      "/Музыка/McRo Music - Night Owl Odysseys, Vol. 1/Night Owl Odysseys Volume 1 - 07 - In the Dead of Winter.mp3",
-      "/Музыка/Arondight Studios - The Undead/The Undead - 02 - Dark Nights.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (BATTLE MUSIC)/Discontent.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Night Owl Odysseys Volume 1 - 07 - In the Dead of Winter.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Undead - 02 - Dark Nights.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Discontent.mp3"
     ],
     "weather": "Туман с утра, прохладно, безветренно.",
     "weather_object": {
@@ -3605,9 +3676,9 @@
     "total_miles": 465,
     "is_rest_day": true,
     "music": [
-      "/Музыка/McRo Music - Night Owl Odysseys, Vol. 1/Night Owl Odysseys Volume 1 - 07 - In the Dead of Winter.mp3",
-      "/Музыка/Arondight Studios - The Undead/The Undead - 02 - Dark Nights.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (BATTLE MUSIC)/Discontent.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Night Owl Odysseys Volume 1 - 07 - In the Dead of Winter.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Undead - 02 - Dark Nights.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Discontent.mp3"
     ],
     "weather": "Туман с утра, прохладно, безветренно.",
     "weather_object": {
@@ -3702,9 +3773,9 @@
     "total_miles": 480,
     "is_rest_day": false,
     "music": [
-      "/Музыка/The Witcher 3_ Wild Hunt Soundtrack/22_56 - Percival - Cloak And Dagger.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 10/05 - Deadly Plants.mp3",
-      "/Музыка/Nightfell RPG - Original Soundtrack/9. Deadly Winter.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/22_56 - Percival - Cloak And Dagger.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/05 - Deadly Plants.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/9. Deadly Winter.mp3"
     ],
     "weather": "Распутица, грязь, тяжёлое небо.",
     "weather_object": {
@@ -3809,10 +3880,10 @@
     "total_miles": 495,
     "is_rest_day": false,
     "music": [
-      "/Музыка/13th Age Soundtrack/The 13th Age Suite - 15 - Tales Around the Fire.mp3",
-      "/Музыка/FaboMusic - Taverns & Inns/Taverns & Inns - 07 - An Evening around the Fire.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (BATTLE MUSIC)/The Kings Road.mp3",
-      "/Музыка/Adventure Music - First Level/First_Level_10_Adventure_Music_A_King's_Blood_The_Cycle_of_Cerberus.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The 13th Age Suite - 15 - Tales Around the Fire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Taverns & Inns - 07 - An Evening around the Fire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Kings Road.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/First_Level_10_Adventure_Music_A_King's_Blood_The_Cycle_of_Cerberus.mp3"
     ],
     "weather": "Ветер, морось, пронизывающая сырость.",
     "weather_object": {
@@ -3946,10 +4017,29 @@
     "total_miles": 510,
     "is_rest_day": false,
     "music": [
-      "/Музыка/McRo Music - Songs to Slay Dragons To, Vol. 6/Songs to Slay Dragons To, Vol. 6 - 24 - Stargazing.mp3",
-      "/Музыка/Tabletop RPG Music - Volume 1/Tabletop RPG Music - Volume 1 - 09 - Forest Stargazing.mp3",
-      "/Музыка/Fogweaver - Magelight/Fogweaver - Magelight.zip",
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 10/14 - Eastern Nights.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Songs to Slay Dragons To, Vol. 6 - 24 - Stargazing.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Tabletop RPG Music - Volume 1 - 09 - Forest Stargazing.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 01 - Illuminated by Magelight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 02 - A Patterning Spell.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 03 - The Eldest Tongue.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 04 - Isle of the Wise.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 05 - The Glimmer of Arhada.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 06 - Windbringer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 07 - Within Spell-Walls.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 08 - The Isolate Tower.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 09 - Thwilburn.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/Fogweaver - Magelight/Magelight - 10 - Inien.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 01 - Illuminated by Magelight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 02 - A Patterning Spell.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 03 - The Eldest Tongue.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 04 - Isle of the Wise.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 05 - The Glimmer of Arhada.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 06 - Windbringer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 07 - Within Spell-Walls.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 08 - The Isolate Tower.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 09 - Thwilburn.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Fogweaver - Magelight/__MACOSX/Fogweaver - Magelight/._Magelight - 10 - Inien.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/14 - Eastern Nights.mp3"
     ],
     "weather": "Холод, ясное звёздное небо, тишина.",
     "weather_object": {
@@ -4025,8 +4115,8 @@
     "total_miles": 525,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Assassin's Creed IV, Black Flag (Original Game Soundtrack)/08 - The Ends of the Earth.mp3",
-      "/Музыка/Nox Arcana - The Dark Tower/The Dark Tower  - 10 - The Dark Tower.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/08 - The Ends of the Earth.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Dark Tower  - 10 - The Dark Tower.mp3"
     ],
     "weather": "Первый сильный заморозок, иней на траве, ясно.",
     "weather_object": {
@@ -4102,10 +4192,10 @@
     "total_miles": 540,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Bloodborne - Original Game Soundtrack/03 - Hunter's Dream.mp3",
-      "/Музыка/Daniel Carl - Cthymphony (Cthulhu, Mystery)/Cthymphony - 03 - Mariner's Dream.mp3",
-      "/Музыка/Filip Melvan - Short Themes Collection Vol. 1/Short Themes Collection Vol. 1 - 09 - Circle of the Shepherd.mp3",
-      "/Музыка/Martin Egger - Of Gamblers And Heroes/Of Gamblers And Heroes - 02 - The Shepherd`s Gamble.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/03 - Hunter's Dream.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Cthymphony - 03 - Mariner's Dream.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Short Themes Collection Vol. 1 - 09 - Circle of the Shepherd.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Of Gamblers And Heroes - 02 - The Shepherd`s Gamble.mp3"
     ],
     "weather": "Густой туман, видимость 50 футов, сыро.",
     "weather_object": {
@@ -4184,10 +4274,10 @@
     "total_miles": 555,
     "is_rest_day": false,
     "music": [
-      "/Музыка/The Legend of Vox Machina (Amazon Original Series Soundtrack)/20 - Shadows at the Gates.mp3",
-      "/Музыка/Dark Fantasy Studio - In Silence  (Curse of Strahd, Dark Gothic Music)/02 - At the gate of hell.mp3",
-      "/Музыка/Assassin's Creed IV, Black Flag (Original Game Soundtrack)/18 - Men of War.mp3",
-      "/Музыка/Castle Zagyx/Oath_of_the_Dark_Chivalry_06_Sanguine_Six_Spectral_Men_At_Arms_at.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/20 - Shadows at the Gates.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/02 - At the gate of hell.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/18 - Men of War.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Oath_of_the_Dark_Chivalry_06_Sanguine_Six_Spectral_Men_At_Arms_at.mp3"
     ],
     "weather": "Промозглый дождь со снегом, серое небо.",
     "weather_object": {
@@ -4348,8 +4438,8 @@
     "total_miles": 555,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Derek & Brandon Fiechter - Gothic Night/Gothic Night - 04 - Haunted Village.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Highlands.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Gothic Night - 04 - Haunted Village.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Highlands.mp3"
     ],
     "weather": "Солнечно, почти тепло, приятный ветерок.",
     "weather_object": {
@@ -4435,10 +4525,10 @@
     "total_miles": 570,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 10/21 - Northern Realms.mp3",
-      "/Музыка/Dungeons & Dragons, Honour Among Thieves - Music from the Motion Picture/37 - Into The Castle.mp3",
-      "/Музыка/Valkyrion - Forevermore/Forevermore  - 01 - Hymn of the North.mp3",
-      "/Музыка/Valkyrion - Forevermore/Forevermore  - 02 - Frozen Love.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/21 - Northern Realms.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/37 - Into The Castle.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Forevermore  - 01 - Hymn of the North.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Forevermore  - 02 - Frozen Love.mp3"
     ],
     "weather": "Пронизывающий ветер, облака проносятся низко.",
     "weather_object": {
@@ -4531,9 +4621,9 @@
     "total_miles": 585,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - The Summoning of Cthulhu/Waiting.mp3",
-      "/Музыка/ASKII - Tamriel Rebuilt/Tamriel Rebuilt - 08 - Darkness.mp3",
-      "/Музыка/Adrian von Ziegler - The Celtic Collection II/The Celtic Collection II - 03 - Fear no Darkness.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Waiting.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Tamriel Rebuilt - 08 - Darkness.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection II - 03 - Fear no Darkness.mp3"
     ],
     "weather": "Удушливая влажность, тучи мошкары, жарко.",
     "weather_object": {
@@ -4646,8 +4736,8 @@
     "total_miles": 600,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Nox Arcana - Darkfall/Darkfall  - 05 - Dark Matter.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Dark Winter.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Darkfall  - 05 - Dark Matter.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Dark Winter.mp3"
     ],
     "weather": "Туман, сырость, всё кажется серым.",
     "weather_object": {
@@ -4746,10 +4836,10 @@
     "total_miles": 615,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Adrian von Ziegler - The Celtic Collection II/The Celtic Collection II - 18 - Journey's End.mp3",
-      "/Музыка/Antti Martikainen - Another Saga/Another Saga - 29 - At the Journey's End (alternative).mp3",
-      "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 08 - Homecoming.mp3",
-      "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 26 - Homecoming (Legacy version).mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Celtic Collection II - 18 - Journey's End.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Another Saga - 29 - At the Journey's End (alternative).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Throne of the North - 08 - Homecoming.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Throne of the North - 26 - Homecoming (Legacy version).mp3"
     ],
     "weather": "Небо проясняется, запах дыма и навоза, теплеет.",
     "weather_object": {
@@ -4839,10 +4929,49 @@
     "total_miles": 630,
     "is_rest_day": false,
     "music": [
-      "/Музыка/The Elder Scrolls V Skyrim Original Game Soundtrack/36_53 - Jeremy Soule - A Chance Meeting.mp3",
-      "/Музыка/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked.zip",
-      "/Музыка/The Witcher 3_ Wild Hunt Soundtrack/12_56 - Percival - The Nightingale.mp3",
-      "/Музыка/Austin Wintory - Horn/Horn - 14 - The Knighting.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/36_53 - Jeremy Soule - A Chance Meeting.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 01 - Dark and Deadly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 02 - Return of the Boogeyman.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 03 - Edge of Night.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 04 - Something Wicked This Way Comes.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 05 - Fade to Black.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 06 - Supernatural.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 07 - Summoning.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 08 - Shadows in the Moonlight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 09 - Night Terrors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 10 - Cursed.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 11 - Burial (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 12 - Halloween Parade.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 13 - The Dance of Halloween.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 14 - Number 13.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 15 - The Horror.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 16 - Spectres.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 17 - Afraid of the Dark.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 18 - Terror Trail.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 19 - Afraid of the Dark (ambient).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 20 - Supernatural (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 01 - Dark and Deadly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 02 - Return of the Boogeyman.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 03 - Edge of Night.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 04 - Something Wicked This Way Comes.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 05 - Fade to Black.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 06 - Supernatural.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 07 - Summoning.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 08 - Shadows in the Moonlight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 09 - Night Terrors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 10 - Cursed.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 11 - Burial (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 12 - Halloween Parade.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 13 - The Dance of Halloween.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 14 - Number 13.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 15 - The Horror.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 16 - Spectres.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 17 - Afraid of the Dark.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 18 - Terror Trail.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 19 - Afraid of the Dark (ambient).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 20 - Supernatural (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/12_56 - Percival - The Nightingale.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Horn - 14 - The Knighting.mp3"
     ],
     "weather": "Пасмурно, временами солнце, шумный портовый город.",
     "weather_object": {
@@ -4935,10 +5064,49 @@
     "total_miles": 630,
     "is_rest_day": true,
     "music": [
-      "/Музыка/The Elder Scrolls V Skyrim Original Game Soundtrack/36_53 - Jeremy Soule - A Chance Meeting.mp3",
-      "/Музыка/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked.zip",
-      "/Музыка/The Witcher 3_ Wild Hunt Soundtrack/12_56 - Percival - The Nightingale.mp3",
-      "/Музыка/Austin Wintory - Horn/Horn - 14 - The Knighting.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/36_53 - Jeremy Soule - A Chance Meeting.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 01 - Dark and Deadly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 02 - Return of the Boogeyman.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 03 - Edge of Night.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 04 - Something Wicked This Way Comes.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 05 - Fade to Black.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 06 - Supernatural.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 07 - Summoning.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 08 - Shadows in the Moonlight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 09 - Night Terrors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 10 - Cursed.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 11 - Burial (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 12 - Halloween Parade.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 13 - The Dance of Halloween.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 14 - Number 13.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 15 - The Horror.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 16 - Spectres.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 17 - Afraid of the Dark.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 18 - Terror Trail.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 19 - Afraid of the Dark (ambient).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/Sam Haynes - Something Wicked/Something Wicked - 20 - Supernatural (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 01 - Dark and Deadly.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 02 - Return of the Boogeyman.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 03 - Edge of Night.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 04 - Something Wicked This Way Comes.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 05 - Fade to Black.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 06 - Supernatural.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 07 - Summoning.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 08 - Shadows in the Moonlight.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 09 - Night Terrors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 10 - Cursed.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 11 - Burial (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 12 - Halloween Parade.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 13 - The Dance of Halloween.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 14 - Number 13.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 15 - The Horror.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 16 - Spectres.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 17 - Afraid of the Dark.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 18 - Terror Trail.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 19 - Afraid of the Dark (ambient).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Sam Haynes - Something Wicked/__MACOSX/Sam Haynes - Something Wicked/._Something Wicked - 20 - Supernatural (remix).mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/12_56 - Percival - The Nightingale.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Horn - 14 - The Knighting.mp3"
     ],
     "weather": "Пасмурно, временами солнце, шумный портовый город.",
     "weather_object": {
@@ -5031,9 +5199,46 @@
     "total_miles": 645,
     "is_rest_day": false,
     "music": [
-      "/Музыка/MuseKey - Sinister/MuseKey - Sinister.zip",
-      "/Музыка/Maestro Spolzino - Suspense/Suspense  - 01 - Arkham Sanitarium.mp3",
-      "/Музыка/Maestro Spolzino - Suspense/Suspense  - 02 - The Devil Of Barovia.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 01 - Bleak Horizon.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 02 - Voices Beneath.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 03 - Gravewind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 04 - The Ash Lantern.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 05 - Rotting Prayer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 06 - The Maw Within.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 07 - Crown of Thorns.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 08 - Midnight Reliquary.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 09 - Silent Effigy.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 10 - Bloodlit Ascent.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 11 - Harrow's March.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 12 - Throne of Vermin.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 13 - Echograve.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 14 - The Withered Psalm.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 15 - The Shattered Omen.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 16 - Fleshspire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 17 - Coffin Maze.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 18 - The Blackened Veil.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/MuseKey - Sinister/Sinister - 19 - Last Light Fades.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 01 - Bleak Horizon.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 02 - Voices Beneath.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 03 - Gravewind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 04 - The Ash Lantern.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 05 - Rotting Prayer.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 06 - The Maw Within.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 07 - Crown of Thorns.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 08 - Midnight Reliquary.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 09 - Silent Effigy.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 10 - Bloodlit Ascent.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 11 - Harrow's March.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 12 - Throne of Vermin.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 13 - Echograve.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 14 - The Withered Psalm.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 15 - The Shattered Omen.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 16 - Fleshspire.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 17 - Coffin Maze.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 18 - The Blackened Veil.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/MuseKey - Sinister/__MACOSX/MuseKey - Sinister/._Sinister - 19 - Last Light Fades.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Suspense  - 01 - Arkham Sanitarium.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Suspense  - 02 - The Devil Of Barovia.mp3"
     ],
     "weather": "Сухо, ветер гонит пыль по дороге, прохладно.",
     "weather_object": {
@@ -5121,10 +5326,10 @@
     "total_miles": 660,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Wartales Official Soundtrack (2022)/Wartales OST - 41 - The Broodmother.mp3",
-      "/Музыка/Bonnie Grace - Crow's Nest/Crow's Nest - 03 - The Night Watchers.mp3",
-      "/Музыка/Wartales Official Soundtrack (2022)/Wartales OST - 12 - The Long Road Ahead.mp3",
-      "/Музыка/d20 Sounds - Subversion (Middle-East Cyberpunk)/Subversion - 04 - The long Road.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Wartales OST - 41 - The Broodmother.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Crow's Nest - 03 - The Night Watchers.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Wartales OST - 12 - The Long Road Ahead.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Subversion - 04 - The long Road.mp3"
     ],
     "weather": "Ветрено, облака несутся, открытое небо.",
     "weather_object": {
@@ -5217,10 +5422,10 @@
     "total_miles": 675,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Hidden Grove.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Hidden Path.mp3",
-      "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Conspiracy Unravel.mp3",
-      "/Музыка/Arondight Studios - A Journey Through Space (Mothership, Spelljammer)/A Journey Through Space - 05 - A Conspiracy.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Hidden Grove.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Hidden Path.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Conspiracy Unravel.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/A Journey Through Space - 05 - A Conspiracy.mp3"
     ],
     "weather": "Мелкий дождь, серые тучи, слякоть.",
     "weather_object": {
@@ -5325,10 +5530,10 @@
     "total_miles": 690,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Alec Shea - The Adventurers Collection, Volume 3/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music, Vol. 13/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
-      "/Музыка/Ambient Realms - Massive Horror Ambience, Vol. 2/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
-      "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
     "weather_object": {
@@ -5448,10 +5653,10 @@
     "total_miles": 690,
     "is_rest_day": true,
     "music": [
-      "/Музыка/Alec Shea - The Adventurers Collection, Volume 3/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music, Vol. 13/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
-      "/Музыка/Ambient Realms - Massive Horror Ambience, Vol. 2/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
-      "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
     "weather_object": {
@@ -5550,10 +5755,10 @@
     "total_miles": 705,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Alec Shea - The Adventurers Collection, Volume 3/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music, Vol. 13/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
-      "/Музыка/Ambient Realms - Massive Horror Ambience, Vol. 2/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
-      "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
     "weather_object": {
@@ -5660,10 +5865,10 @@
     "total_miles": 720,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Alec Shea - The Adventurers Collection, Volume 3/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music, Vol. 13/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
-      "/Музыка/Ambient Realms - Massive Horror Ambience, Vol. 2/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
-      "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
     "weather_object": {
@@ -5777,10 +5982,10 @@
     "total_miles": 735,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Alec Shea - The Adventurers Collection, Volume 3/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
-      "/Музыка/Ambient Realms - Massive Ambient Music, Vol. 13/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
-      "/Музыка/Ambient Realms - Massive Horror Ambience, Vol. 2/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
-      "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/The Adventurers Collection Volume 3 - 07 - Moonlight Forest.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive_Ambient_Music,_Vol_13_30_Wolves_of_the_Moonlight_Moors.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Massive Horror Ambience Music, Vol. 2 - 09 - Lunatics Mind.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
     "weather_object": {
@@ -5873,10 +6078,10 @@
     "total_miles": 750,
     "is_rest_day": false,
     "music": [
-      "/Музыка/Eric Gordon Berg - Morrowind - The New North (Original Game Soundtrack)/Morrowind - The New North  - 16 - From Past to Present.mp3",
-      "/Музыка/The Elder Scrolls V Skyrim Original Game Soundtrack/3_53 - Jeremy Soule - From Past to Present.mp3",
-      "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 01 - From the Fields of Gallia.mp3",
-      "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 02 - Runestones.mp3"
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Morrowind - The New North  - 16 - From Past to Present.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/3_53 - Jeremy Soule - From Past to Present.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Throne of the North - 01 - From the Fields of Gallia.mp3",
+      "modules/biyk_ext/extensions/weather_by_day_time/data/music/Throne of the North - 02 - Runestones.mp3"
     ],
     "weather": "Пасмурно, возможен дождь, шум большого города.",
     "weather_object": {

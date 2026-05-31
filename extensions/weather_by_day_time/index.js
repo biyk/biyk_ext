@@ -137,7 +137,7 @@ export function init() {
   <p><strong>Событие:</strong> ${entry.event || "—"}</p>
   <p><strong>Погода:</strong> ${entry.weather || "—"}</p>
   <hr>
-  <p><em>${(entry.notes || "").split("\n")[0]}</em></p>
+  <p><em>${entry.notes || ""}</em></p>
 </article>`,
             whisper: [game.user.id]
         });

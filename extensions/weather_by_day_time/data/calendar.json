@@ -14,7 +14,63 @@
       "/Музыка/Adrian von Ziegler - The Celtic Collection III/The Celtic Collection III - 10 - Woodland Tales.mp3"
     ],
     "weather": "Солнечно, свежий утренний ветер, к полудню тепло.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.006,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Широкая укатанная дорога меж золотых полей пшеницы. Вдалеке виднеются одинокие фермерские дома, стога сена, ряды подсолнухов. По обочинам бродят куры. Пахнет сухой травой и дымом далёких очагов. Всё дышит покоем и началом долгого пути."
   },
   {
@@ -33,7 +89,66 @@
       "/Музыка/13th Age Soundtrack/The 13th Age Suite - 22 - Dreams of a Lost Age.mp3"
     ],
     "weather": "Ясно, жарко, к вечеру — золотистый закат.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.003,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ],
+              "tint": {
+                "value": "#ffffff"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Бескрайние луга с высокой травой, колышущейся под ветром. Лишь изредка попадаются старые дубы, дающие скудную тень. Горизонт размыт маревом. Цикады неумолчно стрекочут, создавая гулкую тишину."
   },
   {
@@ -50,7 +165,80 @@
       "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 4/24_82 - Ambient Realms - Devasted Realm of the Elves.mp3"
     ],
     "weather": "Облачно, к вечеру морось, воздух влажный и прохладный.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.6,
+            "tint": {
+              "value": "#b0b0b0"
+            }
+          }
+        },
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.3
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Дорога мягко петляет меж невысоких деревьев — берёз, осин, клёнов. Лес прозрачный, полный птичьих голосов. Под ногами — шуршащая прошлогодняя листва. Редкие солнечные лучи пробиваются сквозь кроны, рисуя пятнистый свет."
   },
   {
@@ -69,7 +257,108 @@
       "/Музыка/Dungeons & Dragons, Honour Among Thieves - Music from the Motion Picture/12 - Into The Floor.mp3"
     ],
     "weather": "Промозглый туман с утра, прохлада, под вечер — сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.15,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#556055"
+            }
+          }
+        },
+        {
+          "type": "spiders",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.6,
+            "tint": {
+              "value": "#334433"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "spiders",
+            "options": {
+              "density": 0.5,
+              "alpha": 0.6
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "spiders",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.6
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "spiders",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.6
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "spiders",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.6
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Древний тёмный лес. Могучие стволы обросли мхом, кроны смыкаются над головой, почти не пропуская света. Пахнет сырой землёй и грибами. Паутина свисает с ветвей, а в чаще то и дело что-то шуршит. Дорога превратилась в ухабистую тропу."
   },
   {
@@ -88,7 +377,93 @@
       "/Музыка/Bear McCreary - Black Sails Soundtrack (Pirates)/Black Sails  - 18 - The Parson's Farewell.mp3"
     ],
     "weather": "Ветрено, порывы гонят сухие листья по земле, небо серое.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.5,
+            "tint": {
+              "value": "#9a9a9a"
+            }
+          }
+        },
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.3,
+            "alpha": 0.6
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Лес заканчивается, открывая пологий холм, поросший редким кустарником и высокой травой. Впереди — вновь равнина. На опушке валяется полусгнившее бревно, видны следы старого кострища. Здесь путники часто делают привал перед выходом на открытую местность."
   },
   {
@@ -106,7 +481,63 @@
       "/Музыка/Dreyma - Lumina (Viking Ambient Music)/Lumina - 03 - Windswept.mp3"
     ],
     "weather": "Прохладно, ясно, небо высокое и бледно-голубое.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "eagles",
+          "options": {
+            "density": 0.0003,
+            "animations": [
+              "glide"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0003,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0003,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0002,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Ровная, как стол, степь. Трава здесь низкая, выгоревшая, местами проплешины глинистой почвы. Ветер гуляет беспрепятственно, разнося далёкие запахи дыма и полыни. На горизонте — цепочка далёких холмов. Одинокие валуны служат ориентирами."
   },
   {
@@ -125,7 +556,107 @@
       "/Музыка/Realmcraft Audio - A Winter's Tale/A Winter's Tale - 5 - Realmcraft Audio - Frozen Dreams.mp3"
     ],
     "weather": "Хмуро, к ночи гроза с ливнем и молниями.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.06,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#2a2a3a"
+            }
+          }
+        },
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.7,
+            "alpha": 0.8,
+            "direction": 85
+          }
+        },
+        {
+          "type": "raintop",
+          "options": {
+            "density": 0.5,
+            "alpha": 0.7
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.7,
+              "density": 0.05,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.8,
+              "density": 0.05,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.9,
+              "density": 0.06,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 1,
+              "density": 0.06,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.8,
+              "direction": 80,
+              "alpha": 0.9
+            }
+          },
+          {
+            "type": "raintop",
+            "options": {
+              "density": 0.3
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Большой двухэтажный дом с конюшней и внутренним двором, обнесённым частоколом. Из трубы вьётся дым. Внутри тепло, пахнет элем и жареным мясом. Слышен гул голосов, смех, стук кружек. Во дворе — несколько повозок, куры, спящий пёс. Гроза бушует снаружи, сотрясая ставни."
   },
   {
@@ -144,7 +675,90 @@
       "/Музыка/Gabriel Garrido García - A Journey Across the Deep/A Journey Across the Deep - 06 - Path to the Mountains.mp3"
     ],
     "weather": "Свежесть после грозы, радуга, лёгкий ветер.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.25,
+            "tint": {
+              "value": "#e8e0ff"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.005,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.3,
+              "tint": {
+                "value": "#e8e0ff"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.2,
+              "tint": {
+                "value": "#e8e0ff"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Поля блестят от дождя, воздух чист и прозрачен. Дорога немного раскисла, но быстро сохнет. Впереди виднеются пологие холмы, за которыми, как говорят, начинаются Поля Мёртвых. Настроение приподнятое, небо промыто до синевы."
   },
   {
@@ -163,7 +777,100 @@
       "/Музыка/Arondight Studios - The Unholy (Brian Estes)/The Unholy - 01 - Ashes to Ashes.mp3"
     ],
     "weather": "Тяжёлые тучи, давящая тишина, ни дуновения.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#3a3a3a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.01,
+            "alpha": 0.5,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.9,
+              "density": 0.05,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.9,
+              "density": 0.05,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 1,
+              "density": 0.05,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Пейзаж резко меняется: ровная земля усеяна древними замшелыми камнями и курганами. Трава растёт пучками на кочках, почва кажется чёрной и маслянистой. Не поют птицы, лишь изредка каркнет ворон. Воздух тяжёлый, пахнет сыростью и древностью. Даже лошади ступают осторожнее."
   },
   {
@@ -182,7 +889,100 @@
       "/Музыка/McRo Music - Ambient Adventures/Ambient Adventures - 04 - Cursed Necropolis.mp3"
     ],
     "weather": "Промозглый туман, видимость 100 футов, холодная сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.18,
+            "alpha": 0.8,
+            "tint": {
+              "value": "#5a5a5a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.008,
+            "alpha": 0.6,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.18,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.18,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Туман стелется над землёй, цепляясь за выступы камней. Древние могильные холмы выступают из белёсой мглы, словно спины спящих чудовищ. Звуки здесь глохнут, эхо искажается. Дорога едва угадывается среди кочек и валунов. В тумане могут мерещиться силуэты."
   },
   {
@@ -201,7 +1001,100 @@
       "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 3/66_82 - Ambient Realms - The Ancients.mp3"
     ],
     "weather": "Мрачно, безветренно, серое марево.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.1,
+            "alpha": 0.65,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.006,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.55,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.004,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Курганы здесь выше, многие окружены стόящими камнями с полустёртыми рунами. Земля покрыта ковром вереска и лишайников. Тишина абсолютная, лишь изредка под ногами хрустнет древняя кость. Местные обходят это место стороной. Кажется, что за тобой наблюдают из глубины холмов."
   },
   {
@@ -220,7 +1113,98 @@
       "/Музыка/McRo Music - Ambient Adventures/Ambient Adventures - 04 - Cursed Necropolis.mp3"
     ],
     "weather": "Промозглый туман, видимость 100 футов, холодная сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.5,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#666666"
+            }
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#3a3a3a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.5,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.35,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.06,
+              "alpha": 0.4,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Туман стелется над землёй, цепляясь за выступы камней. Древние могильные холмы выступают из белёсой мглы, словно спины спящих чудовищ. Звуки здесь глохнут, эхо искажается. Дорога едва угадывается среди кочек и валунов. В тумане могут мерещиться силуэты."
   },
   {
@@ -239,7 +1223,95 @@
       "/Музыка/Dark Fantasy Studio - Superheroes/Superheroes - 02 - Between life and death.mp3"
     ],
     "weather": "Серое небо, холодная и быстрая вода, ветер с реки.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.5,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Та же река, но теперь видно, как стремителен поток. Вода доходит лошадям до брюха, крутит водовороты у камней. На дальнем берегу — глинистый обрыв и узкий подъём. Переправа трудная, мокрая, все вымокли до нитки. На вкус вода отдаёт железом."
   },
   {
@@ -257,7 +1329,137 @@
       "/Музыка/Monument Studios - The Summoning of Cthulhu/Organ & Strings.mp3"
     ],
     "weather": "Ливень стеной весь день, к ночи затихает.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.8,
+            "alpha": 0.9,
+            "direction": 85
+          }
+        },
+        {
+          "type": "raintop",
+          "options": {
+            "density": 0.6,
+            "alpha": 0.8
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.06,
+            "alpha": 1,
+            "tint": {
+              "value": "#2a2a2a"
+            }
+          }
+        },
+        {
+          "type": "bubbles",
+          "options": {
+            "density": 0.1,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#88aa66"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.7,
+              "direction": 80,
+              "alpha": 0.8
+            }
+          },
+          {
+            "type": "raintop",
+            "options": {
+              "density": 0.3
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.9,
+              "direction": 80,
+              "alpha": 0.9
+            }
+          },
+          {
+            "type": "raintop",
+            "options": {
+              "density": 0.6
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.5,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "bubbles",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.3,
+              "tint": {
+                "value": "#88aa66"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Низина, заросшая чёрными, искривлёнными деревьями без листьев. Почва превратилась в вязкую топь, усыпанную трухлявыми стволами. Среди грязи — лужи, покрытые радужной плёнкой. Пахнет гнилью и болотом. С заходом солнца поднимается холодный туман."
   },
   {
@@ -274,7 +1476,63 @@
       "/Музыка/Valkyrion - Medieval Tavern/Medieval Tavern - 1 - Tavern of Heroes.mp3"
     ],
     "weather": "Солнечно, тепло, ясное небо.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.005,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Маленькая, но уютная деревушка у брода через мелкую речку. Несколько каменных домов, водяная мельница, кузня, небольшая таверна «Весёлый Угорь». По улицам ходят гуси, пахнет свежим хлебом. Жители приветливы, но чужаков встречают с лёгкой настороженностью."
   },
   {
@@ -292,7 +1550,89 @@
       "/Музыка/Anast Agakides - Vecna, The Last Vestige of the Fallen God/Anast Agakides - Vecna, The Last Vestige of the Fallen God.zip"
     ],
     "weather": "Ветер, несущий запах гари с севера, прохладно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.5,
+            "tint": {
+              "value": "#5a5a5a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.003,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#222222"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.6,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Каменистые, поросшие вереском холмы, меж которых петляет дорога. На склонах виднеются входы в заброшенные шахты. Земля усыпана мелкой щебёнкой. Издалека доносится глухой стук — то ли камнепад, то ли работа троллей. Птиц мало, лишь ястребы парят высоко."
   },
   {
@@ -309,7 +1649,103 @@
       "/Музыка/Epic Fantasy Adventurers - For The Emperor (Oriental Adventures)/For the Emperor - 01 - Gathering Storm.mp3"
     ],
     "weather": "Пронизывающий ветер, снежные заряды, видимость снижена.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "snowstorm",
+          "options": {
+            "density": 0.6,
+            "alpha": 0.9,
+            "direction": 85
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.06,
+            "alpha": 1,
+            "tint": {
+              "value": "#3a3a4a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "snowstorm",
+            "options": {
+              "density": 0.5,
+              "direction": 85,
+              "alpha": 0.6
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "snowstorm",
+            "options": {
+              "density": 0.5,
+              "direction": 85
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "snowstorm",
+            "options": {
+              "density": 0.5,
+              "direction": 85
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.4,
+              "direction": 75
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Дорога забирается всё выше. Вокруг — голые скальные выходы, валуны, покрытые лишайником. Растительность скудная: низкорослые сосны, стелющийся можжевельник. В воздухе пахнет снегом и хвоей. Камни острые, ветер воет в расщелинах, словно голодный зверь."
   },
   {
@@ -326,7 +1762,97 @@
       "/Музыка/Beyond Skyrim： Bruma/Beyond Skyrim - Bruma - 20 - Moon and Scars.mp3"
     ],
     "weather": "Низкие облака, туман цепляется за вершины, сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        },
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.1,
+            "alpha": 0.6,
+            "tint": {
+              "value": "#6a6a7a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.4,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Узкий перевал между тремя остроконечными скалами, напоминающими копья. Дорога вьётся серпантином, с одной стороны — отвесная стена, с другой — пропасть, затянутая облаками. Ветер свистит, проносясь сквозь каменные «зубья». Место глухое, мрачное, но величественное."
   },
   {
@@ -345,7 +1871,105 @@
       "/Музыка/Mountain Realm - Frostfall/Frostfall - 02 - Dungeon Stairs.mp3"
     ],
     "weather": "Мокрый снег, скользко, промозгло.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "snow",
+          "options": {
+            "density": 0.5,
+            "alpha": 0.8,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.95,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.4,
+              "direction": 75,
+              "alpha": 0.6
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.4,
+              "direction": 75
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.4,
+              "direction": 75,
+              "alpha": 0.6
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.4,
+              "direction": 75,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Узкая тропа вдоль скалы, покрытая коркой льда. Справа — каменная стена, слева — крутой обрыв. Внизу туман скрывает дно ущелья. Ветер бросает в лицо колючую ледяную крошку. Каждый шаг даётся с трудом, лошади скользят и фыркают."
   },
   {
@@ -364,7 +1988,117 @@
       "/Музыка/Cthulhu - At The Mountains Of Madness Soundtrack/Cthulhu_At_The_Mountains_Of_Madness_Soundtrack_20_The_Dark_Tower.mp3"
     ],
     "weather": "Снег сменяется дождём, мрачно, запах мокрой коры.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.6,
+            "direction": 85
+          }
+        },
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.06,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#556055"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.005,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Лес у подножия горного кряжа Тролльбарк. Деревья — вековые ели, мрачные, обросшие мхом. Ветви свисают низко, задевая всадников. Земля устлана толстым ковром палой хвои, заглушающей шаги. На стволах видны глубокие борозды от когтей."
   },
   {
@@ -382,7 +2116,77 @@
       "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.18,
+            "alpha": 0.8,
+            "tint": {
+              "value": "#7a8a7a"
+            }
+          }
+        },
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.1,
+            "alpha": 0.25
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.18,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.18,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Глубь древнего леса. Туман клубится меж стволов, заглушая звуки и скрадывая расстояние. С ветвей свисают космы мха-бородача. Множество ручьёв и оврагов. Здесь легко заблудиться. В тумане могут почудиться фигуры, а эхо разносит каждый шорох."
   },
   {
@@ -399,7 +2203,84 @@
       "/Музыка/Gea Wildwood - Timeless Tales/Timeless Tales - 02 - In The Blackness Of A Moonless Night.mp3"
     ],
     "weather": "Мрачно, но без осадков, прохлада.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.06,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#4a5a4a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.003,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.06,
+              "alpha": 0.4,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Поляна в глубине леса, окружённая замшелыми валунами. В центре — старое кострище. Рядом журчит ручей. Кроны деревьев смыкаются над головой, образуя естественный шатёр. Место кажется безопасным, но ощущение, что за тобой наблюдают, не покидает."
   },
   {
@@ -417,7 +2298,96 @@
       "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.6,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Глубь древнего леса. Туман клубится меж стволов, заглушая звуки и скрадывая расстояние. С ветвей свисают космы мха-бородача. Множество ручьёв и оврагов. Здесь легко заблудиться. В тумане могут почудиться фигуры, а эхо разносит каждый шорох."
   },
   {
@@ -436,7 +2406,81 @@
       "/Музыка/James Dooley - Trinity (Orchestra Series, Vol.2)/Trinity  - 13 - Prophecy.mp3"
     ],
     "weather": "Прояснение, робкое солнце сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.35,
+            "tint": {
+              "value": "#e8e0f0"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.004,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.3,
+              "tint": {
+                "value": "#e8e0f0"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Просторная поляна, на которой растут четыре исполинских дуба, стоящих почти правильным квадратом. Под их кронами — густая трава и цветы. Стволы толстые, в несколько обхватов, с глубокими дуплами. Говорят, здесь феи водят хороводы. Место светлое, но полное древней магии."
   },
   {
@@ -455,7 +2499,100 @@
       "/Музыка/Castle Zagyx/Oath_of_the_Dark_Chivalry_03_Gules_The_Dream_Quest_of_Fortress_Nolkur.mp3"
     ],
     "weather": "Промозглый холод, ветер воет в бойницах, низкие тучи.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#3a3a4a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.008,
+            "alpha": 0.5,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.8,
+              "density": 0.04,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.9,
+              "density": 0.04,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.9,
+              "density": 0.05,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "На высоком утёсе над дорогой стоит мрачная каменная башня — всё, что осталось от древней крепости. Стены потрескались, ворота давно сгнили. Внутри — пустые залы, заросшие плющом, и лестница, ведущая на смотровую площадку. Оттуда открывается вид на десятки миль окрест. В подвале, по слухам, обитает призрак."
   },
   {
@@ -473,7 +2610,96 @@
       "/Музыка/Nox Arcana - Grimm Tales/Grimm Tales  - 16 - Labyrinth Of Dreams.mp3"
     ],
     "weather": "Густой туман, капли падают с веток, безветренно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.35,
+            "alpha": 0.5,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.35,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Глубь древнего леса. Туман клубится меж стволов, заглушая звуки и скрадывая расстояние. С ветвей свисают космы мха-бородача. Множество ручьёв и оврагов. Здесь легко заблудиться. В тумане могут почудиться фигуры, а эхо разносит каждый шорох."
   },
   {
@@ -492,7 +2718,87 @@
       "/Музыка/Adrian von Ziegler - The Celtic Collection III/The Celtic Collection III - 13 - Freedom.mp3"
     ],
     "weather": "Ветрено, порывы гнут вереск, небо затянуто облаками.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#7a7a8a"
+            }
+          }
+        },
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.35,
+            "alpha": 0.6
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.6,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Пологая гряда холмов, сплошь покрытых лиловым вереском, уходящим за горизонт. Кое-где белеют кости древних животных. Ветер гудит в ушах, а запах цветов смешивается с запахом торфа. Чувствуется простор и одиночество."
   },
   {
@@ -511,7 +2817,100 @@
       "/Музыка/Into the Wyrd and Wild - RPG Soundtrack/06 - The Wyrd and Wild.mp3"
     ],
     "weather": "Низкое небо, морось, ветер, свистящий в скалах.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.4,
+            "direction": 80
+          }
+        },
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.06,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.06,
+              "alpha": 0.4,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Глубокая расщелина в известняковых скалах. Стены ущелья изрезаны ветрами, образуя причудливые арки и полости. Когда ветер дует сквозь них, рождаются странные звуки, похожие на шёпот или плач. По дну течёт мелкий ручей. Дорога вьётся среди камней, то и дело переходя вброд."
   },
   {
@@ -529,7 +2928,67 @@
       "/Музыка/Sword Coast Soundscapes - Villages & Towns, Vol.1/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
     ],
     "weather": "Ветрено, пыльно, прохладно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "embers",
+          "options": {
+            "density": 0.3,
+            "alpha": 0.5,
+            "tint": {
+              "value": "#ff8800"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.2,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.2,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Импровизированный рынок у пересечения трактов. Пара ферм, навесы, где крестьяне торгуют едой и простыми товарами. Пахнет навозом и свежим сеном. Здесь можно обменять новости, нанять проводника или заночевать в сарае. Постоянно снуют люди, скрипят телеги."
   },
   {
@@ -548,7 +3007,63 @@
       "/Музыка/Atom Music Audio - Epic Nature Series, Fire (Spirit of the Hunter)/Atom_Music_Audio_Epic_Nature_Series,_Fire_Spirit_of_the_Hunter.zip"
     ],
     "weather": "Ясно, прохладно, лёгкий ветерок.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.005,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Обширный луг, посреди которого возвышается огромный белый валун — ледниковый останец. Камень гладкий, испещрённый древними рунами. Трава вокруг сочная, пасутся зайцы. Место спокойное, отмеченное печатью старины."
   },
   {
@@ -567,7 +3082,93 @@
       "/Музыка/Derek & Brandon Fiechter - Pumpkin Town II/Pumpkin Town II  - 03 - Ghost Pumpkins.mp3"
     ],
     "weather": "Сырой туман, морось, видимость 30 футов.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#8a8a8a"
+            }
+          }
+        },
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.35,
+            "direction": 80
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80,
+              "alpha": 0.3
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.85,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.22,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Широкая низина, затянутая плотным туманом, который не рассеивается даже днём. Под ногами хлюпает вода. Из травы торчат пучки камыша. Дорога едва угадывается, ориентирами служат покосившиеся вешки. В тумане легко пропасть, звуки тонут в сырой мгле."
   },
   {
@@ -585,7 +3186,55 @@
       "/Музыка/Sword Coast Soundscapes - Villages & Towns, Vol.1/Villages & Towns, Vol.1 - 01 - Small Marketplace.mp3"
     ],
     "weather": "Ветрено, пыльно, прохладно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.5
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.6
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.3
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Импровизированный рынок у пересечения трактов. Пара ферм, навесы, где крестьяне торгуют едой и простыми товарами. Пахнет навозом и свежим сеном. Здесь можно обменять новости, нанять проводника или заночевать в сарае. Постоянно снуют люди, скрипят телеги."
   },
   {
@@ -604,7 +3253,94 @@
       "/Музыка/DSA Soundtracks - The Battle/DSA Soundtracks - The Battle.zip"
     ],
     "weather": "Сильный ровный ветер, гнущий траву, небо затянуто.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#7a7a7a"
+            }
+          }
+        },
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.7
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.6
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Прямая, как стрела, дорога, продуваемая всеми ветрами. По обе стороны — унылая равнина с чахлыми кустами. Ветер несёт пыль и колючки. Говорить трудно, слова уносит прочь. Капюшоны и плащи — единственное спасение."
   },
   {
@@ -623,7 +3359,115 @@
       "/Музыка/Abandoned Toys - The Witch's Garden/The Witch's Garden - 03 - Vermillion Reflections.mp3"
     ],
     "weather": "Морось, серое небо, сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.3,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#6a6a6a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.006,
+            "alpha": 0.45,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.004,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Маленькая, Богом забытая деревушка вокруг покосившейся дозорной башни. Дома старые, крытые дранкой. Местные жители — подозрительные старики и старухи. Легенды гласят, что в башне когда-то жил маг-отшельник. Сейчас она кажется необитаемой."
   },
   {
@@ -641,7 +3485,114 @@
       "/Музыка/Monument Studios - Fantasy Complete I (BATTLE MUSIC)/Discontent.mp3"
     ],
     "weather": "Туман с утра, прохладно, безветренно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.15,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#5a5a5a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.008,
+            "alpha": 0.5,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        },
+        {
+          "type": "rats",
+          "options": {
+            "density": 0.004,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#443322"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.18,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          },
+          {
+            "type": "rats",
+            "options": {
+              "density": 0.004,
+              "alpha": 0.4
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "rats",
+            "options": {
+              "density": 0.004,
+              "alpha": 0.4
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Старая ферма у дороги, давно покинутая. Остов сгоревшего амбара, покосившийся дом с выбитыми окнами. Забор повален, колодец отравлен. Говорят, Хэмбрук сошёл с ума и убил семью. Теперь здесь селятся только вороны."
   },
   {
@@ -659,7 +3610,86 @@
       "/Музыка/Monument Studios - Fantasy Complete I (BATTLE MUSIC)/Discontent.mp3"
     ],
     "weather": "Туман с утра, прохладно, безветренно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.35,
+            "alpha": 0.5,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.8,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.35,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Старая ферма у дороги, давно покинутая. Остов сгоревшего амбара, покосившийся дом с выбитыми окнами. Забор повален, колодец отравлен. Говорят, Хэмбрук сошёл с ума и убил семью. Теперь здесь селятся только вороны."
   },
   {
@@ -677,7 +3707,96 @@
       "/Музыка/Nightfell RPG - Original Soundtrack/9. Deadly Winter.mp3"
     ],
     "weather": "Распутица, грязь, тяжёлое небо.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.45,
+            "alpha": 0.6,
+            "direction": 85
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#4a4a4a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.45,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.06,
+              "alpha": 0.4,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Дорога превратилась в месиво из глины и луж после затяжных дождей. Телеги вязнут по ступицу. Повсюду валяются обломки досок и камни, брошенные для починки. Место неприятное, грязное, но проходимое — если не жалеть сил."
   },
   {
@@ -696,7 +3815,125 @@
       "/Музыка/Adventure Music - First Level/First_Level_10_Adventure_Music_A_King's_Blood_The_Cycle_of_Cerberus.mp3"
     ],
     "weather": "Ветер, морось, пронизывающая сырость.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.4,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.75,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        },
+        {
+          "type": "embers",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#ff8800"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.25,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Добротный каменный постоялый двор с высокой стеной и надёжными воротами. Во дворе — конюшни, кузница, комнаты для путников. В общем зале тепло, пахнет жареным луком, на стенах висят скрещённые щиты — отсюда название. Хозяин — отставной воин."
   },
   {
@@ -715,7 +3952,67 @@
       "/Музыка/Ambient Realms - Massive Ambient Music_ Vol. 10/14 - Eastern Nights.mp3"
     ],
     "weather": "Холод, ясное звёздное небо, тишина.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "stars",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#ddeeff"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.002,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.002,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.4,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#ddeeff"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Широкая равнина, залитая лунным светом. Трава серебрится, а небо усыпано мириадами звёзд. Кажется, что стоишь на краю мира. Ни одного деревца — лишь бескрайний простор и купол небосвода. Идеальное место для ночных бдений и размышлений."
   },
   {
@@ -732,7 +4029,67 @@
       "/Музыка/Nox Arcana - The Dark Tower/The Dark Tower  - 10 - The Dark Tower.mp3"
     ],
     "weather": "Первый сильный заморозок, иней на траве, ясно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "embers",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#ff7700"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.2,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.25,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "embers",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#ff7700"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Ферма-крепость, принадлежащая старому ветерану Лиаму. Высокий частокол, каменная стена, внутри — добротные постройки. Лиам требует за постой историю, а не деньги. Здесь всё дышит военным порядком и суровым гостеприимством."
   },
   {
@@ -751,7 +4108,70 @@
       "/Музыка/Martin Egger - Of Gamblers And Heroes/Of Gamblers And Heroes - 02 - The Shepherd`s Gamble.mp3"
     ],
     "weather": "Густой туман, видимость 50 футов, сыро.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#9a9a8a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.85,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.85,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.22,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Пологое всхолмье, где пасутся огромные отары овец. Слышен звон колокольчиков, блеяние, лай пастушьих собак. Холмы покрыты низкой, выщипанной травой. Камни-валуны служат приютом для змей. Воздух пахнет овечьей шерстью и дымом пастушьих костров."
   },
   {
@@ -770,7 +4190,152 @@
       "/Музыка/Castle Zagyx/Oath_of_the_Dark_Chivalry_06_Sanguine_Six_Spectral_Men_At_Arms_at.mp3"
     ],
     "weather": "Промозглый дождь со снегом, серое небо.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.6,
+            "direction": 85
+          }
+        },
+        {
+          "type": "snow",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.3,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#4a4a5a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.005,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.15,
+              "direction": 75
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.2,
+              "direction": 75
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.25,
+              "direction": 80
+            }
+          },
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.15,
+              "direction": 75
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "snow",
+            "options": {
+              "density": 0.2,
+              "direction": 75
+            }
+          },
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Огромные, замшелые каменные блоки, явно обработанные руками великанов, выступают из лесной чащи. Когда-то здесь был мост или крепость. Теперь — хаотичное нагромождение глыб, поросших плющом и мхом. В щелях живут змеи, а по ночам здесь, говорят, можно услышать шаги."
   },
   {
@@ -787,7 +4352,77 @@
       "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Highlands.mp3"
     ],
     "weather": "Солнечно, почти тепло, приятный ветерок.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.006,
+            "animations": [
+              "mixed"
+            ]
+          }
+        },
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.1,
+            "alpha": 0.3
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          },
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.3
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.003,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Красивая деревушка на холме, окружённая яблоневыми садами. Главная достопримечательность — таверна «Золотой Сноп», где печёт пироги знаменитый полурослик. Улицы вымощены, дома увиты плющом. Местные жители рады путникам и ценят хорошие новости."
   },
   {
@@ -806,7 +4441,84 @@
       "/Музыка/Valkyrion - Forevermore/Forevermore  - 02 - Frozen Love.mp3"
     ],
     "weather": "Пронизывающий ветер, облака проносятся низко.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.8,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        },
+        {
+          "type": "eagles",
+          "options": {
+            "density": 0.0005,
+            "animations": [
+              "glide"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0003,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Высокий холм с плоской вершиной, на которой стоит каменный указатель. С него открывается потрясающий вид на заснеженные пики далеко на севере. Ветер здесь такой силы, что приходится держаться за камни. Путники часто оставляют здесь записки или подношения духам дороги."
   },
   {
@@ -824,7 +4536,104 @@
       "/Музыка/Adrian von Ziegler - The Celtic Collection II/The Celtic Collection II - 03 - Fear no Darkness.mp3"
     ],
     "weather": "Удушливая влажность, тучи мошкары, жарко.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.12,
+            "alpha": 0.65,
+            "tint": {
+              "value": "#6a7a5a"
+            }
+          }
+        },
+        {
+          "type": "bubbles",
+          "options": {
+            "density": 0.15,
+            "alpha": 0.4,
+            "tint": {
+              "value": "#88aa66"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.6,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "bubbles",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.3,
+              "tint": {
+                "value": "#88aa66"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.12,
+              "alpha": 0.65,
+              "tint": {
+                "value": "#556055"
+              }
+            }
+          },
+          {
+            "type": "bubbles",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.3
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.7,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          },
+          {
+            "type": "bubbles",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.3
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Зловонное болото с чёрной водой и островками гнилой травы. Мошкара вьётся столбами, забиваясь в нос и уши. Дорога — гать из скользких брёвен, кое-где ушедшая под воду. В воздухе пахнет метаном и гнилью. Гигантские жабы провожают путников немигающим взглядом."
   },
   {
@@ -841,7 +4650,90 @@
       "/Музыка/Monument Studios - Fantasy Complete I (REALM MUSIC)/Dark Winter.mp3"
     ],
     "weather": "Туман, сырость, всё кажется серым.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "fog",
+          "options": {
+            "density": 0.2,
+            "alpha": 0.9,
+            "tint": {
+              "value": "#6a6a6a"
+            }
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.004,
+            "alpha": 0.35,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.8,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.2,
+              "alpha": 0.85,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.22,
+              "alpha": 0.9,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Бескрайнее море серого мха, редких чахлых деревьев и стоячей воды. Здесь царит безмолвие, нарушаемое лишь хлюпаньем. Не видно ни зверей, ни птиц. Говорят, здесь живут блуждающие огни. Любой звук кажется чужим и враждебным."
   },
   {
@@ -860,7 +4752,81 @@
       "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 26 - Homecoming (Legacy version).mp3"
     ],
     "weather": "Небо проясняется, запах дыма и навоза, теплеет.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "alpha": 0.35,
+            "tint": {
+              "value": "#d4dce0"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.004,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.3,
+              "tint": {
+                "value": "#d4dce0"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.005,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Возделанные поля, фермы, дымящие трубы. Дорога становится шире, чаще попадаются встречные. Цивилизация возвращается: видны огороды, пастбища, акведуки. Настроение у всех поднимается — долгий путь через дикие земли почти позади. Впереди — Даггерфорд."
   },
   {
@@ -879,7 +4845,84 @@
       "/Музыка/Austin Wintory - Horn/Horn - 14 - The Knighting.mp3"
     ],
     "weather": "Пасмурно, временами солнце, шумный портовый город.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.65,
+            "tint": {
+              "value": "#7a7a8a"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.008,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.008,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Оживлённый город-крепость на перекрёстке торговых путей. Улицы вымощены булыжником, пахнут рыбой и пряностями. В порту — мачты кораблей, крики чаек. Рынок полон товаров, таверны — путников. Здесь можно найти всё — и удачу, и неприятности."
   },
   {
@@ -898,7 +4941,84 @@
       "/Музыка/Austin Wintory - Horn/Horn - 14 - The Knighting.mp3"
     ],
     "weather": "Пасмурно, временами солнце, шумный портовый город.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.03,
+            "alpha": 0.55,
+            "tint": {
+              "value": "#7a7a8a"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.006,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.006,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Оживлённый город-крепость на перекрёстке торговых путей. Улицы вымощены булыжником, пахнут рыбой и пряностями. В порту — мачты кораблей, крики чаек. Рынок полон товаров, таверны — путников. Здесь можно найти всё — и удачу, и неприятности."
   },
   {
@@ -916,7 +5036,79 @@
       "/Музыка/Maestro Spolzino - Suspense/Suspense  - 02 - The Devil Of Barovia.mp3"
     ],
     "weather": "Сухо, ветер гонит пыль по дороге, прохладно.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "leaves",
+          "options": {
+            "density": 0.25,
+            "alpha": 0.5
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.004,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#111111"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.6
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "leaves",
+            "options": {
+              "density": 0.25,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.003,
+              "alpha": 0.5
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Старая караульная башня у высохшего колодца. Давно заброшена, но вокруг видны свежие следы костров. На каменной кладке кто-то оставил символ — пять когтистых линий. Место кажется безлюдным, но наблюдение чувствуется кожей."
   },
   {
@@ -935,7 +5127,84 @@
       "/Музыка/d20 Sounds - Subversion (Middle-East Cyberpunk)/Subversion - 04 - The long Road.mp3"
     ],
     "weather": "Ветрено, облака несутся, открытое небо.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#6a6a7a"
+            }
+          }
+        },
+        {
+          "type": "eagles",
+          "options": {
+            "density": 0.0004,
+            "animations": [
+              "glide"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0003,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.4,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Широкие равнины с высокой травой, переходящие в пологие холмы. Ветер гудит, гнёт траву, несёт запахи моря с севера. Это последний большой открытый участок перед Глубоководьем. Днём жарко, ночью холодно. Горизонт кажется бесконечным."
   },
   {
@@ -954,7 +5223,96 @@
       "/Музыка/Arondight Studios - A Journey Through Space (Mothership, Spelljammer)/A Journey Through Space - 05 - A Conspiracy.mp3"
     ],
     "weather": "Мелкий дождь, серые тучи, слякоть.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.3,
+            "alpha": 0.45,
+            "direction": 80
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "fog",
+            "options": {
+              "density": 0.08,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Узкая лощина меж холмов, всегда тенистая и влажная. Ручьи сбегают по склонам, размывая дорогу. Камни покрыты скользким мхом. Здесь всегда сумрачно, даже днём. Идеальное место для засады или тайной встречи."
   },
   {
@@ -973,7 +5331,111 @@
       "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "stars",
+          "options": {
+            "density": 0.35,
+            "alpha": 0.8,
+            "tint": {
+              "value": "#ddeeff"
+            }
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.02,
+            "alpha": 0.3,
+            "tint": {
+              "value": "#8a8aaa"
+            }
+          }
+        },
+        {
+          "type": "bats",
+          "options": {
+            "density": 0.02,
+            "alpha": 0.3
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.1,
+              "alpha": 0.3
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.2,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.25,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "bats",
+            "options": {
+              "density": 0.03,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.15,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.35,
+              "alpha": 0.8
+            }
+          },
+          {
+            "type": "bats",
+            "options": {
+              "density": 0.03,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.15,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Небольшая роща старых дубов, растущих идеальным полукругом. В центре — ровная поляна, залитая серебристым светом. Деревья словно шепчутся. Здесь, по поверьям, заключались древние союзы. Место спокойное, но полное скрытой значимости."
   },
   {
@@ -992,7 +5454,90 @@
       "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "stars",
+          "options": {
+            "density": 0.3,
+            "alpha": 0.7,
+            "tint": {
+              "value": "#ddeeff"
+            }
+          }
+        },
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.02,
+            "alpha": 0.25,
+            "tint": {
+              "value": "#8a8aaa"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.2,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.2,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.15,
+              "alpha": 0.4
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.15,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "stars",
+            "options": {
+              "density": 0.3,
+              "alpha": 0.7
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.15,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Небольшая роща старых дубов, растущих идеальным полукругом. В центре — ровная поляна, залитая серебристым светом. Деревья словно шепчутся. Здесь, по поверьям, заключались древние союзы. Место спокойное, но полное скрытой значимости."
   },
   {
@@ -1011,7 +5556,98 @@
       "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.3,
+            "alpha": 0.4,
+            "direction": 80
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.006,
+            "alpha": 0.45,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Небольшая роща старых дубов, растущих идеальным полукругом. В центре — ровная поляна, залитая серебристым светом. Деревья словно шепчутся. Здесь, по поверьям, заключались древние союзы. Место спокойное, но полное скрытой значимости."
   },
   {
@@ -1030,7 +5666,105 @@
       "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "rain",
+          "options": {
+            "density": 0.4,
+            "alpha": 0.5,
+            "direction": 85
+          }
+        },
+        {
+          "type": "crows",
+          "options": {
+            "density": 0.008,
+            "alpha": 0.5,
+            "tint": {
+              "value": "#000000"
+            }
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.2,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.3,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.35,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.006,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.4,
+              "direction": 80
+            }
+          },
+          {
+            "type": "crows",
+            "options": {
+              "density": 0.008,
+              "alpha": 0.5,
+              "tint": {
+                "value": "#000000"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Небольшая роща старых дубов, растущих идеальным полукругом. В центре — ровная поляна, залитая серебристым светом. Деревья словно шепчутся. Здесь, по поверьям, заключались древние союзы. Место спокойное, но полное скрытой значимости."
   },
   {
@@ -1049,7 +5783,84 @@
       "/Музыка/Beyond Skyrim：Three Kingdoms (Original Game Soundtrack)/Beyond Skyrim - Three Kingdoms - 06 - Luna.mp3"
     ],
     "weather": "Прохладно, сумерки, робкий лунный свет сквозь облака.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.05,
+            "alpha": 0.85,
+            "tint": {
+              "value": "#5a5a6a"
+            }
+          }
+        },
+        {
+          "type": "eagles",
+          "options": {
+            "density": 0.0003,
+            "animations": [
+              "glide"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "eagles",
+            "options": {
+              "density": 0.0003,
+              "animations": [
+                "glide"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#3a3a3a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Небольшая роща старых дубов, растущих идеальным полукругом. В центре — ровная поляна, залитая серебристым светом. Деревья словно шепчутся. Здесь, по поверьям, заключались древние союзы. Место спокойное, но полное скрытой значимости."
   },
   {
@@ -1068,7 +5879,91 @@
       "/Музыка/Antti Martikainen - Throne of the North/Throne of the North - 02 - Runestones.mp3"
     ],
     "weather": "Пасмурно, возможен дождь, шум большого города.",
-    "weather_object": {},
+    "weather_object": {
+      "particles": [
+        {
+          "type": "clouds",
+          "options": {
+            "density": 0.04,
+            "alpha": 0.65,
+            "tint": {
+              "value": "#7a7a8a"
+            }
+          }
+        },
+        {
+          "type": "birds",
+          "options": {
+            "density": 0.008,
+            "animations": [
+              "mixed"
+            ]
+          }
+        }
+      ],
+      "times": {
+        "morning": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "day": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          },
+          {
+            "type": "birds",
+            "options": {
+              "density": 0.008,
+              "animations": [
+                "mixed"
+              ]
+            }
+          }
+        ],
+        "evening": [
+          {
+            "type": "rain",
+            "options": {
+              "density": 0.15,
+              "direction": 80
+            }
+          },
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ],
+        "night": [
+          {
+            "type": "clouds",
+            "options": {
+              "alpha": 0.5,
+              "tint": {
+                "value": "#6a6a6a"
+              }
+            }
+          }
+        ]
+      }
+    },
     "location_description": "Великий город, раскинувшийся на берегу моря. Узкие улочки, высокие дома, толпы народа. Пахнет солью, пряностями и дымом. Башни и шпили тянутся в небо, колокола звонят в порту. Караван въезжает в северные ворота, и долгий путь подходит к концу."
   }
 ]

@@ -22,7 +22,7 @@ function Invoke-CachedApi($params) {
         return Get-Content $cacheFile -Raw | ConvertFrom-Json
     }
     Write-Host "  [API] $($params.path)" -ForegroundColor DarkYellow
-    $resp = Invoke-RestMethod -Uri $api -Body $params -Method Get
+    $resp = Invoke-RestMethod -Uri $api -Body $params -Method Get -TimeoutSec 600
     $resp | ConvertTo-Json -Depth 5 | Out-File $cacheFile -Encoding utf8
     return $resp
 }

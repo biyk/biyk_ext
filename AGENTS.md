@@ -1,5 +1,8 @@
 # AGENTS.md - Biyk Extensions Framework
 
+## Rules
+- **Never commit unless explicitly told to.** Wait for "commit" or "сделай коммит".
+
 ## Architecture Overview
 - **2 ESModules**: `main.mjs` (loader) + `settings.mjs` (settings registration). Both in `esmodules`.
 - **Extension patterns**: Most extensions use Midi-QOL hooks (`midi-qol.preAttackRoll`, `midi-qol.RollComplete`). Others use Foundry hooks directly (`combatTurn`, `preUpdateToken`, etc.).

@@ -1,149 +1,199 @@
 # Weather by Day Time
 
-Календарь забытых королевств (Harptos). 365 дней в году, 366 в високосный.
+FoundryVTT module extension that manages a 58-day journey from Baldur's Gate to Waterdeep (Forgotten Realms, 1489 DR). Features per-day weather, particle effects (FXMaster), time-of-day lighting, AI-curated music playlists, and automatic Foundry playlist management.
 
-## Старт кампании
+## Architecture
+
 ```
-1489 DR, Альтуриак 22, 06:00
-```
-
-## Месяцы и праздники
-
-| # | Месяц | Дни | Тип |
-|---|-------|----:|-----|
-| 1 | Хаммер (Hammer) | 30 | |
-| — | Макушка зимы (Midwinter) | 1 | праздник |
-| 2 | Альтуриак (Alturiak) | 30 | |
-| 3 | Чес (Ches) | 30 | |
-| 4 | Тарсах (Tarsakh) | 30 | |
-| — | Зеленотравье (Greengrass) | 1 | праздник |
-| 5 | Миртул (Mirtul) | 30 | |
-| 6 | Китхорн (Kythorn) | 30 | |
-| 7 | Флеймрул (Flamerule) | 30 | |
-| — | Солнцеворот (Midsummer) | 1 | праздник |
-| — | День Щитового схода (Shieldmeet) | 0/1 | високосный |
-| 8 | Элиасис (Elesias) | 30 | |
-| 9 | Элейнт (Eleint) | 30 | |
-| — | Праздник урожая (Highharvestide) | 1 | праздник |
-| 10 | Марпенот (Marpenoth) | 30 | |
-| 11 | Уктар (Uktar) | 30 | |
-| — | Пир Луны (Feast of the Moon) | 1 | праздник |
-| 12 | Найталь (Nightal) | 30 | |
-
-**Итого:** 12 × 30 + 5 праздников = 365 дней. Високосный (каждые 4 года): +1 день (Щитовой сход) = 366.
-
-## Сезоны
-- **Весна:** с Альтуриак 18
-- **Лето:** с Флеймрул 19
-- **Осень:** с Элиасис 20
-- **Зима:** с Пир Луны 19
-
-## Високосный год
-Каждые 4 года, начиная с 0 года DR. Правило: `year % 4 === 0`.
-
-## Как считать дату
-Вся хронология в секундах от старта (`currentDate.seconds`). Формула:
-```
-день = Math.floor(seconds / 86400)
-час = Math.floor((seconds % 86400) / 3600)
-минута = Math.floor((seconds % 3600) / 60)
-сек = seconds % 60
+extensions/weather_by_day_time/
+├── index.js              # Main module — hooks Simple Calendar, FXMaster, playlist mgmt
+├── README.md
+├── data/
+│   ├── calendar.json     # 58-day journey calendar (weather, particles, music paths)
+│   ├── playlist.json     # Per-day playlist source of truth (tracks + expert_processed flag)
+│   ├── events.csv        # Journey events
+│   ├── locations.csv     # Location descriptions + weather + music hints
+│   ├── music/            # Downloaded audio files (254 MP3s)
+│   └── ydisk/
+│       └── music.json    # Full Yandex Disk catalog tree (~18,600 files, 1,061 collections)
+├── scripts/
+│   ├── gen_calendar.py       # Generate calendar.json from CSVs
+│   ├── gen_music_json.ps1    # Fetch Yandex Disk music tree → music.json (24h cache)
+│   ├── yadisk.ps1            # Raw Yandex Disk API (public + OAuth)
+│   ├── download_music.py     # Download tracks from calendar paths → data/music/
+│   ├── find_song.py          # Fuzzy search & interactive download from catalog
+│   └── curate_playlist.py    # AI curator — sends day context to localhost:9999
+└── temp/                 # API response cache (SHA256 per URL, 24h TTL)
 ```
 
-Чтобы прибавить N дней:
-- N = 30 → +30 дней от текущей даты
-- Месяц = 30 дней, праздники между месяцами
-- Пример: Альтуриак 22 + 30 дней = Чес 22 (пропускаем Макушку зимы, т.к. она уже прошла 22 числа)
+## Data Flow
 
-## Неделя
-10 дней, без названий — нумеруются: 1st, 2nd, 3rd... 10th.
+1. **`events.csv` + `locations.csv`** → **`gen_calendar.py`** → **`calendar.json`** (58 days with Harptos dates, weather, particles, music paths)
+2. **Yandex Disk** → **`gen_music_json.ps1`** → **`music.json`** (full catalog with download URLs, cached 24h)
+3. **`calendar.json` + `music.json`** → **`download_music.py`** → **`data/music/`** (local audio files + path updates)
+4. **Day context + `music.json` catalog** → **`curate_playlist.py`** → **`playlist.json`** (AI-recommended tracks per day)
+5. **`playlist.json`** → **`index.js`** → Foundry playlist folder "Дорога" with `День N` sub-playlists
 
-## Начальные параметры
+## Setup
+
+1. Install dependencies: `pip install tinytag`
+2. Ensure Yandex public folder URL in `gen_music_json.ps1` is correct
+3. Run `gen_music_json.ps1` (takes ~5 min; re-run when URLs expire/HTTP 410)
+4. Run `gen_calendar.py` to generate `calendar.json`
+5. Run `download_music.py` to fetch music locally
+6. Run `curate_playlist.py all` to let AI curate all days
+7. In Foundry, enable "Weather by Day Time" in module settings, ensure Simple Calendar and FXMaster are active
+
+## Scripts Reference
+
+### `gen_calendar.py`
+```
+python extensions/weather_by_day_time/scripts/gen_calendar.py
+```
+Generates `calendar.json` from `events.csv` + `locations.csv`. Matches event locations to location descriptions by name (fuzzy matching). Computes Harptos dates. Uses cumulative month offsets for Simple Calendar compatibility.
+
+### `gen_music_json.ps1`
+```
+powershell -File extensions/weather_by_day_time/scripts/gen_music_json.ps1
+```
+Fetches full directory tree from Yandex Disk public folder. Each API response cached in `temp/` for 24h. Cleared manually when download URLs expire (HTTP 410).
+
+### `download_music.py`
+```
+python extensions/weather_by_day_time/scripts/download_music.py
+```
+Reads `calendar.json` music paths, resolves to Yandex URLs from `music.json`, downloads to `data/music/`. Extracts zip archives into subdirectories. Updates both `calendar.json` and `playlist.json` paths.
+
+**Note:** Some downloads fail with HTTP 410 (expired URLs). Fix: `Remove-Item temp/ -Recurse`, re-run `gen_music_json.ps1`, re-run `download_music.py`.
+
+### `curate_playlist.py`
+```
+python extensions/weather_by_day_time/scripts/curate_playlist.py <day>|all
+```
+Sends day context (campaign info, weather, current tracks, catalog metadata) to AI expert at `localhost:9999`. AI returns `keep/remove/add` JSON recommendations. Supports two modes:
+- `<day_number>`: curate a single day
+- `all`: process all days with `expert_processed: False`; auto-resets days with < 5 tracks
+
+Features:
+- Extracts MP3 metadata (Artist/Album/Title) via `tinytag` for AI visibility
+- Matches AI track names by both filename AND metadata (Artist-Title, Album-Title)
+- Auto-downloads missing tracks from Yandex Disk catalog
+- Only sets `expert_processed: True` if final track count ≥ 5
+- Filters `._` Apple Double files and `__MACOSX/` directories automatically
+- Deduplicates tracks within each day
+
+**AI recommendation format:**
 ```json
 {
-    "year": 1489,
-    "month": 2,
-    "day": 22,
-    "hour": 6,
-    "minute": 0,
-    "seconds": 0
+  "keep": ["exact_filename.mp3"],
+  "remove": ["exact_filename.mp3"],
+  "add": ["CollectionName - NN - Track Title.mp3"],
+  "mood": "short mood description",
+  "reasoning": "brief explanation"
 }
 ```
-Соответствует `currentDate.seconds = 0` (начало отсчёта).
 
----
-
-## Скрипты
-
-### `scripts/yadisk.ps1`
-Получение содержимого папки Яндекс.Диска (публичной или личной по OAuth).
-
+### `find_song.py`
 ```
-.\scripts\yadisk.ps1 -Url "https://disk.yandex.ru/d/..."           # публичная папка
-.\scripts\yadisk.ps1 -Path "/Музыка"                                 # личный диск (OAuth по умолчанию)
-.\scripts\yadisk.ps1 -Url "..." -Download -OutDir "./downloads"      # скачать файлы
+python extensions/weather_by_day_time/scripts/find_song.py "query" [top_n]
 ```
+Fuzzy search against `music.json` catalog. Supports Unicode normalization (em-dashes, quotes). Prompts to download selected tracks to `data/downloads/`.
 
-### `scripts/gen_music_json.ps1`
-Сбор полного дерева музыки с Яндекс.Диска в `data/ydisk/music.json`.  
-Кэширует каждый API-запрос в `temp/` на 24 часа.
-
+### `yadisk.ps1`
 ```
-.\scripts\gen_music_json.ps1
+powershell -File extensions/weather_by_day_time/scripts/yadisk.ps1 -Url "https://disk.yandex.ru/d/..."
 ```
+Low-level Yandex Disk API wrapper.
 
-### `scripts/gen_calendar.py`
-Генерация `data/calendar.json` из `data/events.csv` + `data/locations.csv`.
-Сопоставляет события с локациями по названию (fuzzy-матчинг), вычисляет даты по календарю Харптоса.
+## Calendar (Harptos)
 
+### Start
+- **Alturiak 22, 1489 DR, 06:00** — day 1 of journey
+
+### Months
 ```
-python scripts\gen_calendar.py
+ 1. Hammer          (30)      7. Flamerule       (30)
+     Midwinter      (1)           Midsummer       (1)
+ 2. Alturiak        (30)          Shieldmeet      (0/1 leap)
+ 3. Ches            (30)      8. Elesias          (30)
+ 4. Tarsakh         (30)      9. Eleint           (30)
+     Greengrass     (1)           Highharvestide  (1)
+ 5. Mirtul          (30)     10. Marpenoth        (30)
+ 6. Kythorn         (30)     11. Uktar            (30)
+                                   Feast of the Moon (1)
+                              12. Nightal          (30)
 ```
+Total: 12 × 30 + 5 holidays = 365 days (366 in leap year). Leap: `year % 4 === 0`.
 
-### `scripts/find_song.py`
-Поиск трека в `music.json` по названию. Устойчив к спецсимволам (—, «», и т.д.), использует токеновое и последовательное сравнение. После выдачи результатов можно ввести номер трека для скачивания в `data/downloads/`.
+### Month Offsets (Simple Calendar)
+For `numericRepresentation` -> Harptos date: `[0, 0, 31, 61, 91, 122, 152, 182, 213, 243/244, 273/274, 303/304, 334/335]`
 
-```
-python scripts\find_song.py "Adrian von Ziegler — Forgotten Gods"     # топ-10 по умолчанию
-python scripts\find_song.py "Adrian von Ziegler — Forgotten Gods" 5   # топ-5
-# После выдачи: введите номер трека → скачивание в data/downloads/
-```
+### Seasons
+- Spring: Alturiak 18+
+- Summer: Flamerule 19+
+- Autumn: Elesias 20+
+- Winter: Feast of the Moon 19+
 
-## Данные
+## Particle Effects (FXMaster)
 
-### `data/ydisk/music.json`
-Полное иерархическое дерево папки `/Музыка` с Яндекс.Диска.  
-Структура каждого элемента:
-```json
-{
-  "name": "filename.mp3",
-  "type": "file",
-  "path": "/Музыка/Album/filename.mp3",
-  "size": 4975793,
-  "file": "https://downloader.disk.yandex.ru/...",
-  "media_type": "audio",
-  "mime_type": "audio/mpeg"
-}
-```
-Папки содержат `"children": [ ... ]`. В сумме ~18 700 файлов, 1061 папка верхнего уровня.
+Particle effects assigned per day in `calendar.json`. Time-of-day splits:
+- **Morning** (6-12): fog, mist, birds
+- **Day** (12-18): clearing, sun rays, eagles
+- **Evening** (18-24): drizzle, fireflies, campfire
+- **Night** (0-6): fog, stars, moonlight
 
-### `data/calendar.json`
-Календарь путешествия: 58 дней от Врат Балдура до Глубоководья. Каждый день содержит:
-- `day` — номер дня пути
-- `calendar_date` — дата по Харптосу (`Alturiak 22, 1489 DR`)
-- `location` — локация
-- `event` — название события (если есть)
-- `notes` — полное описание дня для DM
-- `miles` / `total_miles` — пройденные мили
-- `is_rest_day` — день отдыха
-- `music` — массив путей к трекам из каталога Яндекс.Диска (`/Музыка/Artist — Album/file.mp3`), подобраны по названию из `locations.csv` через поиск в `music.json`
-- `weather` — погода (из `locations.csv` или из `notes`)
-- `weather_object` — заготовка под структурированную погоду (пока пусто)
-- `location_description` — описание ландшафта/окрестностей
+Mood-matched manually to weather descriptions. Clear/sunny days get birds/eagles only (no clouds). Each day has a `weather_object.particles` array (daytime default) plus `weather_object.times` with per-slot arrays.
 
-### `temp/`
-Кэш ответов API Яндекс.Диска (SHA256 от URL → JSON). Живёт 24 часа, продлевается при каждом запуске `gen_music_json.ps1`.
+## Playlist Management (`index.js`)
 
-## Погода
+### Hooks
+- `simple-calendar-date-time-change` → calculate day number, time of day, update particles, darkness, playlists
+- Module `ready` → create "Дорога" playlist folder, ensure `День N` playlists exist
 
-*Заполняется по мере разработки.*
+### Playlist Logic
+1. Reads `data/playlist.json` for current day's tracks
+2. Checks if current day's playlist is already playing (`target.playing === true`) — skip if so
+3. Otherwise stops all "Дорога" playlists, plays current day via `playAll()`
+4. Uses `createEmbeddedDocuments("PlaylistSound", ...)` for Foundry v11/v12 compatibility
+5. Sends DM whisper with calendar date, time of day, location, event, weather, and notes
+
+### Debug Prefix
+All console logs use `[WeatherByDayTime]` prefix.
+
+## AI Curator (`localhost:9999`)
+
+The curator sends day context + MP3 metadata + catalog to a local AI service at port 9999. The AI service must be running separately.
+
+### Prompt Structure
+- Campaign context, day number, Harptos date
+- Location, event, weather, notes
+- Current playlist tracks with metadata (`Artist - Title [Album]`)
+- Available Yandex Disk collections (must use only these)
+- All downloaded tracks with metadata
+- Instruction to generate exactly 10 tracks
+
+### Response Parsing
+Handles nested JSON (`response`, `text` keys), markdown code blocks, and direct JSON. Falls back to regex extraction for malformed responses.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Foundry `416 Range Not Satisfiable` | Zero-byte MP3s found and deleted; delete more: `find . -size 0 -name '*.mp3'` in `data/music/` |
+| `ERR_CACHE_OPERATION_NOT_SUPPORTED` | Same cause as 416 — corrupted zero-byte audio files. Remove and re-download. |
+| HTTP 410 on download | Yandex URLs expired. `Remove-Item temp/ -Recurse`, re-run `gen_music_json.ps1`, then `download_music.py` |
+| Apple Double duplicates (`._` files, `__MACOSX/`) | Filtered automatically by curator + cleanup script. Check `playlist.json` for `._` entries. |
+| AI recommends tracks from non-existent collections | Prompt now uses critical rules. Check that Yandex folder list in `music.json` includes the collection. |
+| AI returns HTTP 500 | AI model backend timed out (~20-30s response). Retry the day. |
+| Unicode/encoding errors on Windows | `_sanitize()` in curator handles NFKC normalization + ASCII fallback. `Sys.stdout.reconfigure(encoding='utf-8')` may help in scripts. |
+| Playlist not updating in Foundry | Reload Foundry, or check that playlist folder name is "Дорога" and sub-playlists are named "День N". |
+
+## File Locations
+
+- Calendar: `data/calendar.json`
+- Playlists: `data/playlist.json`
+- Music catalog: `data/ydisk/music.json`
+- Audio files: `data/music/`
+- API cache: `temp/`
+- Events: `data/events.csv`
+- Locations: `data/locations.csv`

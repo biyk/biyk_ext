@@ -1,6 +1,9 @@
-import json, os, sys, urllib.request, time, zipfile, re
+import json, os, sys, urllib.request, urllib.parse, urllib.error, time, zipfile, re
 
 AUDIO_EXTS = {".mp3", ".ogg", ".wav", ".flac", ".m4a", ".webm"}
+
+YANDEX_API = "https://cloud-api.yandex.net/v1/disk/public/resources/download"
+YANDEX_PUBLIC_KEY = "https://disk.yandex.ru/d/S25ICf3RhneLzA"
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -32,7 +35,18 @@ def flatten(items, parent_path=""):
             files.extend(flatten(children, full))
     return files
 
-def download(url, dest):
+def refresh_yandex_url(yandex_path):
+    try:
+        params = urllib.parse.urlencode({"public_key": YANDEX_PUBLIC_KEY, "path": yandex_path})
+        req = urllib.request.Request(f"{YANDEX_API}?{params}")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("href")
+    except Exception as e:
+        print(f"    URL refresh FAILED: {e}")
+        return None
+
+def download(url, dest, yandex_path=None):
     tmp = dest + ".tmp"
     try:
         urllib.request.urlretrieve(url, tmp)
@@ -40,6 +54,26 @@ def download(url, dest):
             os.remove(dest)
         os.rename(tmp, dest)
         return True
+    except urllib.error.HTTPError as e:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        print(f"  FAILED: {e}")
+        if e.code in (410, 404) and yandex_path:
+            print(f"  URL expired, refreshing from API...", end=" ", flush=True)
+            new_url = refresh_yandex_url(yandex_path)
+            if new_url:
+                try:
+                    urllib.request.urlretrieve(new_url, tmp)
+                    if os.path.exists(dest):
+                        os.remove(dest)
+                    os.rename(tmp, dest)
+                    print("OK (fresh URL)")
+                    return True
+                except Exception as e2:
+                    if os.path.exists(tmp):
+                        os.remove(tmp)
+                    print(f"  FAILED: {e2}")
+        return False
     except Exception as e:
         if os.path.exists(tmp):
             os.remove(tmp)
@@ -161,10 +195,9 @@ def main():
             skipped += 1
         else:
             print(f"  Downloading {entry.get('size', 0) / 1024 / 1024:.1f} MB...", end=" ", flush=True)
-            if not download(url, dest):
+            if not download(url, dest, entry.get("path")):
                 failed += 1
                 continue
-            print("OK")
             downloaded += 1
 
         # Handle zip extraction
@@ -208,7 +241,7 @@ def main():
 
     if failed > 0:
         print(f"\nWarning: {failed} files could not be downloaded.")
-        print("Re-run gen_music_json.ps1 to refresh URLs, then try again.")
+        print("Some URLs may still be expired. Try: Remove-Item temp/ -Recurse; then re-run gen_music_json.ps1 and download_music.py")
 
 if __name__ == "__main__":
     main()

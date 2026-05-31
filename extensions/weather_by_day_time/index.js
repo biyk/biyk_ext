@@ -21,24 +21,61 @@ export function init() {
         return folder;
     }
 
+    function getDayTracks(entry) {
+        if (entry?.tracks && Array.isArray(entry.tracks)) return entry.tracks;
+        if (Array.isArray(entry)) return entry;
+        return [];
+    }
+
+    async function getPlaylists() {
+        const resp = await fetch("modules/biyk_ext/extensions/weather_by_day_time/data/playlist.json");
+        return await resp.json();
+    }
+
+    async function syncPlaylistSounds(playlist, wantedPaths) {
+        const wanted = new Map(wantedPaths.map(p => [p.split("/").pop(), p]));
+        const sounds = playlist.sounds || [];
+        let changed = false;
+        for (const sound of sounds) {
+            if (!wanted.has(sound.name)) {
+                console.log(`${LOG_PREFIX}  Removing "${sound.name}" from "${playlist.name}"`);
+                await sound.delete();
+                changed = true;
+            }
+        }
+        const currentNames = new Set(sounds.map(s => s.name));
+        for (const [name, path] of wanted) {
+            if (!currentNames.has(name)) {
+                console.log(`${LOG_PREFIX}  Adding "${name}" to "${playlist.name}"`);
+                await playlist.createEmbeddedDocuments("PlaylistSound", [{ name, path }]);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
     async function ensureDayPlaylists(folder) {
         if (!folder) return;
         if (!game.playlists) return;
-        const cal = await getCalendar();
-        let created = 0;
-        for (const entry of cal) {
-            const name = `День ${entry.day}`;
-            const existing = game.playlists.find(p => p.name === name && p.folder?.id === folder.id);
-            if (existing) continue;
-            const sounds = entry.music.map(p => ({ name: p.split("/").pop(), path: p }));
-            try {
-                await Playlist.create({ name, folder: folder.id, sounds });
-                created++;
-            } catch (err) {
-                console.error(`${LOG_PREFIX} Failed to create playlist "${name}":`, err);
+        const pl = await getPlaylists();
+        for (const [day, entry] of Object.entries(pl)) {
+            const tracks = getDayTracks(entry);
+            if (tracks.length === 0) continue;
+            const name = `День ${day}`;
+            let playlist = game.playlists.find(p => p.name === name && p.folder?.id === folder.id);
+            if (!playlist) {
+                const sounds = tracks.map(p => ({ name: p.split("/").pop(), path: p }));
+                try {
+                    await Playlist.create({ name, folder: folder.id, sounds });
+                    console.log(`${LOG_PREFIX} Created playlist "${name}" with ${sounds.length} tracks`);
+                } catch (err) {
+                    console.error(`${LOG_PREFIX} Failed to create playlist "${name}":`, err);
+                }
+            } else {
+                const changed = await syncPlaylistSounds(playlist, tracks);
+                if (changed) console.log(`${LOG_PREFIX} Synced playlist "${name}"`);
             }
         }
-        if (created > 0) console.log(`${LOG_PREFIX} Created ${created} day playlist(s)`);
     }
 
     async function initPlaylists() {

@@ -93,6 +93,24 @@ Features:
 }
 ```
 
+### `strip_metadata.py`
+```
+python temp/opencode/strip_metadata.py
+```
+Removes ID3v2 tags from an MP3 to fix Foundry `decodeAudioData()` failures with old LAME-encoded tracks (pre-3.98). Requires editing the `fname` variable in the script. Creates a `.bak` backup automatically. Used to fix `The 13th Age Suite - 15 - Tales Around the Fire.mp3` (LAME3.97, dual channel, 204KB ID3) and `The 13th Age Suite - 22 - Dreams of a Lost Age.mp3`.
+
+### `scan_all_tracks.py`
+```
+python temp/opencode/scan_all_tracks.py
+```
+Scans all unique tracks across all playlist days for encoding problems. Flags:
+- `OLD_ENCODER` (LAME < 3.98 — critical for decodeAudioData)
+- `DUAL_CHANNEL` (uncommon mode, may cause issues)
+- `INFO_HEADER` (CBR with VBR-style header)
+- `LARGE_ID3` (>50KB embedded album art)
+- `NO_VBR_HEADER` (missing Xing/Info header)
+- `MISSING ON DISK` (referenced in playlist.json but not found)
+
 ### `find_song.py`
 ```
 python extensions/weather_by_day_time/scripts/find_song.py "query" [top_n]
@@ -157,6 +175,9 @@ Mood-matched manually to weather descriptions. Clear/sunny days get birds/eagles
 4. Uses `createEmbeddedDocuments("PlaylistSound", ...)` for Foundry v11/v12 compatibility
 5. Sends DM whisper with calendar date, time of day, location, event, weather, and notes
 
+### Sound Path Encoding
+Audio paths are URL-encoded via `soundPath(path)` to replace `&` → `%26`, preventing Chromium/Express from interpreting `&` as a query separator in audio URLs (e.g., `Taverns & Inns` → `Taverns%20%26%20Inns`). The `syncPlaylistSounds()` function also validates file extensions, deleting stale database entries with metadata-string paths (no `.mp3`).
+
 ### Debug Prefix
 All console logs use `[WeatherByDayTime]` prefix.
 
@@ -180,7 +201,9 @@ Handles nested JSON (`response`, `text` keys), markdown code blocks, and direct 
 | Problem | Fix |
 |---------|-----|
 | Foundry `416 Range Not Satisfiable` | Zero-byte MP3s found and deleted; delete more: `find . -size 0 -name '*.mp3'` in `data/music/` |
-| `ERR_CACHE_OPERATION_NOT_SUPPORTED` | Same cause as 416 — corrupted zero-byte audio files. Remove and re-download. |
+| `ERR_CACHE_OPERATION_NOT_SUPPORTED` (old LAME) | File encoded with LAME 3.97 (pre-2008) + dual channel mode + 204KB ID3 art → Foundry's `decodeAudioData()` rejects it. Fix: strip ID3 with `strip_metadata.py` or re-encode with modern LAME. |
+| `ERR_CACHE_OPERATION_NOT_SUPPORTED` (zero-byte) | Corrupted zero-byte audio files. Remove and re-download. |
+| `ERR_CACHE_OPERATION_NOT_SUPPORTED` (`&` in path) | Raw `&` in filename parsed as URL query separator. Fix: `soundPath()` in `index.js` encodes `&` → `%26`. Reload Foundry. |
 | HTTP 410 on download | Yandex URLs expired. `Remove-Item temp/ -Recurse`, re-run `gen_music_json.ps1`, then `download_music.py` |
 | Apple Double duplicates (`._` files, `__MACOSX/`) | Filtered automatically by curator + cleanup script. Check `playlist.json` for `._` entries. |
 | AI recommends tracks from non-existent collections | Prompt now uses critical rules. Check that Yandex folder list in `music.json` includes the collection. |

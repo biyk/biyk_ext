@@ -27,28 +27,45 @@ export function init() {
         return [];
     }
 
+    function soundPath(path) {
+        return path.replace(/&/g, '%26');
+    }
+
+    function soundName(path) {
+        return path.split("/").pop();
+    }
+
     async function getPlaylists() {
         const resp = await fetch("modules/biyk_ext/extensions/weather_by_day_time/data/playlist.json");
         return await resp.json();
     }
 
     async function syncPlaylistSounds(playlist, wantedPaths) {
-        const wanted = new Map(wantedPaths.map(p => [p.split("/").pop(), p]));
-        const sounds = playlist.sounds || [];
+        const wanted = new Map(wantedPaths.map(p => [soundName(p), soundPath(p)]));
+        const validExts = ["mp3", "ogg", "wav", "flac", "m4a", "webm"];
         let changed = false;
-        for (const sound of sounds) {
-            if (!wanted.has(sound.name)) {
-                console.log(`${LOG_PREFIX}  Removing "${sound.name}" from "${playlist.name}"`);
+        for (const sound of playlist.sounds || []) {
+            const ext = sound.path?.split(".").pop()?.toLowerCase();
+            const keep = wanted.has(sound.name) && ext && validExts.includes(ext);
+            if (!keep) {
+                console.log(`${LOG_PREFIX}  Removing "${sound.name || sound.path}" from "${playlist.name}"`);
                 await sound.delete();
                 changed = true;
             }
         }
-        const currentNames = new Set(sounds.map(s => s.name));
+        const remaining = new Set((playlist.sounds || []).map(s => s.name));
         for (const [name, path] of wanted) {
-            if (!currentNames.has(name)) {
+            if (!remaining.has(name)) {
                 console.log(`${LOG_PREFIX}  Adding "${name}" to "${playlist.name}"`);
                 await playlist.createEmbeddedDocuments("PlaylistSound", [{ name, path }]);
                 changed = true;
+            }
+        }
+        // Log constructed URLs for debug
+        for (const s of playlist.sounds || []) {
+            const src = s.path;
+            if (src && src.includes('&')) {
+                console.log(`${LOG_PREFIX}  WARNING: path contains raw &: "${src}" - may cause fetch errors`);
             }
         }
         return changed;
@@ -64,7 +81,7 @@ export function init() {
             const name = `День ${day}`;
             let playlist = game.playlists.find(p => p.name === name && p.folder?.id === folder.id);
             if (!playlist) {
-                const sounds = tracks.map(p => ({ name: p.split("/").pop(), path: p }));
+                const sounds = tracks.map(p => ({ name: soundName(p), path: soundPath(p) }));
                 try {
                     await Playlist.create({ name, folder: folder.id, sounds });
                     console.log(`${LOG_PREFIX} Created playlist "${name}" with ${sounds.length} tracks`);

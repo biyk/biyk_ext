@@ -95,13 +95,19 @@ Features:
 
 ### `strip_metadata.py`
 ```
-python temp/opencode/strip_metadata.py
+python extensions/weather_by_day_time/scripts/strip_metadata.py
 ```
 Removes ID3v2 tags from an MP3 to fix Foundry `decodeAudioData()` failures with old LAME-encoded tracks (pre-3.98). Requires editing the `fname` variable in the script. Creates a `.bak` backup automatically. Used to fix `The 13th Age Suite - 15 - Tales Around the Fire.mp3` (LAME3.97, dual channel, 204KB ID3) and `The 13th Age Suite - 22 - Dreams of a Lost Age.mp3`.
 
+### `batch_strip.py`
+```
+python extensions/weather_by_day_time/scripts/batch_strip.py
+```
+Batch-removes ID3v2 tags (>20KB) from all tracks across all days. Creates `.bak` backups automatically, then removes them on success. Used to fix 117 tracks with large album art that could cause `decodeAudioData()` failures.
+
 ### `scan_all_tracks.py`
 ```
-python temp/opencode/scan_all_tracks.py
+python extensions/weather_by_day_time/scripts/scan_all_tracks.py
 ```
 Scans all unique tracks across all playlist days for encoding problems. Flags:
 - `OLD_ENCODER` (LAME < 3.98 — critical for decodeAudioData)

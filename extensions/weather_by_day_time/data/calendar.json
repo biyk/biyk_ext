@@ -246,6 +246,7 @@
   },
   {
     "day": 4,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/4.webp",
     "calendar_date": "Alturiak 25, 1489 DR",
     "location": "Густой лес",
     "event": "Паучьи леса»\nВстреча с труппой актёров (вечер)",
@@ -366,6 +367,7 @@
   },
   {
     "day": 5,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/5.png",
     "calendar_date": "Alturiak 26, 1489 DR",
     "location": "Опушка леса",
     "event": "Жизнь приключенца»: увольнение",
@@ -471,6 +473,7 @@
   },
   {
     "day": 6,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/6.png",
     "calendar_date": "Alturiak 27, 1489 DR",
     "location": "Равнина",
     "event": "",

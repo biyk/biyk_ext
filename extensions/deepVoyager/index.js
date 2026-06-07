@@ -162,7 +162,7 @@ export function init() {
                                 let targetToken = targets[0];
                                 let response = await api.sendRequest(currentToken, targetToken)
 
-                                let path = response.direct || []
+                                let path = response.path || []
 
                                 log.info(path);
                                 if (path.length > 0) {
@@ -259,7 +259,7 @@ export function init() {
             }
             let response = await api.sendRequest(currentToken, targetToken)
 
-            let path = response.direct || []
+            let path = response.path || []
 
             console.log(path);
             for (const direction of path) {
@@ -301,7 +301,7 @@ export function init() {
             for (let token of canvas.tokens.placeables) {
                 const actor = token.actor;
                 // считаем NPC: если актёр существует и его тип !== 'character' (или === 'npc')
-                if (actor && (actor.type !== 'character' || actor.type === 'npc')) {
+                if (actor) {
                     // Уточнение: в D&D 5e тип может быть 'npc', 'character' – игроки обычно 'character' и имеют владельца-игрока
                     // Для большей точности: считаем NPC, если актёр не имеет владельца-игрока (или имеет владельца с ролью GM)
                     const isPlayer = actor.hasPlayerOwner && !actor.owners?.filter?.(o => o.role === 4).length ? false : true; // проще: не используем hasPlayerOwner, а проверяем наличие игроков-владельцев
@@ -314,7 +314,7 @@ export function init() {
                             break;
                         }
                     }
-                    if (!isPlayerControlled) {
+                    if (!isPlayerControlled || 1) {
                         // Это NPC
                         const hp = actor.system.attributes?.hp || {};
                         npcs.push({

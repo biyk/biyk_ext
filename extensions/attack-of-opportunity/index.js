@@ -96,7 +96,10 @@ export function init() {
 
         for (let potentialAttacker of canvas.tokens.placeables) {
             if (potentialAttacker.id === movingToken.id) continue;
-            if (potentialAttacker.document.disposition !== -movingDisposition) continue;
+            const attackerDisposition = potentialAttacker.document.disposition;
+            if (attackerDisposition === 1 || attackerDisposition === 0) {
+                if (movingDisposition !== -1) continue;
+            }
             if (!potentialAttacker.actor || potentialAttacker.actor.system.attributes.hp.value <= 0) continue;
 
             const isPlayer = potentialAttacker.actor.hasPlayerOwner;

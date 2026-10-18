@@ -16,7 +16,8 @@ from planner.armament import SURE, best_attack
 from planner.context import BattleContext
 from planner.geometry import cell_distance
 from planner.pathfinding import PathfindingService
-from planner.scoring import ATTACK_DOUBT_POINT, ATTACK_POINT, Scorer
+from planner.points import Tuning, tuning
+from planner.scoring import Scorer
 from planner.strategy import Candidate
 
 Cell = Tuple[int, int]
@@ -67,18 +68,20 @@ def reachable_paths(pf, start: Cell, src_id: str, max_steps: int) -> Dict[Cell, 
     return paths
 
 
-def best_strike(ctx: BattleContext, cell: Cell, enemies):
+def best_strike(ctx: BattleContext, cell: Cell, enemies, t: Optional[Tuning] = None):
     """Лучшая атака из клетки: (враг, оружие) по максимуму очков, при равных — ближе.
 
     None, если ни одно оружие ни до кого не достает — тогда кандидат без use.
+    t — действующие коэффициенты; в цикле перебора их берут один раз и передают сюда.
     """
+    t = t or tuning()
     options = []
     for enemy in enemies:
         dist = cell_distance(cell, ctx.cell_of(enemy))
         found = best_attack(ctx.weapons, dist)
         if found:
             weapon, mode = found
-            points = ATTACK_POINT if mode == SURE else ATTACK_DOUBT_POINT
+            points = t.attack_sure if mode == SURE else t.attack_doubt
             options.append(((points, -dist), enemy, weapon))
     if not options:
         return None
@@ -87,9 +90,9 @@ def best_strike(ctx: BattleContext, cell: Cell, enemies):
 
 
 def _candidate(ctx: BattleContext, scorer: Scorer, kind: str,
-               cell: Cell, dirs: List[str], enemies) -> Candidate:
+               cell: Cell, dirs: List[str], enemies, t: Optional[Tuning] = None) -> Candidate:
     """Действия target -> move... -> атака (если из клетки есть чем ударить)."""
-    strike = best_strike(ctx, cell, enemies)
+    strike = best_strike(ctx, cell, enemies, t)
     nearest = strike[0] if strike else min(
         enemies, key=lambda e: cell_distance(cell, ctx.cell_of(e)))
     actions: List[Action] = [target_action(nearest.id)]
@@ -113,11 +116,12 @@ class BruteForceExplorer:
         enemies = self._ctx.hostile_targets()
         if not enemies:
             return
+        t = tuning()          # коэффициенты на весь перебор: файл не дёргать на каждую клетку
         cells = reachable_paths(self._pf, self._ctx.src_cell,
                                 self._ctx.src_id, self._ctx.speed_steps)
         # детерминированный порядок: сначала кратчайшие пути, затем координаты
         for cell, dirs in sorted(cells.items(), key=lambda kv: (len(kv[1]), kv[0])):
-            yield _candidate(self._ctx, self._scorer, "brute", cell, dirs, enemies)
+            yield _candidate(self._ctx, self._scorer, "brute", cell, dirs, enemies, t)
 
 
 class RandomExplorer:
@@ -134,6 +138,7 @@ class RandomExplorer:
         enemies = self._ctx.hostile_targets()
         if not enemies:
             return
+        t = tuning()          # тот же набор чисел на всю случайную прогулку
         while True:
             cell, dirs = self._ctx.src_cell, []
             for _ in range(self._ctx.speed_steps):
@@ -144,7 +149,7 @@ class RandomExplorer:
                     break
                 d, cell = self._rng.choice(options)
                 dirs.append(d)
-            yield _candidate(self._ctx, self._scorer, "random", cell, dirs, enemies)
+            yield _candidate(self._ctx, self._scorer, "random", cell, dirs, enemies, t)
 
     def _steps_from(self, cell: Cell):
         return legal_steps(self._pf, cell[0], cell[1],

@@ -1,23 +1,23 @@
 # tests/test_scoring.py — очки сближения и атаки (пункт 4 todo.md).
+from planner import points
 from planner.action import Action, move_action, target_action, use_action
-from planner.scoring import (
-    ATTACK_DOUBT_POINT, ATTACK_POINT, DAMAGE_PENALTY, FEET_PER_CELL,
-    MOVE_POINT_PER_CELL, PLAN_TIME_LIMIT_SEC, Scorer,
-)
+from planner.scoring import Scorer
 from conftest import make_npc, make_scene_payload, make_weapon
 from planner.context import BattleContext
 
+TUNE = points.default_tuning()      # коэффициенты зафиксированы фикстурой conftest
+
 
 def test_todo_point4_constants():
-    assert FEET_PER_CELL == 5
-    assert MOVE_POINT_PER_CELL == 1      # 1 очко за каждые 5 футов сближения
-    assert ATTACK_POINT == 30            # 30 очков за уверенную атаку
-    assert ATTACK_DOUBT_POINT == 15      # 15 очков за сомнительную (дальняя дистанция)
-    assert PLAN_TIME_LIMIT_SEC == 5.0    # лимит расчёта — 5 секунд
+    assert TUNE.feet_per_cell == 5
+    assert TUNE.move_per_cell == 1       # 1 очко за каждые 5 футов сближения
+    assert TUNE.attack_sure == 30        # 30 очков за уверенную атаку
+    assert TUNE.attack_doubt == 15       # 15 очков за сомнительную (дальняя дистанция)
+    assert TUNE.plan_time_limit_sec == 5.0   # лимит расчёта — 5 секунд
 
 
 def test_todo_point5_damage_penalty_constant():
-    assert DAMAGE_PENALTY == -30         # штраф за получение урона
+    assert TUNE.damage_penalty == -30    # штраф за получение урона
 
 
 def test_empty_plan_scores_zero():
@@ -35,7 +35,7 @@ def test_approach_scores_one_point_per_cell():
 def test_attack_adds_thirty():
     ctx = BattleContext.from_payload(make_scene_payload())
     actions = [target_action("B")] + [move_action("right")] * 6 + [use_action("sword")]
-    assert Scorer().score(ctx, actions) == 6.0 + ATTACK_POINT
+    assert Scorer().score(ctx, actions) == 6.0 + TUNE.attack_sure
 
 
 def test_moving_away_scores_negative():
@@ -73,7 +73,7 @@ def test_doubt_attack_scores_fifteen():
     ctx = BattleContext.from_payload(
         make_scene_payload(npcs=npcs, weapons=[make_weapon("bow", sure_ft=30, doubt_ft=120)]))
     actions = [target_action("B"), use_action("bow")]
-    assert Scorer().score(ctx, actions) == float(ATTACK_DOUBT_POINT)
+    assert Scorer().score(ctx, actions) == float(TUNE.attack_doubt)
     assert "сомнительная" in Scorer().explain(ctx, actions) and "+15" in Scorer().explain(ctx, actions)
 
 
@@ -83,7 +83,7 @@ def test_sure_attack_in_close_range_scores_thirty():
     ctx = BattleContext.from_payload(
         make_scene_payload(npcs=npcs, weapons=[make_weapon("bow", sure_ft=30, doubt_ft=120)]))
     actions = [target_action("B"), use_action("bow")]
-    assert Scorer().score(ctx, actions) == float(ATTACK_POINT)
+    assert Scorer().score(ctx, actions) == float(TUNE.attack_sure)
     assert "уверенная" in Scorer().explain(ctx, actions)
 
 
@@ -93,7 +93,7 @@ def test_ranged_attack_at_point_blank_scores_doubt():
     ctx = BattleContext.from_payload(
         make_scene_payload(npcs=npcs, weapons=[make_weapon("bow", sure_ft=30, doubt_ft=120)]))
     actions = [target_action("B"), use_action("bow")]
-    assert Scorer().score(ctx, actions) == float(ATTACK_DOUBT_POINT)
+    assert Scorer().score(ctx, actions) == float(TUNE.attack_doubt)
     assert "сомнительная" in Scorer().explain(ctx, actions)
 
 
@@ -104,7 +104,7 @@ def test_thrown_attack_at_point_blank_scores_sure():
         npcs=npcs, weapons=[make_weapon("knife", sure_ft=20, doubt_ft=60,
                                         ranged=True, properties=["thr"])]))
     actions = [target_action("B"), use_action("knife")]
-    assert Scorer().score(ctx, actions) == float(ATTACK_POINT)
+    assert Scorer().score(ctx, actions) == float(TUNE.attack_sure)
     assert "уверенная" in Scorer().explain(ctx, actions)
 
 

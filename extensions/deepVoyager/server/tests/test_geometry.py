@@ -1,14 +1,12 @@
 # tests/test_geometry.py — сеточная геометрия: смещения, расстояния, reach.
 import pytest
 
-from planner.geometry import (
-    DIR_VECTORS, FEET_PER_CELL, REACH_GRID_TOLERANCE, apply_moves, cell_distance,
-    within_reach,
-)
+from planner import points
+from planner.geometry import DIR_VECTORS, apply_moves, cell_distance, within_reach
 
 
 def test_feet_per_cell_matches_grid():
-    assert FEET_PER_CELL == 5
+    assert points.tuning().feet_per_cell == 5
 
 
 def test_apply_moves_composes_directions():
@@ -36,7 +34,7 @@ def test_cell_distance_is_euclidean():
 
 def test_within_reach_includes_diagonal_neighbours():
     # допуск аддитивный: полклетки (мерим от края токена, а не от центра)
-    assert REACH_GRID_TOLERANCE == 0.5
+    assert points.tuning().reach_tolerance == 0.5
     assert within_reach((0, 0), (0, 1), 1.0)      # ортогональный сосед
     assert within_reach((0, 0), (1, 1), 1.0)      # диагональный сосед (1.41)
     assert not within_reach((0, 0), (0, 2), 1.0)  # два клетки — мимо

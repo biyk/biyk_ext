@@ -1,10 +1,11 @@
 # planner/geometry.py — сеточная геометрия: направления, смещения, расстояние по прямой.
+# Числа (размер клетки, допуск reach) — в planner/points.py, не здесь.
 import math
 from typing import Dict, Iterable, Tuple
 
-Cell = Tuple[int, int]  # (row, col)
+from planner.points import tuning
 
-FEET_PER_CELL = 5  # одна клетка сетки = 5 футов
+Cell = Tuple[int, int]  # (row, col)
 
 # Векторы 8 направлений в (row, col): up = меньше y = меньше row
 DIR_VECTORS: Dict[str, Cell] = {
@@ -18,10 +19,9 @@ DIR_VECTORS: Dict[str, Cell] = {
     "downright": (1, 1),
 }
 
-# Допуск в полклетки: дистанцию меряем между центрами клеток, а в D&D 5e
-# считают от края токена — плюс диагональный сосед (1.41) должен попадать
-# в reach 1 клетка (как и в utils/combat.js для melee-атак).
-REACH_GRID_TOLERANCE = 0.5
+# Допуск reach настраивается в points.json (reachToleranceCells): дистанцию меряем
+# между центрами клеток, а в D&D 5e считают от края токена — плюс диагональный сосед
+# (1.41) должен попадать в reach 1 клетка (как в utils/combat.js).
 
 
 def apply_moves(start: Cell, directions: Iterable[str]) -> Cell:
@@ -43,4 +43,4 @@ def cell_distance(a: Cell, b: Cell) -> float:
 
 def within_reach(a: Cell, b: Cell, reach_cells: float) -> bool:
     """Достанет ли атака из клетки a в клетку b при дальности reach_cells."""
-    return cell_distance(a, b) <= reach_cells + REACH_GRID_TOLERANCE
+    return cell_distance(a, b) <= reach_cells + tuning().reach_tolerance

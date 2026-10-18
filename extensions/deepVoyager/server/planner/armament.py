@@ -1,6 +1,7 @@
 # planner/armament.py — вооружение NPC: зоны уверенного и сомнительного попадания.
 #
-# Очки (см. planner/scoring.py): уверенная атака — 30, сомнительная — 15.
+# Очки (см. planner/scoring.py и points.json): уверенная атака — attack.sure (30),
+# сомнительная — attack.doubt (15).
 #  • ближний бой: зоны совпадают (5 футов, 10 — если у оружия есть досягаемость),
 #    поэтому «сомнительного» удара у него не бывает;
 #  • дальнобойное: уверенная = range.value (например 30 футов),
@@ -10,17 +11,15 @@
 #    поэтому вплотную и на своей дистанции оно бьёт уверенно.
 # Дальности, признаки и свойства приходят из Foundry в поле payload['weapons']
 # (см. utils/help.js buildWeapons); старый клиент без новых полей — выводим ranged сам.
+# Пороги (5 футов «в упор», допуск reach, базовая ближняя дальность, код свойства
+# «метательное») — в points.json, читаются через planner/points.py.
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional, Tuple
 
-from planner.geometry import FEET_PER_CELL, REACH_GRID_TOLERANCE
+from planner.points import tuning
 
 SURE = "sure"       # уверенное попадание
 DOUBT = "doubt"     # сомнительное (вне уверенной, но в длинной дистанции)
-
-DEFAULT_MELEE_FT = 5     # базовая дальность ближнего боя в футах
-MELEE_THREAT_CELLS = 1.0  # 5 футов — «в упор», для дальнобойного это помеха
-THROWN_PROPERTY = "thr"   # свойство dnd5e «метательное»: в упор бьёт без помехи
 
 
 @dataclass(frozen=True)
@@ -36,45 +35,48 @@ class Weapon:
 
     @property
     def thrown(self) -> bool:
-        """Метательное ли оружие (свойство thr): бросок вплотную — без помехи."""
-        return THROWN_PROPERTY in self.properties
+        """Метательное ли оружие (свойство thr из points.json): бросок вплотную без помехи."""
+        return tuning().thrown_property in self.properties
 
     @property
     def sure_cells(self) -> float:
-        return self.sure_ft / FEET_PER_CELL
+        return self.sure_ft / tuning().feet_per_cell
 
     @property
     def doubt_cells(self) -> float:
-        return self.doubt_ft / FEET_PER_CELL
+        return self.doubt_ft / tuning().feet_per_cell
 
     def mode_at(self, dist_cells: float) -> Optional[str]:
         """Режим попадания на дистанции dist_cells (клетки) — или None, если не достать."""
+        t = tuning()
+        feet = t.feet_per_cell
         # допуск тот же, что у within_reach: полклетки на диагональ/край токена
-        if dist_cells <= self.sure_cells + REACH_GRID_TOLERANCE:
-            if (self.ranged and not self.thrown
-                    and dist_cells <= MELEE_THREAT_CELLS + REACH_GRID_TOLERANCE):
+        if dist_cells <= self.sure_ft / feet + t.reach_tolerance:
+            if (self.ranged and t.thrown_property not in self.properties
+                    and dist_cells <= t.point_blank_cells + t.reach_tolerance):
                 return DOUBT          # стрелять вплотную — только с помехой
             return SURE
-        if dist_cells <= self.doubt_cells + REACH_GRID_TOLERANCE:
+        if dist_cells <= self.doubt_ft / feet + t.reach_tolerance:
             return DOUBT
         return None
 
 
 def parse_weapons(raw: Optional[Iterable[Dict[str, Any]]]) -> Tuple[Weapon, ...]:
     """Список payload['weapons'] -> кортеж Weapon; записи без id отбрасываются."""
+    t = tuning()
     out = []
     for entry in raw or []:
         wid = entry.get("id")
         if not wid:
             continue
-        sure = float(entry.get("sureFt") or DEFAULT_MELEE_FT)
+        sure = float(entry.get("sureFt") or t.default_melee_ft)
         doubt = float(entry.get("doubtFt") or sure)
         doubt = max(sure, doubt)      # сомнительная не короче уверенной
         props = parse_properties(entry.get("properties"))
         ranged = entry.get("ranged")
         if ranged is None:
             # длинная дистанция бывает только у дальнобойного, но метательное — не он
-            ranged = doubt > sure and THROWN_PROPERTY not in props
+            ranged = doubt > sure and t.thrown_property not in props
         out.append(Weapon(
             id=str(wid), name=str(entry.get("name") or wid),
             damage=str(entry.get("damage") or ""), attack_bonus=int(entry.get("attackBonus") or 0),
@@ -93,14 +95,18 @@ def parse_properties(raw: Any) -> Tuple[str, ...]:
 def best_attack(weapons: Iterable[Weapon], dist_cells: float) -> Optional[Tuple[Weapon, str]]:
     """(оружие, режим) с максимумом очков атаки на этой дистанции; None — если не достать.
 
+    Очки за зону берутся из points.json, поэтому «уверенная лучше сомнительной» —
+    следствие настройки attack.sure > attack.doubt, а не жёсткого правила.
     При равных очках выбирается оружие с большим бонусом атаки.
     """
+    t = tuning()
     best = None
     for weapon in weapons:
         mode = weapon.mode_at(dist_cells)
         if mode is None:
             continue
-        key = (1 if mode == SURE else 0, weapon.attack_bonus)
+        points = t.attack_sure if mode == SURE else t.attack_doubt
+        key = (points, weapon.attack_bonus)
         if best is None or key > best[0]:
             best = (key, weapon, mode)
     return (best[1], best[2]) if best else None

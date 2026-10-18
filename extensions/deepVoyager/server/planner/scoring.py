@@ -1,26 +1,21 @@
 # planner/scoring.py — очки стратегий хода (пункт 4 todo.md).
 #
-# Правила из плана:
-#  • сближение: 1 очко за каждые 5 футов вдоль прямой до ОПОРНОГО врага — цели
-#    атаки, если атака в плане есть, иначе ближайшего врага (иначе подход к своей
-#    цели не стоил бы очков, пока рядом стоит кто-то другой);
-#  • атака: 30 очков за уверенное попадание, 15 — за сомнительную (дальняя
-#    дистанция оружия); вне обеих зон атака очков не даёт;
-#  • пункт 5 добавит штраф за полученный урон и многораундовый lookahead.
+# Правила:
+#  • сближение: очко за каждые 5 футов (actions.move.pointsPerCell) вдоль прямой до
+#    ОПОРНОГО врага — цели атаки, если атака в плане есть, иначе ближайшего врага
+#    (иначе подход к своей цели не стоил бы очков, пока рядом стоит кто-то другой);
+#  • атака: actions.attack.sure за уверенное попадание, actions.attack.doubt — за
+#    сомнительную (дальняя дистанция оружия); вне обеих зон атака очков не даёт;
+#  • пункт 5 добавит штраф за полученный урон (actions.damageTaken.points) и
+#    многораундовый lookahead.
+# Все числа — из points.json (planner/points.py), в этом файле их нет.
 from typing import List, Optional
 
 from planner.action import ACTION_MOVE, ACTION_TARGET, ACTION_USE, Action
 from planner.armament import DOUBT, SURE
 from planner.context import BattleContext
-from planner.geometry import (
-    DIR_VECTORS, FEET_PER_CELL, apply_moves, cell_distance,
-)
-
-MOVE_POINT_PER_CELL = 1      # очко за каждую клетку (5 футов) сближения
-ATTACK_POINT = 30            # очко за уверенную атаку
-ATTACK_DOUBT_POINT = 15      # очко за сомнительную атаку (на длинной дистанции)
-DAMAGE_PENALTY = -30         # штраф за получение урона (пункт 5)
-PLAN_TIME_LIMIT_SEC = 5.0    # лимит времени на перебор (пункт 4)
+from planner.geometry import DIR_VECTORS, apply_moves, cell_distance
+from planner.points import tuning
 
 
 class Scorer:
@@ -28,7 +23,8 @@ class Scorer:
 
     def score(self, context: BattleContext, actions: List[Action]) -> float:
         b = self.breakdown(context, actions)
-        return b["approach"] + b["sure"] * ATTACK_POINT + b["doubt"] * ATTACK_DOUBT_POINT
+        t = tuning()
+        return b["approach"] + b["sure"] * t.attack_sure + b["doubt"] * t.attack_doubt
 
     def breakdown(self, context: BattleContext, actions: List[Action]) -> dict:
         """Составляющие оценки: прямая до опорного врага до/после, очки сближения, атаки.
@@ -42,6 +38,7 @@ class Scorer:
                     "attacks": 0, "attack_points": 0.0,
                     "ref_kind": "", "ref_id": "", "ref_name": "", "weapon_name": ""}
 
+        t = tuning()
         start = context.src_cell
         directions, uses = [], []
         for a in actions:
@@ -58,7 +55,7 @@ class Scorer:
             enemies, key=lambda e: cell_distance(start, context.cell_of(e)))
         before = cell_distance(start, context.cell_of(ref))
         after = cell_distance(end, context.cell_of(ref))
-        approach = (before - after) * MOVE_POINT_PER_CELL
+        approach = (before - after) * t.move_per_cell
 
         sure = doubt = 0
         weapon_name = ""
@@ -71,7 +68,7 @@ class Scorer:
                     doubt += 1
             weapon = context.weapon(uses[0].conf.get("itemId", ""))
             weapon_name = weapon.name if weapon else ""
-        attack_points = sure * ATTACK_POINT + doubt * ATTACK_DOUBT_POINT
+        attack_points = sure * t.attack_sure + doubt * t.attack_doubt
         return {"before": before, "after": after, "approach": approach, "sure": sure,
                 "doubt": doubt, "attacks": sure + doubt, "attack_points": attack_points,
                 "ref_kind": "target" if target is not None else "nearest",
@@ -98,14 +95,15 @@ class Scorer:
         """Мини-отчёт «за что начислены очки» (расстояния в футах); пусто, если врагов нет."""
         if not context.hostile_targets():
             return ""
+        t = tuning()
         b = self.breakdown(context, actions)
         zones = ", ".join(filter(None, [
-            f"{b['sure']} уверенная (+{b['sure'] * ATTACK_POINT:g})" if b["sure"] else "",
-            f"{b['doubt']} сомнительная (+{b['doubt'] * ATTACK_DOUBT_POINT:g})" if b["doubt"] else "",
+            f"{b['sure']} уверенная (+{b['sure'] * t.attack_sure:g})" if b["sure"] else "",
+            f"{b['doubt']} сомнительная (+{b['doubt'] * t.attack_doubt:g})" if b["doubt"] else "",
         ])) or f"нет ({b['attack_points']:+g})"
         ref_label = "к цели" if b["ref_kind"] == "target" else "к ближайшему"
-        text = (f"сближение {b['before'] * FEET_PER_CELL:g}→{b['after'] * FEET_PER_CELL:g} футов "
-                f"({b['approach']:+g}) {ref_label}, "
+        text = (f"сближение {b['before'] * t.feet_per_cell:g}→{b['after'] * t.feet_per_cell:g} "
+                f"футов ({b['approach']:+g}) {ref_label}, "
                 f"атак: {b['attacks']} ({zones})")
         if b["attacks"]:
             # имя в арене повторяется («Стражник (1)» ×5), поэтому рядом всегда id

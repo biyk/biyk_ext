@@ -1,7 +1,7 @@
 # tests/test_armament.py — оружие: уверенная/сомнительная дистанции и выбор атаки.
 from conftest import make_weapon
 from planner.armament import DOUBT, SURE, best_attack, parse_weapons
-from planner.geometry import FEET_PER_CELL
+from planner.points import default_tuning
 
 
 def test_parse_keeps_fields_and_exposes_cells():
@@ -11,7 +11,8 @@ def test_parse_keeps_fields_and_exposes_cells():
     assert bow.id == "bow" and bow.name == "лук"
     assert bow.damage == "1d6+2" and bow.attack_bonus == 2
     assert bow.sure_ft == 30.0 and bow.doubt_ft == 120.0
-    assert (bow.sure_cells, bow.doubt_cells) == (30 / FEET_PER_CELL, 120 / FEET_PER_CELL)
+    feet = default_tuning().feet_per_cell
+    assert (bow.sure_cells, bow.doubt_cells) == (30 / feet, 120 / feet)
 
 
 def test_parse_skips_junk_and_clamps_doubt():

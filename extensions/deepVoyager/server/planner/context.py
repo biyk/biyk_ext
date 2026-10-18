@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from planner.armament import Weapon, parse_weapons
-from planner.geometry import FEET_PER_CELL, Cell
+from planner.geometry import Cell
+from planner.points import tuning
 
 
 @dataclass(frozen=True)
@@ -73,7 +74,7 @@ class BattleContext:
     src_id: str
     target_id: Optional[str]
     raw: Dict[str, Any]  # исходный payload.data — для адаптеров (libs.quin)
-    speed_steps: int = 6           # шагов (клеток) за ход, speed_ft / 5
+    speed_steps: int = 6           # шагов (клеток) за ход: speed_ft / rules.feetPerCell
     weapons: Tuple[Weapon, ...] = ()  # чем атаковать; пусто — атаки нет
 
     def token(self, token_id: str) -> Optional[Token]:
@@ -172,6 +173,6 @@ class BattleContext:
         return cls(
             scene=scene, tokens=tuple(tokens), walls=tuple(walls),
             src_id=src_id, target_id=payload.get("token"), raw=data,
-            speed_steps=int(float(payload.get("speed") or 30) // FEET_PER_CELL),
+            speed_steps=int(float(payload.get("speed") or 30) // tuning().feet_per_cell),
             weapons=parse_weapons(payload.get("weapons")),
         )

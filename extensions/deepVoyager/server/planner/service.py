@@ -2,9 +2,9 @@
 #
 # Пункт 4 + перебор хода: три источника кандидатов (quin-маршруты ->
 # полный BFS-перебор достижимых клеток -> случайные прогулки), выбор плана
-# с максимумом очков; при достижении лимита времени (5 с) берётся лучший из
-# уже рассмотренных. Пункт 5 добавит lookahead и штраф урона,
-# пункт 6 — долгосрочное планирование, пункт 7 — баффы/долечку.
+# с максимумом очков; при достижении лимита времени (limits.planTimeLimitSec
+# из points.json) берётся лучший из уже рассмотренных. Пункт 5 добавит lookahead
+# и штраф урона, пункт 6 — долгосрочное планирование, пункт 7 — баффы/долечку.
 import random
 import time
 from dataclasses import dataclass, field
@@ -13,7 +13,8 @@ from typing import Any, Dict, Iterator, List, Optional
 from planner.action import Action
 from planner.context import BattleContext
 from planner.explore import BruteForceExplorer, RandomExplorer
-from planner.scoring import PLAN_TIME_LIMIT_SEC, Scorer
+from planner.points import tuning
+from planner.scoring import Scorer
 from planner.strategy import Candidate, StrategyEnumerator
 
 
@@ -39,10 +40,12 @@ class PlannerService:
     """Сопоставляет входящий payload с последовательностью действий NPC."""
 
     def __init__(self, scorer: Optional[Scorer] = None,
-                 time_limit_sec: float = PLAN_TIME_LIMIT_SEC,
+                 time_limit_sec: Optional[float] = None,
                  rng: Optional[random.Random] = None):
         self.scorer = scorer or Scorer()
-        self._time_limit_sec = time_limit_sec
+        # None — лимит из points.json; 0.0 остаётся явным (так тестируют дедлайн)
+        self._time_limit_sec = (tuning().plan_time_limit_sec
+                                if time_limit_sec is None else time_limit_sec)
         self._rng = rng or random.Random()
 
     def run(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:

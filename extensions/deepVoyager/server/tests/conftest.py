@@ -7,6 +7,8 @@ sys.path.insert(0, SERVER_DIR)
 
 import pytest  # noqa: E402
 
+from planner import points  # noqa: E402
+
 
 def make_npc(npc_id, x, y, size=50, disposition=0, hp=10, name=None):
     """Токен size×size в клетку, координаты — левый верхний угол (как в Foundry)."""
@@ -60,6 +62,18 @@ def make_scene_payload(walls=None, npcs=None, grid=50, weapons=None, token="B"):
             "walls": walls if walls is not None else [],
         },
     }
+
+
+@pytest.fixture(autouse=True)
+def pin_default_tuning():
+    """Фиксируем встроенные коэффициенты на время теста.
+
+    Иначе правка server/points.json (её пользователь крутит под себя) меняла бы
+    очки во всех тестах, где ожидаются 30/15/1.
+    """
+    previous = points.set_tuning(points.default_tuning())
+    yield
+    points.set_tuning(previous or points.default_tuning())
 
 
 @pytest.fixture

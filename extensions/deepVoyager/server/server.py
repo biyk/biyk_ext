@@ -26,7 +26,8 @@ from flask_cors import CORS
 from src.deepseek import ask
 from libs.quin import find_path_from_data
 from planner.service import PlannerService
-from planner.armament import THROWN_PROPERTY, parse_properties
+from planner.armament import parse_properties
+from planner.points import tuning
 
 app = Flask(__name__)
 CORS(app)
@@ -99,7 +100,7 @@ def weapon_description(entry):
 
 def weapon_marks(entry):
     """Метки для консоли: метат (в упор уверенно) либо дальноб (в упор с помехой)."""
-    if THROWN_PROPERTY in parse_properties(entry.get("properties")):
+    if tuning().thrown_property in parse_properties(entry.get("properties")):
         return ", метат"
     return ", дальноб" if is_ranged_entry(entry) else ""
 

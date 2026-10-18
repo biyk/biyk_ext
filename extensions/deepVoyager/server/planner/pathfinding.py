@@ -1,8 +1,8 @@
 # planner/pathfinding.py — сервис расчёта маршрута по сетке.
 #
-# Адаптер над libs/quin.py (A*, 4 направления, учёт стен и занятых клеток).
-# Пункт 3 todo.md: API сервиса фиксируем и покрываем тестами; алгоритм
-# (диагонали, стоимость движения, лимиты) развивается в пунктах 4–5.
+# Адаптер над libs/quin.py (A*, 8 направлений, диагональ = 1 клетка, учёт стен,
+# занятых клеток и правила углов). Пункт 3 todo.md: API сервиса фиксируем
+# и покрываем тестами; развитие алгоритма — в пунктах 4–5.
 from typing import List
 
 from libs.quin import SimplePathfinder
@@ -17,7 +17,7 @@ class PathfindingService:
         self._finder = SimplePathfinder(context.raw)
 
     def find_path(self, src_id: str, tgt_id: str, mode: str = "direct") -> List[str]:
-        """Список направлений ('up'/'down'/'left'/'right'); [] — маршрут невозможен."""
+        """Список направлений (8 имён: up/down/left/right + диагонали); [] — маршрут невозможен."""
         try:
             return self._finder.find_path(src_id, tgt_id, mode)
         except KeyError:

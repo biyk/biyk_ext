@@ -3,8 +3,11 @@
 # Строится из payload эндпоинтов /plan и /path — это формат api.getAllData()
 # со стороны Foundry (extensions/deepVoyager/index.js):
 # { src, token, data: { scene: {...}, npcs: [...], walls: [...] } }
+# Опциональные поля шага 4: speed (футы/ход), reach (футы), weaponId (предмет атаки).
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from planner.geometry import FEET_PER_CELL, Cell
 
 
 @dataclass(frozen=True)
@@ -67,6 +70,9 @@ class BattleContext:
     src_id: str
     target_id: Optional[str]
     raw: Dict[str, Any]  # исходный payload.data — для адаптеров (libs.quin)
+    speed_steps: int = 6           # шагов (клеток) за ход, speed_ft / 5
+    reach_cells: float = 1.0       # дальность атаки в клетках
+    weapon_id: Optional[str] = None  # чем атаковать (use/<itemId>)
 
     def token(self, token_id: str) -> Optional[Token]:
         return next((t for t in self.tokens if t.id == token_id), None)
@@ -77,6 +83,36 @@ class BattleContext:
         if t is None:
             raise ValueError(f"Src-токен не найден в данных сцены: {self.src_id!r}")
         return t
+
+    def cell_of(self, token: Token) -> Cell:
+        return self.scene.cell_of(token.center_x, token.center_y)
+
+    @property
+    def src_cell(self) -> Cell:
+        return self.cell_of(self.src)
+
+    def is_hostile(self, t: Token) -> bool:
+        """Враждебен ли токен текущему (правила группировки как в utils/combat.js).
+
+        Нейтральные (disposition 0) не воюют; для -2 (босс) друзья — это -1.
+        """
+        s = self.src.disposition
+        if t.id == self.src_id or not t.is_alive:
+            return False
+        if s == 0 or t.disposition == 0:
+            return False
+        if s == -2:
+            return t.disposition == 1
+        return t.disposition != s
+
+    def hostile_targets(self) -> List[Token]:
+        """Живые враги + явный target_id из запроса (если это не src и он жив)."""
+        result = [t for t in self.tokens if self.is_hostile(t)]
+        if self.target_id and self.target_id != self.src_id:
+            explicit = self.token(self.target_id)
+            if explicit is not None and explicit.is_alive and explicit not in result:
+                result.append(explicit)
+        return result
 
     # ------------------------------------------------------------------
     @classmethod
@@ -129,4 +165,7 @@ class BattleContext:
         return cls(
             scene=scene, tokens=tuple(tokens), walls=tuple(walls),
             src_id=src_id, target_id=payload.get("token"), raw=data,
+            speed_steps=int(float(payload.get("speed") or 30) // FEET_PER_CELL),
+            reach_cells=float(payload.get("reach") or 5) / FEET_PER_CELL,
+            weapon_id=payload.get("weaponId"),
         )

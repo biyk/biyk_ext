@@ -1,6 +1,4 @@
-export function addGMButton(){
-    if (document.getElementById("custom-text-save-btn")) return;
-
+export function addGMButton(onPlayClick){
     // Находим целевую кнопку создания боя
     const targetButton = document.querySelector("a.combat-button.combat-create");
     if (!targetButton) {
@@ -8,19 +6,34 @@ export function addGMButton(){
         return;
     }
 
-    // Создаём новую кнопку
-    const newButton = document.createElement("a");
-    newButton.id = "custom-text-save-btn";
-    newButton.className = "combat-button";
-    newButton.setAttribute("aria-label", "Сохранить текст");
-    newButton.setAttribute("data-tooltip", "Сохранить текст в локальное хранилище");
-    newButton.innerHTML = '<i class="fas fa-save"></i>';
-    newButton.style.marginLeft = "4px"; // небольшой отступ
+    let saveBtn = document.getElementById("custom-text-save-btn");
+    if (!saveBtn) {
+        // Создаём новую кнопку
+        saveBtn = document.createElement("a");
+        saveBtn.id = "custom-text-save-btn";
+        saveBtn.className = "combat-button";
+        saveBtn.setAttribute("aria-label", "Сохранить текст");
+        saveBtn.setAttribute("data-tooltip", "Сохранить текст в локальное хранилище");
+        saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+        saveBtn.style.marginLeft = "4px"; // небольшой отступ
 
-    // Добавляем обработчик клика (диалог с текстом)
-    newButton.addEventListener("click", messageBox);
-    targetButton.insertAdjacentElement("afterend", newButton);
+        // Добавляем обработчик клика (диалог с текстом)
+        saveBtn.addEventListener("click", messageBox);
+        targetButton.insertAdjacentElement("afterend", saveBtn);
+    }
 
+    // ▶ — ручной ход NPC deepVoyager, справа от custom-text-save-btn
+    if (!document.getElementById("deepvoyager-play-btn")) {
+        const playBtn = document.createElement("a");
+        playBtn.id = "deepvoyager-play-btn";
+        playBtn.className = "combat-button";
+        playBtn.setAttribute("aria-label", "Ход ИИ");
+        playBtn.setAttribute("data-tooltip", "Передать текущий ход NPC скрипту deepVoyager (/plan)");
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        playBtn.style.marginLeft = "4px";
+        playBtn.addEventListener("click", () => onPlayClick && onPlayClick());
+        saveBtn.insertAdjacentElement("afterend", playBtn);
+    }
 }
 function messageBox(){
     // Макрос для сохранения и загрузки текста из localStorage

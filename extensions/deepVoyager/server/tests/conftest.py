@@ -35,7 +35,8 @@ def make_scene_payload(walls=None, npcs=None, grid=50):
         "mode": "direct",
         "data": {
             "scene": {"id": "s1", "name": "test", "width": 500, "height": 500, "gridSize": grid},
-            "npcs": npcs if npcs is not None else [make_npc("A", 0, 0), make_npc("B", 450, 0)],
+            "npcs": npcs if npcs is not None else [
+                make_npc("A", 0, 0, disposition=-1), make_npc("B", 450, 0, disposition=1)],
             "walls": walls if walls is not None else [],
         },
     }
@@ -43,5 +44,5 @@ def make_scene_payload(walls=None, npcs=None, grid=50):
 
 @pytest.fixture
 def scene_payload():
-    """Свободная сцена 10×10 клеток: A в (0,0), B в (9,0) — 9 шагов вправо."""
+    """Свободная сцена 10×10: враждебный A в (0,0), цель B в (9,0) — 9 шагов вправо."""
     return make_scene_payload()

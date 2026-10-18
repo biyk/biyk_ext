@@ -14,7 +14,7 @@ def test_parses_full_payload(scene_payload):
 
     a = ctx.token("A")
     assert (a.center_x, a.center_y) == (25.0, 25.0)
-    assert a.is_alive and a.disposition == 0
+    assert a.is_alive and a.disposition == -1
     assert ctx.src.id == "A"
 
 
@@ -65,3 +65,37 @@ def test_src_property_raises_when_missing(scene_payload):
     ctx = BattleContext.from_payload(scene_payload)
     with pytest.raises(ValueError):
         _ = ctx.src
+
+
+def test_defaults_and_optional_step4_fields():
+    ctx = BattleContext.from_payload(make_scene_payload())
+    assert ctx.speed_steps == 6      # 30 футов / 5
+    assert ctx.reach_cells == 1.0    # 5 футов
+    assert ctx.weapon_id is None
+
+    ctx = BattleContext.from_payload(
+        {**make_scene_payload(), "speed": 50, "reach": 10, "weaponId": "longsword"})
+    assert ctx.speed_steps == 10
+    assert ctx.reach_cells == 2.0
+    assert ctx.weapon_id == "longsword"
+
+
+def test_hostile_rules():
+    # босс (-2) воюет с 1; друзья (-1), нейтральные (0) и мёртвые — не цели
+    npcs = [
+        make_npc("A", 0, 0, disposition=-2),
+        make_npc("P", 100, 0, disposition=1),
+        make_npc("M", 150, 0, disposition=-1),
+        make_npc("N", 200, 0, disposition=0),
+        make_npc("D", 250, 0, disposition=1, hp=0),
+    ]
+    ctx = BattleContext.from_payload(make_scene_payload(npcs=npcs))
+    assert [t.id for t in ctx.hostile_targets()] == ["P"]
+
+
+def test_explicit_target_added_to_hostiles():
+    # target_id из запроса становится кандидатом, даже если формально нейтрален
+    npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("N", 200, 0, disposition=0)]
+    payload = {**make_scene_payload(npcs=npcs), "token": "N"}
+    ctx = BattleContext.from_payload(payload)
+    assert [t.id for t in ctx.hostile_targets()] == ["N"]

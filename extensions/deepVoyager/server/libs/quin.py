@@ -5,7 +5,7 @@ import heapq
 from typing import List, Dict, Tuple
 
 class SimplePathfinder:
-    """Только ортогональные шаги (4 направления)."""
+    """A* по 8 направлениям; диагональ = 1 клетка хода, углы стен не протискиваются."""
 
     def __init__(self, scene_data: dict):
         self.gs = scene_data["scene"]["gridSize"]
@@ -32,13 +32,11 @@ class SimplePathfinder:
                 npc["x"], npc["y"], npc["width"], npc["height"]
             )
 
-        # 4 направления
-        self.dirs = [(-1,0), (1,0), (0,-1), (0,1)]
+        # 8 направлений; диагональ стоит 1 клетку (базовое правило D&D 5e)
+        self.dirs = [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)]
         self.dir_names = {
-            (-1,0): "up",
-            (1,0): "down",
-            (0,-1): "left",
-            (0,1): "right"
+            (-1,0): "up", (1,0): "down", (0,-1): "left", (0,1): "right",
+            (-1,-1): "upleft", (-1,1): "upright", (1,-1): "downleft", (1,1): "downright",
         }
 
     # -----------------------------------------------------------------
@@ -79,7 +77,7 @@ class SimplePathfinder:
         return x1 < x2 + w2 and x1 + w1 > x2 and y1 < y2 + h2 and y1 + h1 > y2
 
     # -----------------------------------------------------------------
-    def _cell_valid(self, r, c, ignore_npc_id: str = None) -> bool:
+    def _cell_valid(self, r, c, ignore_npc_id: str = None, skip_npcs: bool = False) -> bool:
         """Клетка свободна для занятия (без учёта лучей)."""
         x, y, w, h = self._cell_rect(r, c)
         # границы
@@ -89,16 +87,20 @@ class SimplePathfinder:
         for seg in self.walls:
             if self._segment_rect_intersect(seg[0][0], seg[0][1], seg[1][0], seg[1][1], x, y, w, h):
                 return False
-        # другие NPC
-        for nid, (rx, ry, rw, rh) in self.npc_rects.items():
+        # другие NPC (skip_npcs — проверку считают только стены, для угол-правила)
+        for nid, (rx, ry, rw, rh) in ([] if skip_npcs else self.npc_rects.items()):
             if nid == ignore_npc_id:
                 continue
             if self._rect_rect_overlap(x, y, w, h, rx, ry, rw, rh):
                 return False
         return True
 
-    def _edge_valid(self, r1, c1, r2, c2, ignore_npc_id: str = None) -> bool:
-        """Переход центра из клетки в клетку (отрезок не пересекает стены и NPC)."""
+    def _edge_valid(self, r1, c1, r2, c2, ignore_ids: tuple = ()) -> bool:
+        """Переход центра из клетки в клетку (отрезок не пересекает стены и NPC).
+
+        ignore_ids — id токенов, чьи прямоугольники не считаем препятствием
+        (стартовый и целевой: выход из своей клетки и вход в клетку цели).
+        """
         p1 = self._center(r1, c1)
         p2 = self._center(r2, c2)
         # стены
@@ -107,7 +109,7 @@ class SimplePathfinder:
                 return False
         # NPC
         for nid, (rx, ry, rw, rh) in self.npc_rects.items():
-            if nid == ignore_npc_id:
+            if nid in ignore_ids:
                 continue
             if self._segment_rect_intersect(p1[0], p1[1], p2[0], p2[1], rx, ry, rw, rh):
                 return False
@@ -131,7 +133,6 @@ class SimplePathfinder:
         # стартовая клетка должна быть свободна (игнорируем самого себя)
         if not self._cell_valid(start[0], start[1], ignore_npc_id=src_id):
             return []
-
         open_set = [(0.0, 0.0, start)]
         came_from: Dict[Tuple[int,int], Tuple[int,int]] = {}
         g_score = {start: 0.0}
@@ -140,7 +141,6 @@ class SimplePathfinder:
             f, g, (cr, cc) = heapq.heappop(open_set)
             if g > g_score.get((cr, cc), math.inf):
                 continue
-
             if mode == "direct" and (cr, cc) == end:
                 if self._cell_valid(cr, cc, ignore_npc_id=tgt_id):
                     return self._reconstruct(came_from, (cr, cc))
@@ -153,23 +153,25 @@ class SimplePathfinder:
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                     continue
 
+                # правило углов D&D 5e: диагональ требует проходимости обеих ортогоналей
+                if dr and dc and not (self._cell_valid(cr, nc, skip_npcs=True)
+                                      and self._cell_valid(nr, cc, skip_npcs=True)):
+                    continue
                 # конечная клетка
                 ign_cell = tgt_id if (nr, nc) == end else None
                 if not self._cell_valid(nr, nc, ign_cell):
                     continue
-
-                # ребро перехода
-                ign_edge = src_id if (cr, cc) == start else (tgt_id if (nr, nc) == end else None)
-                if not self._edge_valid(cr, cc, nr, nc, ign_edge):
+                # ребро перехода: не мешают и стартовый токен, и цель
+                if not self._edge_valid(cr, cc, nr, nc,
+                                        (src_id if (cr, cc) == start else None,
+                                         tgt_id if (nr, nc) == end else None)):
                     continue
-
-                cost = 1.0   # все шаги равны
-                tent_g = g + cost
+                tent_g = g + 1.0   # любой шаг (в т.ч. диагональ) = 1 клетка (база 5e)
                 if tent_g < g_score.get((nr, nc), math.inf):
                     came_from[(nr, nc)] = (cr, cc)
                     g_score[(nr, nc)] = tent_g
-                    # Манхэттенская эвристика (без диагоналей)
-                    h = abs(nr - end[0]) + abs(nc - end[1])
+                    # Эвристика Чебышёва: минимум шагов при 8 направлениях
+                    h = max(abs(nr - end[0]), abs(nc - end[1]))
                     heapq.heappush(open_set, (tent_g + h, tent_g, (nr, nc)))
 
         return []

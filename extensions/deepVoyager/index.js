@@ -37,7 +37,6 @@ export function init() {
 
         if (token.actor?.system?.attributes?.hp == 0) return log.info('Актер мертв');
         if (token.actor?.type !== 'npc') return log.info('это не НПС');
-        if (game.paused) return log.info('игра на паузе');
         log.info(token);
 
         // ---------- 1. Данные текущего токена ----------
@@ -89,7 +88,15 @@ export function init() {
 
         // ---------- 4. Запрос к ИИ ----------
         log.info('============>Отправляю запрос',data.name);
-        let actions = await getAction(data);
+        // Пункт 4: сначала собственный расчёт /plan (первый видимый враг + первое equipped-оружие),
+        // пустой план/ошибка — прежний путь через LLM getAction(). Боссом (-2) по-прежнему рулит LLM/DM.
+        let actions = [];
+        if (data.disposition !== -2) {
+            const enemy = data.enemies[0];
+            const weapon = availableActions.find(a => a.type === 'weapon' || a.type === 'equipment');
+            actions = await api.getPlanActions(token, enemy ? enemy.id : null, currentData.speed, weapon ? weapon.id : null);
+        }
+        if (!actions.length) actions = await getAction(data);
 
         let limit = {
             move: data.baseMove,
@@ -214,25 +221,60 @@ export function init() {
     }
 
     // === Хуки ===
+
+    // Обёртка ручного хода (кнопка ▶ / api.combatTurn из консоли): защита от повторного входа.
+    let turnInProgress = false;
+
+    async function manualCombatTurn() {
+        if (turnInProgress) return log.info('Ход уже выполняется, не торопи');
+        turnInProgress = true;
+        try {
+            await combatTurn();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            turnInProgress = false;
+        }
+    }
+
     Hooks.on("updateCombat", async (combat, combatant) => {
-        await combatTurn()
+        //await combatTurn()
     });
     Hooks.on("combatRound", async (combat, combatant) => {
-        await combatTurn()
+        //await combatTurn()
     });
 
-    addGMButton();
+    addGMButton(manualCombatTurn);
 
     Hooks.on("renderCombatTracker", (app, html, data) => {
         // Ваша функция addGMButton, но с поиском кнопки внутри текущего html
         if (html.find("#custom-text-save-btn").length) return;
-        addGMButton();
+        addGMButton(manualCombatTurn);
     });
 
 
 
     // Создаём API объект
     const api = {
+        // Собственный расчёт хода (сервер /plan, пункт 4 todo.md). Ошибка/пусто -> [].
+        getPlanActions: async (srcToken, targetId, speed, weaponId) => {
+            try {
+                const data = api.getAllData();
+                const response = await fetch('http://localhost:9999/plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({ src: srcToken.id, token: targetId, speed, weaponId, data }),
+                }).then(r => r.json());
+
+                if (response.error) log.error('plan:', response.error);
+                log.info('plan actions:', response.actions || []);
+                return response.actions || [];
+            } catch (e) {
+                log.error('Сервер :9999/plan недоступен', e);
+                return [];
+            }
+        },
+
         testPath: async () => {
             const selected = canvas.tokens.controlled;
             let currentToken = null;
@@ -392,5 +434,6 @@ export function init() {
     };
 
     // Сохраняем API в глобальный объект модуля
+    api.combatTurn = manualCombatTurn; // ручной запуск хода из консоли: game.modules.get("biyk_ext").api.combatTurn()
     game.modules.get("biyk_ext").api = api;
 }

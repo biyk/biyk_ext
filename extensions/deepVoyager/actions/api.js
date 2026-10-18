@@ -18,11 +18,18 @@ export async function getAction(data) {
     }
 
 
-    let response = await fetch(AI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ text: prompt })
-    }).then(r => r.json());
+    let response;
+    try {
+        response = await fetch(AI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({ text: prompt })
+        }).then(r => r.json());
+    } catch (e) {
+        // Сервер :9999 не запущен/не ответил — ход не должен зависать на необработанной ошибке
+        log.error('Сервер :9999/ask недоступен', e);
+        return [];
+    }
     
     log.info('AI Response:', response);
     let actions = parseResponse(response);

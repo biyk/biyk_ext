@@ -10,18 +10,18 @@ AI-подсистема модуля `biyk_ext`: управление NPC в б�
 - Без запущенного сервера `localhost:9999` ход NPC падает с ошибкой fetch — `getAction()` не обёрнут в try/catch.
 - План развития — в `todo.md` (server, TDD-расчёт путей своим кодом, очковая система, playground, долгосрочное планирование).
 - Запуск сервера: из `server/` выполнить `.venv\Scripts\python.exe server.py` (порт 9999, конфиг в `server/.env`, пакеты — только в `.venv`).
-- Тесты сервера (TDD, шаг 3 плана): из `server/` — `.venv\Scripts\python.exe -m pytest tests`; новые классы — в `planner/`, файл ≤200 строк.
+- Тесты сервера (TDD): из `server/` — `.venv\Scripts\python.exe -m pytest tests`; собственный расчёт хода — `planner/` (шаг 4: перебор целей/маршрутов, очки, лимит 5 с), файл ≤200 строк.
 - Пересобрать оглавление: `Select-String -Path agents.md -Pattern '^#{1,3} '` и обновить диапазоны строк ниже.
 
 ## Оглавление
 | # | Раздел | Строки |
 |---|--------|--------|
 | 1 | [Архитектура и поток выполнения](#1-архитектура-и-поток-выполнения) | 28–49 |
-| 2 | [Структура файлов](#2-структура-файлов) | 50–86 |
-| 3 | [Контракт данных и формат действий](#3-контракт-данных-и-формат-действий) | 87–114 |
-| 4 | [Внешние зависимости](#4-внешние-зависимости) | 115–126 |
-| 5 | [Паттерны и особенности](#5-паттерны-и-особенности) | 127–144 |
-| 6 | [Известные проблемы / долг](#6-известные-проблемы--долг) | 145–157 |
+| 2 | [Структура файлов](#2-структура-файлов) | 50–88 |
+| 3 | [Контракт данных и формат действий](#3-контракт-данных-и-формат-действий) | 89–122 |
+| 4 | [Внешние зависимости](#4-внешние-зависимости) | 123–135 |
+| 5 | [Паттерны и особенности](#5-паттерны-и-особенности) | 136–153 |
+| 6 | [Известные проблемы / долг](#6-известные-проблемы--долг) | 154–166 |
 
 ---
 
@@ -68,19 +68,21 @@ deepVoyager/
 │   ├── messageBox.js   # addGMButton(): кнопка в трекере боя, gmNotes в localStorage
 │   └── dm.js           # пустой файл-заглушка
 └── server/             # Python-сервер (Flask), порт 9999 — порт функции прототипа DeepWeb (шаг 2 todo.md)
-    ├── server.py       # /ask (LLM-действия), /path (расчёт пути), /plan (свой план, шаг 3: пока {"actions": []})
+    ├── server.py       # /ask (LLM-действия), /path (расчёт пути), /plan (свой план хода, шаги 3–4)
     ├── requirements.txt# flask, flask-cors, websocket-client, python-dotenv (ставить только в .venv!)
     ├── requirements-dev.txt # pytest — тоже в .venv
     ├── .venv/          # виртуальное окружение (в git не попадает)
     ├── .env / .env.example # SERVER_PORT, CDP_PORT, BRAVE_PATH, DEEPSEEK_PROFILE_DIR, DEEPSEEK_USE_EXPERT
     ├── libs/quin.py    # SimplePathfinder (A*, 4 направления) — перенесён из прототипа без изменений
-    ├── planner/        # собственный расчёт хода вместо LLM (шаг 3), иерархия классов:
-    │   ├── service.py  # PlannerService — точка входа /plan; plan() пока возвращает []
-    │   ├── context.py  # BattleContext/Scene/Token/Wall — разбор и валидация payload (ValueError → 400)
+    ├── planner/        # собственный расчёт хода вместо LLM (шаги 3–4), иерархия классов:
+    │   ├── service.py  # PlannerService — точка входа /plan; перебор с лимитом 5 с, лучший по очкам
+    │   ├── context.py  # BattleContext/Scene/Token/Wall — разбор payload, speed/reach/weaponId, hostile_targets()
     │   ├── action.py   # Action + фабрики; JS-контракт move/target/use/message, 8 направлений
+    │   ├── geometry.py # клетки, векторы направлений, расстояние по прямой, within_reach (с допуском диагонали)
+    │   ├── strategy.py # StrategyEnumerator — перебор кандидатов (цель × direct/los × атака), ленивый генератор
     │   ├── pathfinding.py # PathfindingService — адаптер над quin (find_path/path_to_target)
-    │   └── scoring.py  # Scorer + константы очков шагов 4–5 (заглушка, растёт в шаге 4)
-    ├── tests/          # pytest-покрытие каркаса (45 тестов): модель, pathfinding, scoring, сервис, HTTP-роуты
+    │   └── scoring.py  # Scorer: сближение 1 очко/клетка, атака 30; DAMAGE_PENALTY — задел шага 5
+    ├── tests/          # pytest-покрытие (68 тестов): геометрия, модель, перебор, очки, сервис, HTTP-роуты
     └── src/            # CDP-мост к DeepSeek через Brave: browser.py (пути/порт из env), page.py, deepseek.py, timer.py
 ```
 
@@ -108,16 +110,23 @@ message/<язык>/<текст>
 где `npcs[]` — все токены с центром/размером/HP/disposition, `walls[]` — стены/двери/окна
 с точками A/B и состояниями closed/locked, полями move/sight.
 
-**Эндпоинт `/plan`** (шаг 3 плана): тот же payload, что и `/path` (+необязательный `mode`);
-ответ `{"actions": [{action, conf}…]}` — форма совпадает с parseResponse() для `/ask`,
-чтобы step 5 combatTurn() можно было перевести на него без правок. Сейчас всегда `[]`.
+**Эндпоинт `/plan`** (шаги 3–4 плана): payload как у `/path` + необязательные
+`speed` (футы за ход, по умолчанию 30), `reach` (футы атаки, 5), `weaponId` (чем атаковать;
+без него атака не планируется). Ответ `{"actions": [{action, conf}…]}` — форма совпадает
+с parseResponse() для `/ask`, чтобы перевод combatTurn() на свой расчёт не требовал правок JS.
+Логика: StrategyEnumerator перебирает живых врагов (hostile_targets) × режимы quin
+`direct`/`los`, усекает маршрут до speed шагов, не позволяет встать на клетку цели
+(последний шаг убирается, атака с соседней), добавляет `use`, если финальная клетка достает цель;
+PlannerService выбирает кандидата с максимумом очков Scorer'а, при превышении лимита 5 с
+фиксируется лучший из уже рассмотренных. Если врагов/ходов нет — `{"actions": []}`.
 
 ## 4. Внешние зависимости
 
 - **Сервер `http://localhost:9999`** — свой, в `server/` (Flask, Python 3.11 в `.venv`):
   эндпоинты `/ask` (LLM-действия через CDP-мост к chat.deepseek.com в Brave),
-  `/path` (A* по сетке, `libs/quin.py`) и `/plan` (собственный расчёт, `planner/`, шаг 3 — пока пустой массив).
-  Порт функции — прототип `C:\Users\b5\Desktop\DeepWeb` (шаг 2 плана); развитие — шаг 4 (перебор стратегий, очки, лимит 5 с).
+  `/path` (A* по сетке, `libs/quin.py`) и `/plan` (собственный расчёт, `planner/`, шаги 3–4:
+  перебор целей и маршрутов с очками и лимитом 5 с; JS-сторона на `/plan` пока не переведена).
+  Порт функции — прототип `C:\Users\b5\Desktop\DeepWeb` (шаг 2 плана).
   Профиль браузера с сессией DeepSeek переиспользуется из DeepWeb через `DEEPSEEK_PROFILE_DIR` в `.env`.
 - **Модуль Polyglot** — для `message/…` (селектор `#polyglot select` для выбора языка).
 - **Система dnd5e** — `actor.system.attributes.*`, `item.system.equipped/uses/…`, `item.use()`.

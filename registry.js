@@ -135,6 +135,10 @@ export const EXTENSIONS = {
     "weather_by_day_time": {
         label: "Погода по времени суток",
         reload: true
+    },
+    "stas_char": {
+        label: "Эван чародей",
+        reload: true
     }
 
 };

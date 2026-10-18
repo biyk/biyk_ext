@@ -18,9 +18,10 @@ DIR_VECTORS: Dict[str, Cell] = {
     "downright": (1, 1),
 }
 
-# Диагональ соседней клетки = 1.41 клетки; допуск 1.5 — чтобы melee-атака
-# считалась возможной против соседей по диагонали (как в D&D 5e).
-DIAGONAL_REACH_TOLERANCE = 1.5
+# Допуск в полклетки: дистанцию меряем между центрами клеток, а в D&D 5e
+# считают от края токена — плюс диагональный сосед (1.41) должен попадать
+# в reach 1 клетка (как и в utils/combat.js для melee-атак).
+REACH_GRID_TOLERANCE = 0.5
 
 
 def apply_moves(start: Cell, directions: Iterable[str]) -> Cell:
@@ -41,5 +42,5 @@ def cell_distance(a: Cell, b: Cell) -> float:
 
 
 def within_reach(a: Cell, b: Cell, reach_cells: float) -> bool:
-    """Достанет ли атака из клетки a до клетки b при дальности reach_cells."""
-    return cell_distance(a, b) <= reach_cells * DIAGONAL_REACH_TOLERANCE
+    """Достанет ли атака из клетки a в клетку b при дальности reach_cells."""
+    return cell_distance(a, b) <= reach_cells + REACH_GRID_TOLERANCE

@@ -46,6 +46,90 @@ export function buildItemAction(item) {
 }
 
 /**
+ * Вооружение токена для сервера /plan (поле payload["weapons"]).
+ * Уверенная дистанция = range.value (для ближнего боя 5 футов, 10 — если есть
+ * досягаемость), сомнительная = range.long (у ближнего боя совпадает с уверенной).
+ * ranged — дальнобойное: выстрел в упор сервер считает сомнительным.
+ * properties — коды свойств dnd5e (thr/rch/fin/…); метательное (thr) в упор бьёт уверенно.
+ * @param {Token} token
+ * @returns {Array<{id,name,damage,attackBonus,sureFt,doubtFt,ranged,properties}>}
+ */
+export function buildWeapons(token) {
+    const weapons = [];
+    for (let item of token?.actor?.items ?? []) {
+        if (!isWeaponAttack(item)) continue;
+        weapons.push(weaponEntry(item));
+    }
+    return weapons;
+}
+
+/**
+ * Можно ли этим предметом атаковать как оружием? Тип `weapon` берём всегда,
+ * остальное — если система помечает его как атаку оружием (actionType mwak/rwak):
+ * так попадают природное оружие NPC (укус/когти), которое в dnd5e 3.x оформлено как feat.
+ * @param {Item} item
+ * @returns {boolean}
+ */
+function isWeaponAttack(item) {
+    if (item.system.equipped === false) return false;   // не в руках — не бьём (у feats этого поля нет)
+    if (item.type === 'weapon') return true;
+    return ['mwak', 'rwak'].includes(item.system.actionType ?? item.system.attackType);
+}
+
+function weaponEntry(item) {
+    const range = (typeof item.system.range === 'object' && item.system.range) || {};
+    const sure = Math.max(Number(range.value) || 0, reachFt(item));
+    const doubt = Math.max(Number(range.long) || 0, sure);
+    return {
+        id: item.id,
+        name: item.name,
+        damage: item.system.damage?.parts?.[0]?.[0] || null,
+        attackBonus: attackBonus(item),
+        sureFt: sure,
+        doubtFt: doubt,
+        ranged: isRanged(item),
+        properties: propertyList(item),
+    };
+}
+
+/** Свойства предмета-оружия списком кодов: в 3.x это Set, в 2.x — объект {код: true}. */
+function propertyList(item) {
+    const properties = item.system.properties;
+    if (properties instanceof Set) return [...properties];
+    if (Array.isArray(properties)) return properties.filter(Boolean);
+    if (properties && typeof properties === 'object') {
+        return Object.keys(properties).filter(key => properties[key]);
+    }
+    return [];
+}
+
+/**
+ * Дальнобойное ли: тип атаки системы (rwak), фолбэк — ненулевая дальность.
+ * Метательное (свойство thr) не считается: бросок в упор идёт без помехи.
+ */
+function isRanged(item) {
+    if (propertyList(item).includes('thr')) return false;
+    const at = item.system.actionType ?? item.system.attackType;
+    if (at) return at === 'rwak';
+    const range = item.system.range || {};
+    return (Number(range.value) || 0) > 5 || (Number(range.long) || 0) > 0;
+}
+
+/** Бонус атаки: система считает сама и кладёт в labels.toHit («+5»), иначе — магический бонус. */
+function attackBonus(item) {
+    const fromLabel = parseInt(item.labels?.toHit ?? item.labels?.modifier ?? '', 10);
+    if (Number.isFinite(fromLabel)) return fromLabel;
+    return Number(item.system.magicalBonus ?? item.system.magicBonus ?? 0) || 0;
+}
+
+/** Досягаемость ближнего боя в футах: 5 без свойства reach, иначе 10. */
+function reachFt(item) {
+    if (propertyList(item).includes('rch')) return 10;
+    const explicit = Number(item.reach);
+    return Number.isFinite(explicit) && explicit > 0 ? explicit : 5;
+}
+
+/**
  * Вычисляет коэффициент схожести двух строк (0..1)
  * Использует расстояние Левенштейна + нормализацию регистра
  * @param {string} realId - настоящий ID (эталон)

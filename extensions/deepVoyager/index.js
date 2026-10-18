@@ -3,7 +3,7 @@ import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
 import {sendMessage} from "./actions/message.js";
-import {getStatus, buildItemAction} from "./utils/help.js";
+import {getStatus, buildItemAction, buildWeapons} from "./utils/help.js";
 import {getCurrentTokenData, getVisibleCombatTokens, groupTokensByDisposition} from "./utils/combat.js";
 import {log} from "./utils/logger.js";
 import {addGMButton} from "./utils/messageBox.js";
@@ -88,13 +88,15 @@ export function init() {
 
         // ---------- 4. Запрос к ИИ ----------
         log.info('============>Отправляю запрос',data.name);
-        // Пункт 4: сначала собственный расчёт /plan (первый видимый враг + первое equipped-оружие),
-        // пустой план/ошибка — прежний путь через LLM getAction(). Боссом (-2) по-прежнему рулит LLM/DM.
+        // Пункт 4: сначала собственный расчёт /plan (первый видимый враг + всё equipped-оружие,
+        // сервер сам выбирает чем и с какой клетки бить), пустой план/ошибка — прежний путь LLM.
         let actions = [];
         if (data.disposition !== -2) {
             const enemy = data.enemies[0];
-            const weapon = availableActions.find(a => a.type === 'weapon' || a.type === 'equipment');
-            actions = await api.getPlanActions(token, enemy ? enemy.id : null, currentData.speed, weapon ? weapon.id : null);
+            const weapons = buildWeapons(token);
+            log.info('вооружение:', weapons.map(w => `${w.name} ${w.sureFt}/${w.doubtFt}ф`
+                + `${w.properties?.includes('thr') ? ' (метат)' : (w.ranged ? ' (дальнобой)' : '')}`));
+            actions = await api.getPlanActions(token, enemy ? enemy.id : null, currentData.speed, weapons);
         }
         if (!actions.length) actions = await getAction(data);
 
@@ -257,13 +259,14 @@ export function init() {
     // Создаём API объект
     const api = {
         // Собственный расчёт хода (сервер /plan, пункт 4 todo.md). Ошибка/пусто -> [].
-        getPlanActions: async (srcToken, targetId, speed, weaponId) => {
+        // weapons — массив вооружения токена (см. utils/help.js buildWeapons).
+        getPlanActions: async (srcToken, targetId, speed, weapons) => {
             try {
                 const data = api.getAllData();
                 const response = await fetch('http://localhost:9999/plan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json; charset=utf-8' },
-                    body: JSON.stringify({ src: srcToken.id, token: targetId, speed, weaponId, data }),
+                    body: JSON.stringify({ src: srcToken.id, token: targetId, speed, weapons, data }),
                 }).then(r => r.json());
 
                 if (response.error) log.error('plan:', response.error);

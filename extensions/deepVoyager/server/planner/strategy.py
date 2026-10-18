@@ -1,13 +1,14 @@
 # planner/strategy.py — перебор сценариев хода (пункт 4 todo.md):
 # каждая живая враждебная цель × алгоритм маршрута (direct/los) × атака в конце.
-# Маршрут усекается скоростью хода; атака добавляется, только если финальная
-# клетка достает цель (reach) и в запросе указан weaponId.
+# Маршрут усекается скоростью хода; атака добавляется, только если из финальной
+# клетки туда достает хотя бы одно оружие (зону выбирает planner/armament.py).
 from dataclasses import dataclass
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 from planner.action import Action, move_action, target_action, use_action
+from planner.armament import Weapon, best_attack
 from planner.context import BattleContext
-from planner.geometry import apply_moves, within_reach
+from planner.geometry import apply_moves, cell_distance
 from planner.pathfinding import PathfindingService
 from planner.scoring import Scorer
 
@@ -46,15 +47,17 @@ class StrategyEnumerator:
                     path = path[:-1]
                 actions = [target_action(enemy.id)]
                 actions += [move_action(d) for d in path]
-                if self._can_attack(enemy, path):
-                    actions.append(use_action(self._ctx.weapon_id))
+                strike = self._attack(enemy, path)
+                if strike is not None:
+                    actions.append(use_action(strike.id))
                 yield Candidate(
                     kind=mode, target_id=enemy.id, actions=actions,
                     score=self._scorer.score(self._ctx, actions),
                 )
 
-    def _can_attack(self, enemy, path: List[str]) -> bool:
-        if not self._ctx.weapon_id:
-            return False
+    def _attack(self, enemy, path: List[str]) -> Optional[Weapon]:
+        """Оружие для атаки цели из финальной клетки маршрута (None — не достать)."""
         end = apply_moves(self._ctx.src_cell, path)
-        return within_reach(end, self._ctx.cell_of(enemy), self._ctx.reach_cells)
+        found = best_attack(self._ctx.weapons,
+                            cell_distance(end, self._ctx.cell_of(enemy)))
+        return found[0] if found else None

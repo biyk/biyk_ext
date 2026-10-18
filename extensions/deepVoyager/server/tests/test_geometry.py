@@ -2,7 +2,8 @@
 import pytest
 
 from planner.geometry import (
-    DIR_VECTORS, FEET_PER_CELL, apply_moves, cell_distance, within_reach,
+    DIR_VECTORS, FEET_PER_CELL, REACH_GRID_TOLERANCE, apply_moves, cell_distance,
+    within_reach,
 )
 
 
@@ -34,8 +35,11 @@ def test_cell_distance_is_euclidean():
 
 
 def test_within_reach_includes_diagonal_neighbours():
+    # допуск аддитивный: полклетки (мерим от края токена, а не от центра)
+    assert REACH_GRID_TOLERANCE == 0.5
     assert within_reach((0, 0), (0, 1), 1.0)      # ортогональный сосед
     assert within_reach((0, 0), (1, 1), 1.0)      # диагональный сосед (1.41)
     assert not within_reach((0, 0), (0, 2), 1.0)  # два клетки — мимо
-    assert within_reach((0, 0), (0, 3), 2.0)      # reach 2 клетки достанет (0,2)
+    assert within_reach((0, 0), (0, 2), 2.0)      # reach 2 клетки достает (0,2)
+    assert not within_reach((0, 0), (0, 3), 2.0)  # 15 футов вне 10-футовой досягаемости
     assert not within_reach((0, 0), (0, 4), 2.0)

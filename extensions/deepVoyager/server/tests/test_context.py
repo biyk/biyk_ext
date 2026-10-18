@@ -1,7 +1,7 @@
 # tests/test_context.py — разбор и валидация payload в доменную модель.
 import pytest
 
-from conftest import make_npc, make_scene_payload, make_wall
+from conftest import make_npc, make_scene_payload, make_wall, make_weapon
 from planner.context import BattleContext
 
 
@@ -70,14 +70,29 @@ def test_src_property_raises_when_missing(scene_payload):
 def test_defaults_and_optional_step4_fields():
     ctx = BattleContext.from_payload(make_scene_payload())
     assert ctx.speed_steps == 6      # 30 футов / 5
-    assert ctx.reach_cells == 1.0    # 5 футов
-    assert ctx.weapon_id is None
+    assert ctx.weapons == ()         # без оружия атака невозможна
 
     ctx = BattleContext.from_payload(
-        {**make_scene_payload(), "speed": 50, "reach": 10, "weaponId": "longsword"})
+        {**make_scene_payload(weapons=[make_weapon("shortbow", sure_ft=30, doubt_ft=120)]),
+         "speed": 50})
     assert ctx.speed_steps == 10
-    assert ctx.reach_cells == 2.0
-    assert ctx.weapon_id == "longsword"
+    assert [w.id for w in ctx.weapons] == ["shortbow"]
+    assert (ctx.weapons[0].sure_ft, ctx.weapons[0].doubt_ft) == (30.0, 120.0)
+    assert ctx.weapons[0].attack_bonus == 2 and ctx.weapons[0].damage == "1d6+2"
+    assert ctx.weapon("shortbow") is ctx.weapons[0]
+    assert ctx.weapon("ghost") is None
+
+
+def test_weapon_without_id_skipped():
+    ctx = BattleContext.from_payload(
+        make_scene_payload(weapons=[{"name": "мусор"}, make_weapon("bite")]))
+    assert [w.id for w in ctx.weapons] == ["bite"]
+
+
+def test_melee_defaults_sure_equals_doubt():
+    # у ближнего боя сомнительная == уверенная (5 футов = 1 клетка)
+    ctx = BattleContext.from_payload(make_scene_payload(weapons=[make_weapon("club")]))
+    assert (ctx.weapons[0].sure_ft, ctx.weapons[0].doubt_ft) == (5.0, 5.0)
 
 
 def test_hostile_rules():
@@ -99,3 +114,19 @@ def test_explicit_target_added_to_hostiles():
     payload = {**make_scene_payload(npcs=npcs), "token": "N"}
     ctx = BattleContext.from_payload(payload)
     assert [t.id for t in ctx.hostile_targets()] == ["N"]
+
+
+def test_token_keeps_name():
+    # Имя токена нужно для логов: «праща → Стражник (1)» вместо непонятного id.
+    npcs = [make_npc("A", 0, 0, disposition=-1, name="Кобольд"),
+            make_npc("B", 450, 0, disposition=1, name="Стражник (1)")]
+    ctx = BattleContext.from_payload(make_scene_payload(npcs=npcs))
+    assert ctx.token("B").name == "Стражник (1)"
+    assert ctx.src.name == "Кобольд"
+
+    # Старый клиент без поля name: имя остаётся пустым, а не падает
+    legacy = [make_npc("A", 0, 0, disposition=-1), make_npc("B", 450, 0, disposition=1)]
+    for entry in legacy:
+        entry.pop("name")
+    ctx = BattleContext.from_payload(make_scene_payload(npcs=legacy))
+    assert ctx.token("B").name == ""

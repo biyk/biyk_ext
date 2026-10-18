@@ -1,5 +1,5 @@
 # tests/test_strategy.py — перебор кандидатов StrategyEnumerator (пункт 4).
-from conftest import make_npc, make_scene_payload
+from conftest import make_npc, make_scene_payload, make_weapon
 from planner.context import BattleContext
 from planner.strategy import PATH_MODES, StrategyEnumerator
 
@@ -30,7 +30,7 @@ def test_direct_path_truncated_to_speed_and_scored():
     assert len(moves) == 6                       # speed 30 = 6 клеток
     assert direct.actions[0].action == "target" and direct.actions[0].conf == {"id": "B"}
     assert direct.score == 6.0                   # 9 -> 3 клетки по прямой
-    assert not any(a.action == "use" for a in direct.actions)  # weaponId не задан
+    assert not any(a.action == "use" for a in direct.actions)  # оружия нет — атаки нет
 
 
 def test_attack_appended_when_final_cell_reaches_target():
@@ -38,7 +38,7 @@ def test_attack_appended_when_final_cell_reaches_target():
     # нельзя, шаг срезается; атака возможна с места: 0 сближения + 30
     npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("B", 50, 0, disposition=1)]
     ctx = BattleContext.from_payload(
-        {**make_scene_payload(npcs=npcs), "speed": 50, "weaponId": "sword"})
+        {**make_scene_payload(npcs=npcs, weapons=[make_weapon("sword")]), "speed": 50})
     direct = next(c for c in candidates_of(ctx) if c.kind == "direct")
     assert [a.action for a in direct.actions] == ["target", "use"]
     assert direct.actions[-1].conf == {"itemId": "sword"}
@@ -49,7 +49,7 @@ def test_diagonal_neighbour_is_within_melee_reach():
     # B по диагонали (клетка (1,1)): после двух шагов прямая 0 — атака возможна
     npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("B", 50, 50, disposition=1)]
     ctx = BattleContext.from_payload(
-        {**make_scene_payload(npcs=npcs), "speed": 50, "weaponId": "sword"})
+        {**make_scene_payload(npcs=npcs, weapons=[make_weapon("sword")]), "speed": 50})
     direct = next(c for c in candidates_of(ctx) if c.kind == "direct")
     assert direct.actions[-1].action == "use"
 

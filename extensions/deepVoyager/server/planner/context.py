@@ -3,10 +3,12 @@
 # Строится из payload эндпоинтов /plan и /path — это формат api.getAllData()
 # со стороны Foundry (extensions/deepVoyager/index.js):
 # { src, token, data: { scene: {...}, npcs: [...], walls: [...] } }
-# Опциональные поля шага 4: speed (футы/ход), reach (футы), weaponId (предмет атаки).
+# Опциональные поля шага 4: speed (футы за ход) и weapons (массив вооружения,
+# см. planner/armament.py — дальности уверенного/сомнительного попадания).
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from planner.armament import Weapon, parse_weapons
 from planner.geometry import FEET_PER_CELL, Cell
 
 
@@ -40,6 +42,7 @@ class Token:
     center_y: float
     disposition: int
     hp_current: int
+    name: str = ""      # имя из Foundry — только для логов, на решения не влияет
 
     @property
     def is_alive(self) -> bool:
@@ -71,11 +74,14 @@ class BattleContext:
     target_id: Optional[str]
     raw: Dict[str, Any]  # исходный payload.data — для адаптеров (libs.quin)
     speed_steps: int = 6           # шагов (клеток) за ход, speed_ft / 5
-    reach_cells: float = 1.0       # дальность атаки в клетках
-    weapon_id: Optional[str] = None  # чем атаковать (use/<itemId>)
+    weapons: Tuple[Weapon, ...] = ()  # чем атаковать; пусто — атаки нет
 
     def token(self, token_id: str) -> Optional[Token]:
         return next((t for t in self.tokens if t.id == token_id), None)
+
+    def weapon(self, weapon_id: str) -> Optional[Weapon]:
+        """Оружие по itemId из действия use (None, если такого нет)."""
+        return next((w for w in self.weapons if w.id == weapon_id), None)
 
     @property
     def src(self) -> Token:
@@ -146,6 +152,7 @@ class BattleContext:
                 center_y=float(center.get("y", n["y"] + n["height"] / 2)),
                 disposition=int(n.get("disposition", 0)),
                 hp_current=int(hp.get("current", 0)),
+                name=str(n.get("name") or ""),
             ))
         if not tokens:
             raise ValueError("No tokens in scene data")
@@ -166,6 +173,5 @@ class BattleContext:
             scene=scene, tokens=tuple(tokens), walls=tuple(walls),
             src_id=src_id, target_id=payload.get("token"), raw=data,
             speed_steps=int(float(payload.get("speed") or 30) // FEET_PER_CELL),
-            reach_cells=float(payload.get("reach") or 5) / FEET_PER_CELL,
-            weapon_id=payload.get("weaponId"),
+            weapons=parse_weapons(payload.get("weapons")),
         )

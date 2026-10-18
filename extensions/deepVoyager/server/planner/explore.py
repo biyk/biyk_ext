@@ -5,15 +5,18 @@
 #    путь к выбранной клетке кратчайший, поэтому движение не «прыгает»;
 #  • RandomExplorer — случайные легальные прогулки до дедлайна сервиса.
 # Валидация клеток переиспользуется из libs/quin.py (стены, занятость, углы).
-# Действия пока move/use/target — _candidate расширяем под новые типы действий.
+# Из каждой клетки подбираем лучшую атаку: враг × оружие × зона попадания,
+# поэтому «постоять и выстрелить сомнительно» против «подойти и рубить уверенно»
+# решается очками. Действия пока move/use/target — _candidate расширяем под новые.
 import random
 from typing import Dict, List, Optional, Tuple
 
 from planner.action import Action, move_action, target_action, use_action
+from planner.armament import SURE, best_attack
 from planner.context import BattleContext
-from planner.geometry import cell_distance, within_reach
+from planner.geometry import cell_distance
 from planner.pathfinding import PathfindingService
-from planner.scoring import Scorer
+from planner.scoring import ATTACK_DOUBT_POINT, ATTACK_POINT, Scorer
 from planner.strategy import Candidate
 
 Cell = Tuple[int, int]
@@ -64,14 +67,35 @@ def reachable_paths(pf, start: Cell, src_id: str, max_steps: int) -> Dict[Cell, 
     return paths
 
 
+def best_strike(ctx: BattleContext, cell: Cell, enemies):
+    """Лучшая атака из клетки: (враг, оружие) по максимуму очков, при равных — ближе.
+
+    None, если ни одно оружие ни до кого не достает — тогда кандидат без use.
+    """
+    options = []
+    for enemy in enemies:
+        dist = cell_distance(cell, ctx.cell_of(enemy))
+        found = best_attack(ctx.weapons, dist)
+        if found:
+            weapon, mode = found
+            points = ATTACK_POINT if mode == SURE else ATTACK_DOUBT_POINT
+            options.append(((points, -dist), enemy, weapon))
+    if not options:
+        return None
+    _key, enemy, weapon = max(options, key=lambda o: o[0])
+    return enemy, weapon
+
+
 def _candidate(ctx: BattleContext, scorer: Scorer, kind: str,
                cell: Cell, dirs: List[str], enemies) -> Candidate:
-    """Действия target -> move... -> атака (если цель в досягаемости) и их оценка."""
-    nearest = min(enemies, key=lambda e: cell_distance(cell, ctx.cell_of(e)))
+    """Действия target -> move... -> атака (если из клетки есть чем ударить)."""
+    strike = best_strike(ctx, cell, enemies)
+    nearest = strike[0] if strike else min(
+        enemies, key=lambda e: cell_distance(cell, ctx.cell_of(e)))
     actions: List[Action] = [target_action(nearest.id)]
     actions += [move_action(d) for d in dirs]
-    if ctx.weapon_id and within_reach(cell, ctx.cell_of(nearest), ctx.reach_cells):
-        actions.append(use_action(ctx.weapon_id))
+    if strike:
+        actions.append(use_action(strike[1].id))
     return Candidate(kind=kind, target_id=nearest.id, actions=actions,
                      score=scorer.score(ctx, actions))
 

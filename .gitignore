@@ -3,3 +3,20 @@ extensions/weather_by_day_time/temp/*
 extensions/weather_by_day_time/data/downloads/*
 extensions/weather_by_day_time/data/music/*
 extensions/weather_by_day_time/data/images/*
+
+# временные отладочные файлы модуля
+/temp/
+
+# артефакты Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# журнал запросов/ответов планировщика deepVoyager
+extensions/deepVoyager/server/logs/
+
+# генерируемые данные каталогизатора weather_by_day_time
+extensions/weather_by_day_time/data/sounds/
+extensions/weather_by_day_time/data/ydisk/tree.json
+extensions/weather_by_day_time/data/ydisk_catalog*
+extensions/weather_by_day_time/data/ydisk_state.json

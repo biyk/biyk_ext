@@ -548,6 +548,7 @@
   },
   {
     "day": 7,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/7.png",
     "calendar_date": "Alturiak 28, 1489 DR",
     "location": "Придорожный трактир",
     "event": "Жизнь приключенца»: нападение монстров (ночь)",
@@ -667,6 +668,7 @@
   },
   {
     "day": 8,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/8.png",
     "calendar_date": "Alturiak 29, 1489 DR",
     "location": "Открытая местность",
     "event": "",
@@ -769,6 +771,7 @@
   },
   {
     "day": 9,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/9.png",
     "calendar_date": "Alturiak 30, 1489 DR",
     "location": "Начало Полей Мёртвых",
     "event": "Золотой олень",
@@ -881,6 +884,7 @@
   },
   {
     "day": 10,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/10.png",
     "calendar_date": "Ches 1, 1489 DR",
     "location": "Поля Мёртвых (глубже)",
     "event": "Засада хобгоблинов",
@@ -993,6 +997,7 @@
   },
   {
     "day": 11,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/11.png",
     "calendar_date": "Ches 2, 1489 DR",
     "location": "Поля Мёртвых, курганы",
     "event": "",
@@ -1105,6 +1110,7 @@
   },
   {
     "day": 12,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/12.png",
     "calendar_date": "Ches 3, 1489 DR",
     "location": "Поля Мёртвых",
     "event": "Контрабанда",
@@ -1215,6 +1221,7 @@
   },
   {
     "day": 13,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/13.png",
     "calendar_date": "Ches 4, 1489 DR",
     "location": "Троллькло Форд",
     "event": "Переправа",
@@ -1322,6 +1329,7 @@
   },
   {
     "day": 14,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/14.png",
     "calendar_date": "Ches 5, 1489 DR",
     "location": "Гнилое Урочище",
     "event": "Грибной дождь",
@@ -1470,6 +1478,7 @@
   },
   {
     "day": 15,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/15.png",
     "calendar_date": "Ches 6, 1489 DR",
     "location": "Кхельдриввер",
     "event": "День отдыха",
@@ -1543,8 +1552,9 @@
   },
   {
     "day": 16,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/16.png",
     "calendar_date": "Ches 7, 1489 DR",
-    "location": "В обход Тролльих Холмов",
+    "location": "Тролльи Холмы",
     "event": "",
     "notes": "Погода: ветер, несущий запах гари с севера. Начинается долгий переход через холмы. Днём караван встречает группу угрюмых шахтёров, которые предупреждают, что «в холмах неспокойно, тролли проснулись». Ночь проходит в повышенной готовности. Разговоры у костра стихают. Все чувствуют, что цивилизация осталась далеко позади.",
     "miles": 15,
@@ -1662,6 +1672,7 @@
   },
   {
     "day": 17,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/17.png",
     "calendar_date": "Ches 8, 1489 DR",
     "location": "Предгорья",
     "event": "Гроза гор",
@@ -1775,6 +1786,7 @@
   },
   {
     "day": 18,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/18.png",
     "calendar_date": "Ches 9, 1489 DR",
     "location": "Перевал Трёх Копий",
     "event": "",
@@ -1882,6 +1894,7 @@
   },
   {
     "day": 19,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/19.png",
     "calendar_date": "Ches 10, 1489 DR",
     "location": "Обледенелый Карниз",
     "event": "",
@@ -1999,6 +2012,7 @@
   },
   {
     "day": 20,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/20.png",
     "calendar_date": "Ches 11, 1489 DR",
     "location": "У подножия Тролльбарк",
     "event": "",
@@ -2128,6 +2142,7 @@
   },
   {
     "day": 21,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/21.png",
     "calendar_date": "Ches 12, 1489 DR",
     "location": "Тролльбаркский лес",
     "event": "Придорожное гостеприимство",
@@ -2216,6 +2231,7 @@
   },
   {
     "day": 22,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/22.png",
     "calendar_date": "Ches 13, 1489 DR",
     "location": "Лесная стоянка",
     "event": "День отдыха",
@@ -2310,6 +2326,7 @@
   },
   {
     "day": 23,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/23.png",
     "calendar_date": "Ches 14, 1489 DR",
     "location": "Тролльбаркский лес",
     "event": "",
@@ -2417,6 +2434,7 @@
   },
   {
     "day": 24,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/24.png",
     "calendar_date": "Ches 15, 1489 DR",
     "location": "Поляна Четырёх Дубов",
     "event": "У всего есть цена» (кража)",
@@ -2510,6 +2528,7 @@
   },
   {
     "day": 25,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/25.png",
     "calendar_date": "Ches 16, 1489 DR",
     "location": "Драконье Копьё (замок)",
     "event": "Номеров нет",
@@ -2622,6 +2641,7 @@
   },
   {
     "day": 26,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/26.png",
     "calendar_date": "Ches 17, 1489 DR",
     "location": "Тролльбаркский лес",
     "event": "",
@@ -2729,6 +2749,7 @@
   },
   {
     "day": 27,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/27.png",
     "calendar_date": "Ches 18, 1489 DR",
     "location": "Вересковые Взгорья",
     "event": "",
@@ -2828,6 +2849,7 @@
   },
   {
     "day": 28,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/28.png",
     "calendar_date": "Ches 19, 1489 DR",
     "location": "Ущелье Шепчущих Скал",
     "event": "",
@@ -2940,6 +2962,7 @@
   },
   {
     "day": 29,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/29.png",
     "calendar_date": "Ches 20, 1489 DR",
     "location": "Путевой трактир",
     "event": "День отдыха",
@@ -3018,6 +3041,7 @@
   },
   {
     "day": 30,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/30.png",
     "calendar_date": "Ches 21, 1489 DR",
     "location": "Луга Белого Камня",
     "event": "",
@@ -3116,6 +3140,7 @@
   },
   {
     "day": 31,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/31.png",
     "calendar_date": "Ches 22, 1489 DR",
     "location": "Туманные Низины",
     "event": "",
@@ -3221,6 +3246,7 @@
   },
   {
     "day": 32,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/32.png",
     "calendar_date": "Ches 23, 1489 DR",
     "location": "Путевой двор",
     "event": "",
@@ -3287,6 +3313,7 @@
   },
   {
     "day": 33,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/33.png",
     "calendar_date": "Ches 24, 1489 DR",
     "location": "Ветреный Тракт",
     "event": "",
@@ -3422,6 +3449,7 @@
   },
   {
     "day": 34,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/34.png",
     "calendar_date": "Ches 25, 1489 DR",
     "location": "Боушот",
     "event": "",
@@ -3549,6 +3577,7 @@
   },
   {
     "day": 35,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/35.png",
     "calendar_date": "Ches 26, 1489 DR",
     "location": "Заброшенная Ферма Хэмбрука",
     "event": "",
@@ -3674,8 +3703,9 @@
   },
   {
     "day": 36,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/36.png",
     "calendar_date": "Ches 27, 1489 DR",
-    "location": "Заброшенная Ферма Хэмбрука",
+    "location": "Лагерь у Ручья Серебрянки",
     "event": "",
     "notes": "Погода: дождь. Вынужденная стоянка. Персонажи могут тренироваться, чинить снаряжение. Квентин Скотт просит дать ему урок фехтования. Вальтер Дорвард (маг нобиля) предлагает обменяться знаниями: он готов показать простой ритуал или заговор в обмен на помощь в сборе редких трав на обочине. Можно ввести мини-обучение бытовой магии. Вечером все ужинают в тесноте под навесом, рассказывая страшные истории.",
     "miles": 0,
@@ -3771,6 +3801,7 @@
   },
   {
     "day": 37,
+    "image": "modules/biyk_ext/extensions/weather_by_day_time/data/images/37.png",
     "calendar_date": "Ches 28, 1489 DR",
     "location": "Разбитый Тракт",
     "event": "",
@@ -3879,7 +3910,7 @@
   {
     "day": 38,
     "calendar_date": "Ches 29, 1489 DR",
-    "location": "Постоялый Двор «Два Щита",
+    "location": "Постоялый Двор «Два Щита»",
     "event": "",
     "notes": "Погода: ветер, рвущий плащи. Гонец на взмыленной лошади догоняет караван и вручает Нерону Аксузадскому письмо. Тот читает, бледнеет и запирается в фургоне. Квентин рассказывает, что у Нерона серьёзные проблемы с гильдией — его отец, возможно, лишит его наследства. Нерон становится ещё более невыносимым, срываясь на слугах. Квентин на грани отчаяния. Игроки могут либо утешить сквайра, либо жёстко поговорить с нобилем.",
     "miles": 15,

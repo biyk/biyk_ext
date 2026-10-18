@@ -14,22 +14,36 @@ extensions/weather_by_day_time/
 │   ├── events.csv        # Journey events
 │   ├── locations.csv     # Location descriptions + weather + music hints
 │   ├── music/            # Downloaded audio files (254 MP3s)
+│   ├── ydisk_catalog.db   # Full Yandex Disk catalog (SQLite): 39,351 dirs, 539,978 files (~750 MB)
 │   └── ydisk/
-│       └── music.json    # Full Yandex Disk catalog tree (~18,600 files, 1,061 collections)
+│       └── music.json    # Yandex Disk music tree (~18,600 files, 1,061 collections)
 ├── scripts/
+│   ├── batch_strip.py        # Batch-strip large ID3 tags from all MP3s
+│   ├── check_cyr.py          # Scan MP3s for Cyrillic ID3 tags
+│   ├── curate_playlist.py    # AI curator — day context → localhost:9999
+│   ├── download_music.py     # Download tracks from Yandex → data/music/
+│   ├── find_song.ps1         # PowerShell fuzzy search in music.json
+│   ├── find_in_disk.py       # Substring search over catalog.db (SQL)
+│   ├── find_song.py          # Python fuzzy search & download from catalog
 │   ├── gen_calendar.py       # Generate calendar.json from CSVs
-│   ├── gen_music_json.ps1    # Fetch Yandex Disk music tree → music.json (24h cache)
-│   ├── yadisk.ps1            # Raw Yandex Disk API (public + OAuth)
-│   ├── download_music.py     # Download tracks from calendar paths → data/music/
-│   ├── find_song.py          # Fuzzy search & interactive download from catalog
-│   └── curate_playlist.py    # AI curator — sends day context to localhost:9999
+│   ├── gen_music_json.ps1    # Fetch Yandex music tree → music.json
+│   ├── get_loc.py            # Lookup location by day number
+│   ├── migrate_json_to_db.py # One-time migration: ydisk_catalog.json → .db
+│   ├── rebuild_catalog.py    # Rebuild catalog.db offline from temp/ API cache
+│   ├── scan_all_tracks.py    # Scan playlist tracks for encoding issues
+│   ├── scan_disk.py          # Full Yandex Disk recursive scan → catalog.db
+│   ├── strip_metadata.py     # Remove ID3 tags from a single MP3
+│   ├── test_tags.py          # Check all MP3s for missing metadata
+│   ├── yadisk.ps1            # Raw Yandex Disk API wrapper
+│   └── ydisk_db.py           # Shared SQLite storage layer (items + meta)
 └── temp/                 # API response cache (SHA256 per URL, 24h TTL)
 ```
 
 ## Data Flow
 
 1. **`events.csv` + `locations.csv`** → **`gen_calendar.py`** → **`calendar.json`** (58 days with Harptos dates, weather, particles, music paths)
-2. **Yandex Disk** → **`gen_music_json.ps1`** → **`music.json`** (full catalog with download URLs, cached 24h)
+2. **Yandex Disk** → **`scan_disk.py`** → **`ydisk_catalog.db`** (SQLite: full disk tree, incremental UPSERTs)
+3. **Yandex Disk** → **`gen_music_json.ps1`** → **`music.json`** (music-only catalog with download URLs, cached 24h)
 3. **`calendar.json` + `music.json`** → **`download_music.py`** → **`data/music/`** (local audio files + path updates)
 4. **Day context + `music.json` catalog** → **`curate_playlist.py`** → **`playlist.json`** (AI-recommended tracks per day)
 5. **`playlist.json`** → **`index.js`** → Foundry playlist folder "Дорога" with `День N` sub-playlists
@@ -122,6 +136,56 @@ Scans all unique tracks across all playlist days for encoding problems. Flags:
 python extensions/weather_by_day_time/scripts/find_song.py "query" [top_n]
 ```
 Fuzzy search against `music.json` catalog. Supports Unicode normalization (em-dashes, quotes). Prompts to download selected tracks to `data/downloads/`.
+
+### `find_in_disk.py`
+```
+python extensions/weather_by_day_time/scripts/find_in_disk.py "query" [query2 ...]
+```
+Substring search over `ydisk_catalog.db` by name (case-insensitive, works with Cyrillic). Lists matching dirs and files with sizes and full paths. Fast: single SQL query, no full catalog load.
+
+### `check_cyr.py`
+```
+python extensions/weather_by_day_time/scripts/check_cyr.py
+```
+Scans all downloaded MP3s for Cyrillic characters in ID3 tags (artist/album/title). Shows raw and NFKC-normalized values. Useful for detecting encoding mismatches before the AI curator processes tracks.
+
+### `test_tags.py`
+```
+python extensions/weather_by_day_time/scripts/test_tags.py
+```
+Checks all MP3s for missing ID3 metadata (artist, album, title). Reports total count and lists files with missing fields. Run before curation to ensure the AI has sufficient metadata.
+
+### `get_loc.py`
+```
+python extensions/weather_by_day_time/scripts/get_loc.py <day>
+```
+Looks up location description for a given journey day from `locations.csv` + `calendar.json`. Prints environment description and music hints for the specified day number.
+
+### `find_song.ps1`
+```
+powershell -File extensions/weather_by_day_time/scripts/find_song.ps1 -Query "query" [-Top 10]
+```
+PowerShell fuzzy search against `music.json`. Scores results by relevance (full match, prefix, word match). Shows name, path, size, and match percentage. Useful for quickly browsing the catalog from the command line.
+
+### `scan_disk.py`
+```
+python extensions/weather_by_day_time/scripts/scan_disk.py
+```
+Full recursive Yandex Disk scan — walks ALL folders from root `/`, records every file and folder with size, type, mime, media type, download URL, and MD5. Output: `data/ydisk_catalog.db` (SQLite). Incremental: skips dirs whose `modified` timestamp is unchanged, UPSERTs only changed listings into the DB (no full-file rewrite). Fills dirs with `listed=0`, prunes dirs deleted on disk (HTTP 404). A no-change run takes ~3 seconds. Uses SHA256-cached API responses in `temp/` (24h TTL) and adaptive rate limiter (5 req/s cap, additive increase on 429, multiplicative decrease on success).
+
+Storage layer is shared in `ydisk_db.py`: table `items` (flat path-keyed rows, `listed` flag = subtree listing fetched) + `meta` (source, root_name, timestamps).
+
+### `rebuild_catalog.py`
+```
+python extensions/weather_by_day_time/scripts/rebuild_catalog.py [db_path]
+```
+Disaster recovery: rebuilds `ydisk_catalog.db` offline from the `temp/` API response cache (no network). Dirs with incomplete listings get `listed=0` so the next `scan_disk.py` run refetches them.
+
+### `migrate_json_to_db.py`
+```
+python extensions/weather_by_day_time/scripts/migrate_json_to_db.py
+```
+One-time migration from the old JSON storage (`ydisk_catalog.json`) to SQLite. Idempotent (clears `items` first).
 
 ### `yadisk.ps1`
 ```
@@ -222,6 +286,7 @@ Handles nested JSON (`response`, `text` keys), markdown code blocks, and direct 
 - Calendar: `data/calendar.json`
 - Playlists: `data/playlist.json`
 - Music catalog: `data/ydisk/music.json`
+- Full disk catalog: `data/ydisk_catalog.db` (SQLite; legacy `ydisk_catalog.json`/`ydisk_state.json` unused after migration)
 - Audio files: `data/music/`
 - API cache: `temp/`
 - Events: `data/events.csv`

@@ -218,6 +218,31 @@ export function init() {
             }
         }
 
+        // Update tile image on the road scene FIRST, independent of playlists,
+        // so an early "return" in the music logic below can never skip it.
+        const ROAD_SCENE_ID = "q2be0cq4lQvHr2KS";
+        const ROAD_TILE_ID = "Y13np4o1dLgdjHpn";
+        const roadScene = game.scenes?.get(ROAD_SCENE_ID);
+        if (roadScene) {
+            const tile = roadScene.tiles?.get(ROAD_TILE_ID);
+            if (tile) {
+                const defaultImg = "%D0%94%D0%BE%D1%80%D0%BE%D0%B3%D0%B0.jpeg";
+                let img = defaultImg;
+                if (journeyDay >= 1 && journeyDay <= 58 && entry?.image) {
+                    img = entry.image;
+                }
+                if (tile.texture?.src !== img) {
+                    console.log(`${LOG_PREFIX} Updating tile image: "${tile.texture?.src}" -> "${img}"`);
+                    await tile.update({ "texture.src": img });
+                    if (game.scenes.active?.id === roadScene.id) await canvas.draw();
+                }
+            } else {
+                console.warn(`${LOG_PREFIX} Road tile "${ROAD_TILE_ID}" not found in scene "${ROAD_SCENE_ID}"`);
+            }
+        } else {
+            console.warn(`${LOG_PREFIX} Road scene "${ROAD_SCENE_ID}" not found`);
+        }
+
         // Handle day music: start/switch playlist
         if (!game.playlists) return;
         const folder = game.folders.find(f => f.name === "Дорога" && f.type === "Playlist");
@@ -236,23 +261,6 @@ export function init() {
         if (target) {
             console.log(`${LOG_PREFIX} Playing playlist "${target.name}"`);
             await target.playAll();
-        }
-
-        // Update tile image on scene q2be0cq4lQvHr2KS
-        if (game.scenes?.active?.id === "q2be0cq4lQvHr2KS") {
-            const tile = game.scenes.active.tiles.get("Y13np4o1dLgdjHpn");
-            if (tile) {
-                const defaultImg = "%D0%94%D0%BE%D1%80%D0%BE%D0%B3%D0%B0.jpeg";
-                let img = defaultImg;
-                if (journeyDay >= 1 && journeyDay <= 58 && entry?.image) {
-                    img = entry.image;
-                }
-                if (tile.texture.src !== img) {
-                    console.log(`${LOG_PREFIX} Updating tile image: "${tile.texture.src}" -> "${img}"`);
-                    await tile.update({ "texture.src": img });
-                }
-                await canvas.draw();
-            }
         }
     });
 }

@@ -1,0 +1,27 @@
+{
+  "comment": "Пятеро слабых вокруг героя: колец угроз несколько, важно, кого снять первым и не дать себя окружить. Многоцелевая сцена для головы целей.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "M1",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 5], "hp": 34},
+    {"id": "M1", "name": "Разбойник (1)", "disposition": 1, "cell": [3, 5], "hp": 6,
+     "speed": 30, "damage": "1d6", "reachFt": 5, "hitChance": 0.55},
+    {"id": "M2", "name": "Разбойник (2)", "disposition": 1, "cell": [7, 5], "hp": 6,
+     "speed": 30, "damage": "1d6", "reachFt": 5, "hitChance": 0.55},
+    {"id": "M3", "name": "Разбойник (3)", "disposition": 1, "cell": [5, 3], "hp": 6,
+     "speed": 15, "damage": "1d6", "reachFt": 5, "hitChance": 0.55},
+    {"id": "M4", "name": "Разбойник (4)", "disposition": 1, "cell": [5, 7], "hp": 6,
+     "speed": 15, "damage": "1d6", "reachFt": 5, "hitChance": 0.55},
+    {"id": "M5", "name": "Разбойник (5)", "disposition": 1, "cell": [4, 6], "hp": 6,
+     "speed": 30, "damage": "1d6", "reachFt": 5, "hitChance": 0.55}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "scimitar", "name": "Скимитар", "damage": "1d6+3", "attackBonus": 4,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

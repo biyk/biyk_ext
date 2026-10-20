@@ -1,0 +1,23 @@
+{
+  "comment": "Танк и мелочь: здоровый громила (40 hp, 2d6+4) и две прислуги по 6 hp. Приоритет цели — снять лёгкую угрозу или бить главного? Учим разнице в цене целей.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "BRUTE",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 1], "hp": 36},
+    {"id": "BRUTE", "name": "Громила", "disposition": 1, "cell": [5, 6], "hp": 40,
+     "speed": 30, "damage": "2d6+4", "reachFt": 5, "hitChance": 0.6},
+    {"id": "IMP1", "name": "Нечисть (1)", "disposition": 1, "cell": [3, 6], "hp": 6,
+     "speed": 30, "damage": "1d4", "reachFt": 5, "hitChance": 0.55},
+    {"id": "IMP2", "name": "Нечисть (2)", "disposition": 1, "cell": [7, 6], "hp": 6,
+     "speed": 30, "damage": "1d4", "reachFt": 5, "hitChance": 0.55}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "mace", "name": "Булава", "damage": "1d8+2", "attackBonus": 4,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

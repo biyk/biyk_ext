@@ -1,0 +1,19 @@
+{
+  "comment": "Дальнобойщик-китинг: у героя лук (30/120 футов), навстречу идёт тяжёлый ближник. Учимся не подпускать угрозу вплотную и стрелять с дистанции — противоположность жадному сближению.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "BRUISER",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [5, 1], "hp": 22},
+    {"id": "BRUISER", "name": "Громила", "disposition": 1, "cell": [5, 7], "hp": 28,
+     "speed": 30, "damage": "2d6+2", "reachFt": 5, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+2", "attackBonus": 4,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

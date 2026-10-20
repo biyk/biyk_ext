@@ -4,3 +4,11 @@ __pycache__/
 *.pyc
 .env
 profile/
+
+# arent: сборка exe и всё, что генерируется при gen/train
+# (снимки сцен arent/data/payloads в git остаются — это исходные данные обучения)
+arent/build/
+arent/dist/
+arent/runs/
+arent/data/samples/
+arent/data/payloads/captures/

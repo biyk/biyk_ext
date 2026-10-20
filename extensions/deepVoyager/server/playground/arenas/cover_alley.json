@@ -1,0 +1,21 @@
+{
+  "comment": "Переулок с укрытием: стена посередине загораживает прямую линию к лучнику. Проверяем выбор маршрута — обойти укрытие, а не встать в его тупик.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "SNIPER",
+  "walls": [
+    {"id": "mid", "points": {"A": {"x": 250, "y": 0}, "B": {"x": 250, "y": 350}}, "move": 1, "sight": 0}
+  ],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 1], "hp": 26},
+    {"id": "SNIPER", "name": "Снайпер", "disposition": 1, "cell": [7, 7], "hp": 10,
+     "speed": 15, "damage": "1d8+3", "reachFt": 60, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

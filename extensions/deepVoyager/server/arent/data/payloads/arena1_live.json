@@ -1,0 +1,1240 @@
+{
+ "_meta": {
+  "cellPx": 90,
+  "ftPerCell": 5,
+  "round": 19,
+  "scene": "Arena 1",
+  "source": "CDP live dump (temp/js_arena.js)",
+  "srcName": "Кобольд",
+  "tokens": 8,
+  "turn": 0,
+  "walls": 42
+ },
+ "data": {
+  "npcs": [
+   {
+    "ac": 12,
+    "center": {
+     "x": 3195,
+     "y": 1665
+    },
+    "cr": 0.125,
+    "damage": "1d4  + @mod",
+    "damageAvg": 2.5,
+    "disposition": -1,
+    "height": 90,
+    "hp": {
+     "current": 3,
+     "max": 5,
+     "temp": 469
+    },
+    "id": "L5uZYPkKEPa0Y5pk",
+    "name": "Кобольд",
+    "rangeFt": 30,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 4,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 120,
+      "id": "JRgqSQoYPBaP5oP9",
+      "name": "Праща",
+      "properties": [
+       "amm"
+      ],
+      "ranged": true,
+      "sureFt": 30
+     },
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 5,
+      "id": "ElukyPh7uqZQbiGd",
+      "name": "Кинжал",
+      "properties": [
+       "fin",
+       "lgt",
+       "thr"
+      ],
+      "ranged": false,
+      "sureFt": 5
+     }
+    ],
+    "width": 90,
+    "x": 3150,
+    "y": 1620
+   },
+   {
+    "ac": 12,
+    "center": {
+     "x": 2745,
+     "y": 1755
+    },
+    "cr": 0.125,
+    "damage": "1d4  + @mod",
+    "damageAvg": 2.5,
+    "disposition": -1,
+    "height": 90,
+    "hp": {
+     "current": 3,
+     "max": 5,
+     "temp": 469
+    },
+    "id": "XARi9352Awgc6xVO",
+    "name": "Кобольд",
+    "rangeFt": 30,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 4,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 120,
+      "id": "JRgqSQoYPBaP5oP9",
+      "name": "Праща",
+      "properties": [
+       "amm"
+      ],
+      "ranged": true,
+      "sureFt": 30
+     },
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 5,
+      "id": "ElukyPh7uqZQbiGd",
+      "name": "Кинжал",
+      "properties": [
+       "fin",
+       "lgt",
+       "thr"
+      ],
+      "ranged": false,
+      "sureFt": 5
+     }
+    ],
+    "width": 90,
+    "x": 2700,
+    "y": 1710
+   },
+   {
+    "ac": 12,
+    "center": {
+     "x": 2745,
+     "y": 2205
+    },
+    "cr": 0.125,
+    "damage": "1d4  + @mod",
+    "damageAvg": 2.5,
+    "disposition": -1,
+    "height": 90,
+    "hp": {
+     "current": 3,
+     "max": 5,
+     "temp": 469
+    },
+    "id": "hHRBoqAqQx2muvCi",
+    "name": "Кобольд",
+    "rangeFt": 30,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 4,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 120,
+      "id": "JRgqSQoYPBaP5oP9",
+      "name": "Праща",
+      "properties": [
+       "amm"
+      ],
+      "ranged": true,
+      "sureFt": 30
+     },
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 5,
+      "id": "ElukyPh7uqZQbiGd",
+      "name": "Кинжал",
+      "properties": [
+       "fin",
+       "lgt",
+       "thr"
+      ],
+      "ranged": false,
+      "sureFt": 5
+     }
+    ],
+    "width": 90,
+    "x": 2700,
+    "y": 2160
+   },
+   {
+    "ac": 12,
+    "center": {
+     "x": 2835,
+     "y": 2025
+    },
+    "cr": 0.125,
+    "damage": "1d4  + @mod",
+    "damageAvg": 2.5,
+    "disposition": -1,
+    "height": 90,
+    "hp": {
+     "current": 3,
+     "max": 5,
+     "temp": 469
+    },
+    "id": "iCSnm778pMCmHswr",
+    "name": "Кобольд",
+    "rangeFt": 30,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 4,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 120,
+      "id": "JRgqSQoYPBaP5oP9",
+      "name": "Праща",
+      "properties": [
+       "amm"
+      ],
+      "ranged": true,
+      "sureFt": 30
+     },
+     {
+      "attackBonus": 0,
+      "damage": "1d4  + @mod",
+      "doubtFt": 5,
+      "id": "ElukyPh7uqZQbiGd",
+      "name": "Кинжал",
+      "properties": [
+       "fin",
+       "lgt",
+       "thr"
+      ],
+      "ranged": false,
+      "sureFt": 5
+     }
+    ],
+    "width": 90,
+    "x": 2790,
+    "y": 1980
+   },
+   {
+    "ac": 16,
+    "center": {
+     "x": 3285,
+     "y": 2385
+    },
+    "cr": 0.125,
+    "damage": "1d6  + @mod",
+    "damageAvg": 3.5,
+    "disposition": 1,
+    "height": 90,
+    "hitChance": 0.6,
+    "hp": {
+     "current": 11,
+     "max": 11,
+     "temp": 492
+    },
+    "id": "oHmIXptvBA19f3HS",
+    "name": "Стражник (1)",
+    "rangeFt": 20,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 3,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d6  + @mod",
+      "doubtFt": 60,
+      "id": "dP433LgDrePp8Spz",
+      "name": "Копьё",
+      "properties": [
+       "thr",
+       "ver"
+      ],
+      "ranged": false,
+      "sureFt": 20
+     }
+    ],
+    "width": 90,
+    "x": 3240,
+    "y": 2340
+   },
+   {
+    "ac": 16,
+    "center": {
+     "x": 2295,
+     "y": 2385
+    },
+    "cr": 0.125,
+    "damage": "1d6  + @mod",
+    "damageAvg": 3.5,
+    "disposition": 1,
+    "height": 90,
+    "hitChance": 0.6,
+    "hp": {
+     "current": 11,
+     "max": 11,
+     "temp": 492
+    },
+    "id": "nlrIlupc8mFmVFgb",
+    "name": "Стражник (1)",
+    "rangeFt": 20,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 3,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d6  + @mod",
+      "doubtFt": 60,
+      "id": "dP433LgDrePp8Spz",
+      "name": "Копьё",
+      "properties": [
+       "thr",
+       "ver"
+      ],
+      "ranged": false,
+      "sureFt": 20
+     }
+    ],
+    "width": 90,
+    "x": 2250,
+    "y": 2340
+   },
+   {
+    "ac": 16,
+    "center": {
+     "x": 2115,
+     "y": 1575
+    },
+    "cr": 0.125,
+    "damage": "1d6  + @mod",
+    "damageAvg": 3.5,
+    "disposition": 1,
+    "height": 90,
+    "hitChance": 0.6,
+    "hp": {
+     "current": 11,
+     "max": 11,
+     "temp": 492
+    },
+    "id": "1uE0lIle4GSNnqgm",
+    "name": "Стражник (1)",
+    "rangeFt": 20,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 3,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d6  + @mod",
+      "doubtFt": 60,
+      "id": "dP433LgDrePp8Spz",
+      "name": "Копьё",
+      "properties": [
+       "thr",
+       "ver"
+      ],
+      "ranged": false,
+      "sureFt": 20
+     }
+    ],
+    "width": 90,
+    "x": 2070,
+    "y": 1530
+   },
+   {
+    "ac": 16,
+    "center": {
+     "x": 2835,
+     "y": 1935
+    },
+    "cr": 0.125,
+    "damage": "1d6  + @mod",
+    "damageAvg": 3.5,
+    "disposition": 1,
+    "height": 90,
+    "hitChance": 0.6,
+    "hp": {
+     "current": 11,
+     "max": 11,
+     "temp": 492
+    },
+    "id": "0JMkDffZCwbqFRyp",
+    "name": "Стражник (1)",
+    "rangeFt": 20,
+    "reachFt": 5,
+    "speed": 30,
+    "toHit": 3,
+    "weapons": [
+     {
+      "attackBonus": 0,
+      "damage": "1d6  + @mod",
+      "doubtFt": 60,
+      "id": "dP433LgDrePp8Spz",
+      "name": "Копьё",
+      "properties": [
+       "thr",
+       "ver"
+      ],
+      "ranged": false,
+      "sureFt": 20
+     }
+    ],
+    "width": 90,
+    "x": 2790,
+    "y": 1890
+   }
+  ],
+  "scene": {
+   "gridSize": 90,
+   "height": 4770,
+   "id": "HVm9VBWww0O3FxiP",
+   "name": "Arena 1",
+   "width": 7560
+  },
+  "walls": [
+   {
+    "closed": false,
+    "door": null,
+    "id": "P3DFYdiyJnq471gL",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 1260,
+      "y": 810
+     },
+     "B": {
+      "x": 6300,
+      "y": 810
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "RaoI5muv90aEFpl0",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 6300,
+      "y": 810
+     },
+     "B": {
+      "x": 6300,
+      "y": 3960
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "dA29eo4467IlGbBm",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 6300,
+      "y": 3960
+     },
+     "B": {
+      "x": 1260,
+      "y": 3960
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "DtfbFxarKP9BlMXj",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 1260,
+      "y": 810
+     },
+     "B": {
+      "x": 1260,
+      "y": 3960
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "WU5NQAt578s2wrfi",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3622,
+      "y": 2452
+     },
+     "B": {
+      "x": 3678,
+      "y": 2542
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "lqSI1uVlz9JxHANs",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3678,
+      "y": 2542
+     },
+     "B": {
+      "x": 3825,
+      "y": 2610
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "8YdhUmMXHlW5sRuX",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3825,
+      "y": 2610
+     },
+     "B": {
+      "x": 3960,
+      "y": 2565
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "LQQ5CvpH6iRxzp0i",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3960,
+      "y": 2565
+     },
+     "B": {
+      "x": 4038,
+      "y": 2452
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "GiwcprROfVUPuxHZ",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4038,
+      "y": 2452
+     },
+     "B": {
+      "x": 4027,
+      "y": 2340
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "6WvPd73xAzAXRCaH",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4027,
+      "y": 2340
+     },
+     "B": {
+      "x": 3948,
+      "y": 2227
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "B0eCmU9bSSsdr4kd",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3948,
+      "y": 2227
+     },
+     "B": {
+      "x": 3802,
+      "y": 2182
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "zprSFt41LL5bJanj",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3802,
+      "y": 2182
+     },
+     "B": {
+      "x": 3678,
+      "y": 2250
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "SADRGx6QdirkoTDJ",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3678,
+      "y": 2250
+     },
+     "B": {
+      "x": 3622,
+      "y": 2373
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "EWnY7R888SycZDdA",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3622,
+      "y": 2373
+     },
+     "B": {
+      "x": 3622,
+      "y": 2452
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "gDJiLOrb3AKFSgVT",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3093,
+      "y": 2238
+     },
+     "B": {
+      "x": 3386,
+      "y": 2227
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "arxz07p3Z8UdQD9b",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3667,
+      "y": 1935
+     },
+     "B": {
+      "x": 3667,
+      "y": 1665
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "RBV6Yh8Mf4zZVJuH",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3667,
+      "y": 1665
+     },
+     "B": {
+      "x": 3431,
+      "y": 1732
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "3B9xz2v7pGg3QWtq",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3431,
+      "y": 1732
+     },
+     "B": {
+      "x": 3195,
+      "y": 1968
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "Ju27CJzfzAhiLMc8",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3195,
+      "y": 1968
+     },
+     "B": {
+      "x": 3093,
+      "y": 2238
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "y7z6Q3tApVlQem2b",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3093,
+      "y": 2542
+     },
+     "B": {
+      "x": 3386,
+      "y": 2542
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "gM4SamHvexktmShJ",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3678,
+      "y": 2846
+     },
+     "B": {
+      "x": 3667,
+      "y": 3093
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "VLQu02d3TMghBvYy",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3667,
+      "y": 3093
+     },
+     "B": {
+      "x": 3397,
+      "y": 3003
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "XU19EeKgsiVRr2aO",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3397,
+      "y": 3003
+     },
+     "B": {
+      "x": 3195,
+      "y": 2801
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "vcqiojjkgJX5l4J8",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3195,
+      "y": 2801
+     },
+     "B": {
+      "x": 3093,
+      "y": 2542
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "w4Wpp7wl9xrrOaEN",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3982,
+      "y": 2823
+     },
+     "B": {
+      "x": 4162,
+      "y": 2700
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "UwTedGlDHoF30oRY",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4162,
+      "y": 2700
+     },
+     "B": {
+      "x": 4275,
+      "y": 2542
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "aqncy1nw3hlf8Omp",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4275,
+      "y": 2542
+     },
+     "B": {
+      "x": 4556,
+      "y": 2531
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "EqwRF8Pnhd9hE2PE",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4556,
+      "y": 2531
+     },
+     "B": {
+      "x": 4455,
+      "y": 2790
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "Y31fhRxZgNN4zdrp",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4455,
+      "y": 2790
+     },
+     "B": {
+      "x": 4297,
+      "y": 2970
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "PfU0zdxtqNPwxSuO",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4297,
+      "y": 2970
+     },
+     "B": {
+      "x": 4005,
+      "y": 3105
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "oX03wQNltjBSZ7Bb",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4005,
+      "y": 3105
+     },
+     "B": {
+      "x": 3982,
+      "y": 2823
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "9t4eOc7tBty09Gfs",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3982,
+      "y": 1935
+     },
+     "B": {
+      "x": 4151,
+      "y": 2058
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "Rv3tDr59lBjGUHRs",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4151,
+      "y": 2058
+     },
+     "B": {
+      "x": 4275,
+      "y": 2238
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "yFb9f5SXNgfY6t6W",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4275,
+      "y": 2238
+     },
+     "B": {
+      "x": 4556,
+      "y": 2227
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "AYnf1KEVK0VIjX1h",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4556,
+      "y": 2227
+     },
+     "B": {
+      "x": 4466,
+      "y": 1980
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "XysDvJ5KZFYjEkpp",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4466,
+      "y": 1980
+     },
+     "B": {
+      "x": 4286,
+      "y": 1777
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "LDVXlD7BG66qsOO6",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 4286,
+      "y": 1777
+     },
+     "B": {
+      "x": 3982,
+      "y": 1665
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "LdF9cDcJEdq0IkzF",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3982,
+      "y": 1665
+     },
+     "B": {
+      "x": 3982,
+      "y": 1935
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "kO22MdbwWN1QvfP3",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3667,
+      "y": 1935
+     },
+     "B": {
+      "x": 3498,
+      "y": 2058
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "rj3McR3T6OXEheQ4",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3498,
+      "y": 2058
+     },
+     "B": {
+      "x": 3386,
+      "y": 2227
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "qMNcIZxQ2WcpKjzU",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3386,
+      "y": 2542
+     },
+     "B": {
+      "x": 3498,
+      "y": 2711
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   },
+   {
+    "closed": false,
+    "door": null,
+    "id": "TL4UEqRXYmcl26E6",
+    "locked": false,
+    "move": 20,
+    "points": {
+     "A": {
+      "x": 3498,
+      "y": 2711
+     },
+     "B": {
+      "x": 3678,
+      "y": 2846
+     }
+    },
+    "sight": 20,
+    "type": "wall"
+   }
+  ]
+ },
+ "mode": "direct",
+ "speed": 30,
+ "src": "iCSnm778pMCmHswr",
+ "token": null,
+ "weapons": [
+  {
+   "attackBonus": 0,
+   "damage": "1d4  + @mod",
+   "doubtFt": 120,
+   "id": "JRgqSQoYPBaP5oP9",
+   "name": "Праща",
+   "properties": [
+    "amm"
+   ],
+   "ranged": true,
+   "sureFt": 30
+  },
+  {
+   "attackBonus": 0,
+   "damage": "1d4  + @mod",
+   "doubtFt": 5,
+   "id": "ElukyPh7uqZQbiGd",
+   "name": "Кинжал",
+   "properties": [
+    "fin",
+    "lgt",
+    "thr"
+   ],
+   "ranged": false,
+   "sureFt": 5
+  }
+ ]
+}

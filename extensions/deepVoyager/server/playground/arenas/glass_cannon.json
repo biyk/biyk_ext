@@ -1,0 +1,21 @@
+{
+  "comment": "Стеклянная пушка: герой снимает врага с одного удара (3d8), сам хрупкий. Идти в угрозу выгодно — убитый враг больше не бьёт; проверяем, что снятие угрозы учитывается.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "W1",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 4], "hp": 20},
+    {"id": "W1", "name": "Разведчик (1)", "disposition": 1, "cell": [5, 2], "hp": 8,
+     "speed": 30, "damage": "1d4", "reachFt": 5, "hitChance": 0.65},
+    {"id": "W2", "name": "Разведчик (2)", "disposition": 1, "cell": [3, 6], "hp": 12,
+     "speed": 30, "damage": "1d4", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "greatsword", "name": "Двуручный меч", "damage": "3d8", "attackBonus": 5,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

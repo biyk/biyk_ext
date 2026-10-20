@@ -3,6 +3,7 @@ import pytest
 
 from conftest import make_npc, make_scene_payload, make_wall, make_weapon
 from planner.context import BattleContext
+from planner.points import tuning
 
 
 def test_parses_full_payload(scene_payload):
@@ -130,3 +131,40 @@ def test_token_keeps_name():
         entry.pop("name")
     ctx = BattleContext.from_payload(make_scene_payload(npcs=legacy))
     assert ctx.token("B").name == ""
+
+
+def test_optional_sim_fields_parsed():
+    # пункт 5: параметры токена для симуляции чужих ходов (арены присылают их явно)
+    npcs = [make_npc("A", 0, 0, disposition=-1),
+            make_npc("B", 100, 0, disposition=1, speed=10, damage="2d6", reach_ft=10,
+                     hit_chance=0.5)]
+    tok = BattleContext.from_payload(make_scene_payload(npcs=npcs)).token("B")
+    assert (tok.speed_ft, tok.damage, tok.reach_ft, tok.hit_chance) == (10, "2d6", 10.0, 0.5)
+    t = tuning()
+    assert tok.sim_speed_steps == 10 // t.feet_per_cell
+    assert tok.sim_reach_cells == 10 / t.feet_per_cell
+    assert tok.sim_damage_avg == 7.0
+    assert tok.sim_hit_chance == 0.5
+
+
+def test_sim_fields_fall_back_to_tuning_when_absent():
+    # старый клиент ничего не прислал — сервер берёт числа из points.json
+    npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("B", 100, 0, disposition=1)]
+    tok = BattleContext.from_payload(make_scene_payload(npcs=npcs)).token("B")
+    t = tuning()
+    assert (tok.speed_ft, tok.damage, tok.reach_ft, tok.hit_chance) == (0, "", 0.0, 0.0)
+    assert tok.sim_speed_steps == t.default_speed_ft // t.feet_per_cell
+    assert tok.sim_reach_cells == t.default_enemy_reach_cells
+    assert tok.sim_damage_avg == t.unknown_damage_avg
+    assert tok.sim_hit_chance == t.hit_chance
+
+
+def test_junk_sim_fields_are_treated_as_absent():
+    npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("B", 100, 0, disposition=1)]
+    npcs[1].update({"speed": "быстрый", "damage": None, "reachFt": "мало",
+                    "hitChance": "много"})
+    tok = BattleContext.from_payload(make_scene_payload(npcs=npcs)).token("B")
+    t = tuning()
+    assert (tok.sim_speed_steps, tok.sim_reach_cells) == (
+        t.default_speed_ft // t.feet_per_cell, t.default_enemy_reach_cells)
+    assert (tok.sim_damage_avg, tok.sim_hit_chance) == (t.unknown_damage_avg, t.hit_chance)

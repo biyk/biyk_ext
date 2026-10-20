@@ -16,6 +16,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional, Tuple
 
+from planner.dice import average
 from planner.points import tuning
 
 SURE = "sure"       # уверенное попадание
@@ -37,6 +38,15 @@ class Weapon:
     def thrown(self) -> bool:
         """Метательное ли оружие (свойство thr из points.json): бросок вплотную без помехи."""
         return tuning().thrown_property in self.properties
+
+    @property
+    def expected_damage(self) -> float:
+        """Сколько урона ждать от оружия (пункт 5): симуляция меряет ожиданием, а не броском.
+
+        Неразбираемая строка урона — это не «ноль урона», а неизвестность:
+        берём rules.unknownDamage, иначе бой с безымянным ударом выглядел бы безопасным.
+        """
+        return average(self.damage) or tuning().unknown_damage_avg
 
     @property
     def sure_cells(self) -> float:

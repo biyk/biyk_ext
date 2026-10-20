@@ -1,117 +1,23 @@
-# planner/points.py — коэффициенты планировщика хода: единый источник + JSON-переопределение.
+# planner/points.py — коэффициенты планировщика хода: загрузка и живая перезагрузка.
 #
-# Тактические числа (награды, пороги дистанций, лимит перебора) заданы в SPEC ниже и
-# переопределяются server/points.json: что указано — то применено, остальное из DEFAULTS.
-# Файл перечитывается на ходу (mtime + размер), поэтому правку видно на следующем запросе;
-# битый или отсутствующий файл не роняет запрос — держим прежние значения + строка в консоль.
-# Ни от кого в planner этот модуль не зависит — импорт только в одну сторону.
+# Какие числа существуют и что значат — в planner/points_spec.py (Tuning/SPEC/DEFAULTS);
+# здесь только состояние: откуда читать server/points.json, перечитать его, когда файл
+# изменился на диске (mtime + размер), и не уронить запрос на битом JSON. Поэтому правку
+# points.json видно на следующем запросе — перезапуск сервера не нужен.
+# Ни от кого в planner этот модуль не зависит, кроме points_spec.
 import json
 import os
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
+
+from planner.points_spec import (DEFAULTS, SPEC, SKIP_KEYS, Tuning, _build, default_tuning,
+                                 describe as _describe, unknown_key_notes)
 
 SERVER_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POINTS_FILE = os.path.join(SERVER_DIR, "points.json")   # переопределяется env POINTS_FILE
-SKIP_KEYS = ("comment", "version")     # служебные поля файла, их нет в SPEC
 
-# «в упор» и размер клетки пользователь задаёт футами, а правила меряют клетками:
-# point_blank_cells = pointBlankFt / feetPerCell.
-POINT_BLANK_PATH = ("rules", "pointBlankFt")
-DEFAULT_POINT_BLANK_FT = 5.0
-
-#: (путь в JSON, атрибут Tuning, встроенное значение) — единственный источник чисел
-SPEC: Tuple[Tuple[Tuple[str, ...], str, Any], ...] = (
-    (("actions", "move", "pointsPerCell"), "move_per_cell", 1.0),
-    (("actions", "attack", "sure"), "attack_sure", 30.0),
-    (("actions", "attack", "doubt"), "attack_doubt", 15.0),
-    (("actions", "damageTaken", "points"), "damage_penalty", -30.0),
-    (("rules", "feetPerCell"), "feet_per_cell", 5.0),
-    (("rules", "reachToleranceCells"), "reach_tolerance", 0.5),
-    (("rules", "defaultMeleeFt"), "default_melee_ft", 5.0),
-    (("rules", "thrownProperty"), "thrown_property", "thr"),
-    (("limits", "planTimeLimitSec"), "plan_time_limit_sec", 5.0),
-)
-
-DEFAULTS: Dict[str, Any] = {".".join(path): value for path, _, value in SPEC}
-DEFAULTS[".".join(POINT_BLANK_PATH)] = DEFAULT_POINT_BLANK_FT
-_KNOWN = {path for path, _, _ in SPEC} | {POINT_BLANK_PATH}
-_CONTAINERS = {path[:i] for path in _KNOWN for i in range(len(path))}
-
-
-@dataclass(frozen=True)
-class Tuning:
-    """Действующие коэффициенты: числа из points.json, подмешанные к встроенным."""
-    move_per_cell: float        # очки за клетку сближения
-    attack_sure: float          # очки за уверенную атаку
-    attack_doubt: float         # очки за атаку с помехой
-    damage_penalty: float       # штраф за полученный урон (пункт 5, пока не применяется)
-    feet_per_cell: float        # футов в клетке сетки
-    point_blank_cells: float    # «в упор» для дальнобойного, в клетках
-    reach_tolerance: float      # допуск на диагональ и край токена, в клетках
-    default_melee_ft: float     # дальность оружия, если sureFt не прислали
-    thrown_property: str        # код свойства «метательное» (исключение помехи)
-    plan_time_limit_sec: float  # лимит перебора вариантов хода
-
-
-def default_tuning() -> Tuning:
-    """Встроенные значения — те же числа, что исторически были зашиты в код."""
-    return _build({})
-
-
-def _dig(raw: Any, path: Tuple[str, ...]):
-    """(значение по пути во вложенных dict, есть ли оно там)."""
-    node = raw
-    for key in path:
-        if not isinstance(node, dict) or key not in node:
-            return None, False
-        node = node[key]
-    return node, True
-
-
-def _coerce(value: Any, default: Any, notes: List[str], path: Tuple[str, ...]) -> Any:
-    """Значение из файла нужного типа; мусор -> встроенное значение + замечание."""
-    name = ".".join(path)
-    if isinstance(default, str):
-        text = str(value if value is not None else "").strip()
-        if not text:
-            notes.append(f"{name}: пусто, берём {default!r}")
-        return text or default
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        notes.append(f"{name}: {value!r} не число, берём {default:g}")
-        return default
-    return float(value)
-
-
-def _build(raw: Dict[str, Any], notes: Optional[List[str]] = None) -> Tuning:
-    """Собрать Tuning из разобранного JSON (пустой dict = чистые DEFAULTS)."""
-    notes = [] if notes is None else notes
-    values: Dict[str, Any] = {}
-    for path, attr, default in SPEC:
-        found, present = _dig(raw, path)
-        values[attr] = _coerce(found, default, notes, path) if present else default
-    blank, present = _dig(raw, POINT_BLANK_PATH)
-    blank_ft = _coerce(blank, DEFAULT_POINT_BLANK_FT, notes, POINT_BLANK_PATH) if present \
-        else DEFAULT_POINT_BLANK_FT
-    feet = values["feet_per_cell"]
-    if feet <= 0:
-        notes.append("rules.feetPerCell должен быть больше 0, берём 5")
-        feet = values["feet_per_cell"] = 5.0
-    values["point_blank_cells"] = blank_ft / feet
-    return Tuning(**values)
-
-
-def _notes_about_unknown(raw: Any, notes: List[str], path: Tuple[str, ...] = ()) -> None:
-    """Заметить опечатки в ключах — иначе «поправил, а ничего не поменялось» невыловимо."""
-    if not isinstance(raw, dict):
-        return
-    for key, value in raw.items():
-        if key in SKIP_KEYS:
-            continue
-        here = path + (key,)
-        if here in _CONTAINERS:
-            _notes_about_unknown(value, notes, here)
-        elif here not in _KNOWN:
-            notes.append(f"неизвестный ключ {'.'.join(here)} — он ни на что не влияет")
+__all__ = ["SERVER_DIR", "POINTS_FILE", "Tuning", "DEFAULTS", "SPEC", "SKIP_KEYS",
+           "default_tuning", "describe", "read", "resolve_path", "configure",
+           "set_tuning", "tuning"]
 
 
 def _load(path: str) -> Tuple[Tuning, List[str], bool]:
@@ -127,7 +33,7 @@ def _load(path: str) -> Tuple[Tuning, List[str], bool]:
         return default_tuning(), [f"{path}: ожидается объект с разделами actions/rules/limits"], False
     notes: List[str] = []
     tuning_obj = _build(raw, notes)
-    _notes_about_unknown(raw, notes)
+    unknown_key_notes(raw, notes)
     return tuning_obj, notes, True
 
 
@@ -144,12 +50,8 @@ def resolve_path(path: Optional[str] = None) -> str:
 
 
 def describe(t: Optional[Tuning] = None) -> str:
-    """Компактная сводка коэффициентов для консоли сервера."""
-    t = t if t is not None else tuning()
-    return (f"уверенная={t.attack_sure:g}, сомнительная={t.attack_doubt:g}, "
-            f"ход={t.move_per_cell:g}/клетку, клетка={t.feet_per_cell:g}фт, "
-            f"вупор={t.point_blank_cells * t.feet_per_cell:g}фт, "
-            f"урон={t.damage_penalty:g}, лимит={t.plan_time_limit_sec:g}с")
+    """Компактная сводка коэффициентов для консоли сервера (по умолчанию — действующих)."""
+    return _describe(t if t is not None else tuning())
 
 
 def _announce(notes: List[str], message: str) -> None:

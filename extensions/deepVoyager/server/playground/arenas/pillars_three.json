@@ -1,0 +1,32 @@
+{
+  "comment": "Колонны и трое врагов: маршрут не прямой, цель надо выбрать. Проверяем, что обход и выбор цели не разъедаются с глубиной.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "S1",
+  "walls": [
+    {"id": "p1n", "points": {"A": {"x": 100, "y": 100}, "B": {"x": 150, "y": 100}}},
+    {"id": "p1s", "points": {"A": {"x": 100, "y": 150}, "B": {"x": 150, "y": 150}}},
+    {"id": "p1w", "points": {"A": {"x": 100, "y": 100}, "B": {"x": 100, "y": 150}}},
+    {"id": "p1e", "points": {"A": {"x": 150, "y": 100}, "B": {"x": 150, "y": 150}}},
+    {"id": "p2n", "points": {"A": {"x": 300, "y": 250}, "B": {"x": 350, "y": 250}}},
+    {"id": "p2s", "points": {"A": {"x": 300, "y": 300}, "B": {"x": 350, "y": 300}}},
+    {"id": "p2w", "points": {"A": {"x": 300, "y": 250}, "B": {"x": 300, "y": 300}}},
+    {"id": "p2e", "points": {"A": {"x": 350, "y": 250}, "B": {"x": 350, "y": 300}}}
+  ],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [7, 1], "hp": 30},
+    {"id": "S1", "name": "Стражник (1)", "disposition": 1, "cell": [2, 4], "hp": 12,
+     "speed": 30, "damage": "1d8", "reachFt": 5, "hitChance": 0.65},
+    {"id": "S2", "name": "Стражник (2)", "disposition": 1, "cell": [7, 8], "hp": 12,
+     "speed": 30, "damage": "1d8", "reachFt": 5, "hitChance": 0.65},
+    {"id": "S3", "name": "Стражник (3)", "disposition": 1, "cell": [1, 8], "hp": 12,
+     "speed": 15, "damage": "1d8", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

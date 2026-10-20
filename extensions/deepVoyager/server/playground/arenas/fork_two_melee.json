@@ -1,0 +1,21 @@
+{
+  "comment": "Вилка: герой между двумя ближниками. Жадный план идёт в ближнего и получает ответку с обеих сторон; многошаговый должен ударить и отойти либо снять одного.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "E1",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 5], "hp": 30},
+    {"id": "E1", "name": "Ближник слева", "disposition": 1, "cell": [5, 3], "hp": 12,
+     "speed": 30, "damage": "1d8", "reachFt": 5, "hitChance": 0.65},
+    {"id": "E2", "name": "Ближник справа", "disposition": 1, "cell": [5, 7], "hp": 12,
+     "speed": 30, "damage": "1d8", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

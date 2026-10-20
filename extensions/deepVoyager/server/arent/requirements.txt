@@ -1,0 +1,7 @@
+# arent/requirements.txt - training-side dependencies (installed into arent/.venv by setup.bat).
+#
+# Only pyinstaller here on purpose: torch must come from the CUDA wheel index, and
+# setup.bat installs it with --index-url (plain "pip install torch" would pull the cpu
+# build from PyPI and overwrite the cuda one). Training needs no other third-party
+# libs: the pure-python backend works on lists, the torch backend uses its own tensors.
+pyinstaller>=6.3

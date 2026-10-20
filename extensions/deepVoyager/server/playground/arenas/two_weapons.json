@@ -1,0 +1,21 @@
+{
+  "comment": "Выбор оружия: у героя два ближних клинка (обычный и двуручный с большим уроном). Голова weapons должна научиться предпочитать двуручный, когда риск приёма сопоставим.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "E1",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 5], "hp": 30},
+    {"id": "E1", "name": "Стражник", "disposition": 1, "cell": [5, 4], "hp": 16,
+     "speed": 30, "damage": "1d8", "reachFt": 5, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5},
+      {"id": "greatsword", "name": "Двуручный меч", "damage": "2d6+3", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "comment": "Два стрелка на дистанции против ближника-героя: сквозь их огонь надо сокращать, решая, кто ближе и опаснее. Учим приоритету цели под угрозой дальнобойного огня.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "SH1",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 1], "hp": 30},
+    {"id": "SH1", "name": "Лучник (1)", "disposition": 1, "cell": [3, 6], "hp": 9,
+     "speed": 15, "damage": "1d6+3", "reachFt": 30, "hitChance": 0.6},
+    {"id": "SH2", "name": "Лучник (2)", "disposition": 1, "cell": [7, 7], "hp": 9,
+     "speed": 15, "damage": "1d6+3", "reachFt": 30, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

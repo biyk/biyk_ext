@@ -28,6 +28,7 @@ from libs.quin import find_path_from_data
 from planner.service import PlannerService
 from planner.armament import parse_properties
 from planner.points import tuning
+from arent import capture as arent_capture   # сбор живых состояний для обучения (arent/capture.py)
 
 app = Flask(__name__)
 CORS(app)
@@ -180,6 +181,7 @@ def plan_endpoint():
                    + (f" | {result.details}" if result.details else ""))
         _log("plan", f"#{event} {summary}")
         _log_exchange("plan", data, {"actions": actions}, summary, event=event)
+        arent_capture.capture(data, {"actions": actions}, event=event)
         return jsonify({"actions": actions}), 200, {"Content-Type": "application/json; charset=utf-8"}
     except ValueError as e:
         _log("plan", f"#{event} ошибка входа: {e}")

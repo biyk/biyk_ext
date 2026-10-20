@@ -1,0 +1,19 @@
+{
+  "comment": "Тяжёлый бешеный: один враг с уроном 2d6+3 и ходом 30 футов. Штраф за смерть (-150) не должен дать встать вплотную, если враг не убит.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "BRUISER",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 1], "hp": 15},
+    {"id": "BRUISER", "name": "Громила", "disposition": 1, "cell": [5, 6], "hp": 30,
+     "speed": 30, "damage": "2d6+3", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

@@ -2,6 +2,7 @@
 # перезагрузка на ходу. Числа влияют и на решения, поэтому проверяем оба слоя:
 # сам загрузчик и то, что scoring/service/armament действительно их читают.
 from dataclasses import replace
+import dataclasses
 import json
 
 from conftest import make_scene_payload, make_weapon
@@ -28,10 +29,25 @@ def test_defaults_match_previous_constants():
     assert (t.default_melee_ft, t.thrown_property, t.plan_time_limit_sec) == (5.0, "thr", 5.0)
 
 
+def test_lookahead_defaults_are_flat():
+    # в DEFAULTS многошаговость ВЫКЛЮЧЕНА: встроенное значение = сегодняшнее поведение,
+    # а включённое — только в поставляемом points.json (см. test_shipped_json_...)
+    t = points.default_tuning()
+    assert (t.max_rounds, t.top_k, t.shallow_k) == (1, 8, 4)
+    assert (t.hit_chance, t.death_penalty) == (0.65, -150.0)
+    assert (t.default_speed_ft, t.default_enemy_reach_cells) == (30.0, 1.0)
+    assert points.DEFAULTS["lookahead.rounds"] == 1.0
+
+
 def test_shipped_json_is_valid_and_matches_defaults():
     t, notes = points.read(points.POINTS_FILE)
     assert notes == []                       # поставляемый файл без замечаний
-    assert t == points.default_tuning()      # это шаблон, а не «затюненный» конфиг
+    assert t.max_rounds == 3.0               # в бою многошаговый расчёт включён
+    # расходится с DEFAULTS ровно на lookahead (плюс лимит времени — его подбирает
+    # playground по замеру латентности); всё остальное — те же числа
+    diffs = {k for k, v in dataclasses.asdict(t).items()
+             if v != dataclasses.asdict(points.default_tuning())[k]}
+    assert diffs <= {"max_rounds", "top_k", "shallow_k", "plan_time_limit_sec"}
 
 
 def test_partial_override_keeps_other_values(tmp_path):
@@ -105,6 +121,38 @@ def test_describe_lists_key_coefficients():
     assert "уверенная=30" in text and "сомнительная=15" in text
     assert "вупор=5фт" in text and "клетка=5фт" in text
     assert "лимит=5с" in text
+    assert "раундов=1" in text                # глубина тоже видна в консоли
+
+
+def test_lookahead_section_overrides(tmp_path):
+    p = write_points(tmp_path / "points.json",
+                     {"lookahead": {"rounds": 3, "topK": 2, "shallowK": 1}})
+    t, notes = points.read(p)
+    assert notes == []
+    assert (t.max_rounds, t.top_k, t.shallow_k) == (3.0, 2.0, 1.0)
+    assert t.hit_chance == 0.65               # остальное — из DEFAULTS
+
+
+def test_hit_chance_must_be_numeric(tmp_path):
+    p = write_points(tmp_path / "points.json", {"rules": {"hitChance": "высокое"}})
+    t, notes = points.read(p)
+    assert t.hit_chance == 0.65
+    assert any("rules.hitChance" in n for n in notes)
+
+
+def test_unknown_damage_is_parsed_into_average(tmp_path):
+    p = write_points(tmp_path / "points.json", {"rules": {"unknownDamage": "2d6"}})
+    t, notes = points.read(p)
+    assert notes == []                        # строка кубика — легальное значение
+    assert t.unknown_damage == "2d6"
+    assert t.unknown_damage_avg == 7.0
+
+
+def test_enemy_reach_feet_converts_to_cells(tmp_path):
+    p = write_points(tmp_path / "points.json",
+                     {"rules": {"defaultEnemyReachFt": 10, "feetPerCell": 5}})
+    t, _ = points.read(p)
+    assert t.default_enemy_reach_cells == 2.0
 
 
 def test_point_blank_threshold_from_config():

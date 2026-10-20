@@ -111,3 +111,20 @@ def test_best_attack_none_when_nothing_reaches():
     club = parse_weapons([make_weapon("club")])[0]
     assert best_attack((club,), 2.0) is None
     assert best_attack((), 0.0) is None
+
+
+def test_expected_damage_is_the_dice_average():
+    # пункт 5: симуляция меряет урон ожиданием, а не броском
+    sword = parse_weapons([make_weapon("sword", damage="1d6+2")])[0]
+    assert sword.expected_damage == 5.5
+    greatsword = parse_weapons([make_weapon("gs", damage="2d6")])[0]
+    assert greatsword.expected_damage == 7.0
+
+
+def test_unparsable_damage_falls_back_to_unknown_average():
+    # «нет данных об уроне» != «нулевой урон», иначе бой с безымянным ударом
+    # выглядел бы безопасным, чем он является на самом деле
+    bare = parse_weapons([make_weapon("fist", damage="")])[0]
+    assert bare.expected_damage == default_tuning().unknown_damage_avg
+    odd = parse_weapons([{"id": "x", "damage": "2d6 + @mod"}])[0]
+    assert odd.expected_damage == 7.0

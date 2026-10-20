@@ -5,11 +5,14 @@
 # { src, token, data: { scene: {...}, npcs: [...], walls: [...] } }
 # Опциональные поля шага 4: speed (футы за ход) и weapons (массив вооружения,
 # см. planner/armament.py — дальности уверенного/сомнительного попадания).
+# Разбор npcs[] и сам токен — в planner/payload.py (там же необязательные поля
+# пункта 5: speed/damage/reachFt/hitChance для симуляции чужих ходов).
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from planner.armament import Weapon, parse_weapons
 from planner.geometry import Cell
+from planner.payload import Token, parse_tokens
 from planner.points import tuning
 
 
@@ -30,24 +33,6 @@ class Scene:
     def cell_of(self, x: float, y: float) -> Tuple[int, int]:
         """(row, col) клетки, содержащей точку (x, y) в пикселях."""
         return int(y // self.grid_size), int(x // self.grid_size)
-
-
-@dataclass(frozen=True)
-class Token:
-    id: str
-    x: int
-    y: int
-    width: int
-    height: int
-    center_x: float
-    center_y: float
-    disposition: int
-    hp_current: int
-    name: str = ""      # имя из Foundry — только для логов, на решения не влияет
-
-    @property
-    def is_alive(self) -> bool:
-        return self.hp_current > 0
 
 
 @dataclass(frozen=True)
@@ -141,22 +126,7 @@ class BattleContext:
             grid_size=int(scene_raw["gridSize"]),
         )
 
-        tokens = []
-        for n in data.get("npcs") or []:
-            hp = n.get("hp") or {}
-            center = n.get("center") or {}
-            tokens.append(Token(
-                id=n["id"],
-                x=int(n["x"]), y=int(n["y"]),
-                width=int(n["width"]), height=int(n["height"]),
-                center_x=float(center.get("x", n["x"] + n["width"] / 2)),
-                center_y=float(center.get("y", n["y"] + n["height"] / 2)),
-                disposition=int(n.get("disposition", 0)),
-                hp_current=int(hp.get("current", 0)),
-                name=str(n.get("name") or ""),
-            ))
-        if not tokens:
-            raise ValueError("No tokens in scene data")
+        tokens = parse_tokens(data)
 
         walls = []
         for w in data.get("walls") or []:

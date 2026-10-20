@@ -1,0 +1,19 @@
+{
+  "comment": "Метательное: герой вооружён дротиками (свойство thr, 30/60 футов) — бросок вплотную без помехи. Проверяем, что исключение метательного не ломает разметку и выбор дистанции.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "RUSHER",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Дротикометатель", "disposition": -1, "cell": [5, 2], "hp": 20},
+    {"id": "RUSHER", "name": "Бегун", "disposition": 1, "cell": [5, 6], "hp": 14,
+     "speed": 30, "damage": "1d6", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "javelin", "name": "Дротик", "damage": "1d6+2", "attackBonus": 3,
+       "sureFt": 30, "doubtFt": 60, "properties": ["thr"]}
+    ]
+  }
+}

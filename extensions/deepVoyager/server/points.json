@@ -13,7 +13,8 @@
     },
     "damageTaken": {
       "points": -30,
-      "comment": "штраф за полученный урон - задел на пункт 5 todo.md, сейчас ни на что не влияет"
+      "death": -150,
+      "comment": "штраф симуляции (пункт 5): points - за сам факт полученного за раунд урона (умножается на rules.hitChance), death - если в симуляции hp героя стал <= 0"
     }
   },
   "rules": {
@@ -22,10 +23,20 @@
     "reachToleranceCells": 0.5,
     "defaultMeleeFt": 5,
     "thrownProperty": "thr",
-    "comment": "feetPerCell - сколько футов в клетке; pointBlankFt - ближе которой дальнобойное бьёт с помехой; reachToleranceCells - допуск на диагональ и край токена; defaultMeleeFt - дальность, если в запросе нет sureFt; thrownProperty - код свойства dnd5e «метательное», оно бьёт в упор без помехи"
+    "hitChance": 0.65,
+    "unknownDamage": "1d8",
+    "defaultSpeedFt": 30,
+    "defaultEnemyReachFt": 5,
+    "comment": "feetPerCell - сколько футов в клетке; pointBlankFt - ближе которой дальнобойное бьёт с помехой; reachToleranceCells - допуск на диагональ и край токена; defaultMeleeFt - дальность, если в запросе нет sureFt; thrownProperty - код свойства dnd5e «метательное», оно бьёт в упор без помехи; hitChance - вероятность попадания, если у врага в запросе нет его КД; unknownDamage - чем бьёт враг без поля damage (строка кубика); defaultSpeedFt/defaultEnemyReachFt - ход и досягаемость токена, если их не прислали"
   },
   "limits": {
     "planTimeLimitSec": 5,
     "comment": "сколько секунд максимум перебирать варианты хода, потом берётся лучший из уже просмотренных"
+  },
+  "lookahead": {
+    "rounds": 3,
+    "topK": 8,
+    "shallowK": 4,
+    "comment": "rounds - на сколько раундов смотреть вперёд (1 = сегодняшний жадный перебор); topK - сколько вариантов первого слоя разворачивать; shallowK - сколько ходов героя рассматривать в глубине, иначе дерево не считается вообще"
   }
 }

@@ -112,7 +112,15 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
     environment = _make_env(cfg, _team_reward(cfg), phi)
     order = list(range(len(scenarios)))
     rng.shuffle(order)
-    pointer, sample = 0, environment.reset(scenarios[order[0]][1])
+    episodes: Dict[int, int] = {}        # WP5: сколько боёв сцена сыграна -> следующий старт-актёр
+
+    def _begin(slot: int) -> Row:
+        """Reset с ротацией: каждый новый эпизод сцены стартует с следующего актёра."""
+        k = episodes.get(slot, 0)
+        episodes[slot] = k + 1
+        return environment.reset(scenarios[slot][1], start_index=k)
+
+    pointer, sample = 0, _begin(order[0])
     samples, actions, logps, values, rewards, next_values, alive = \
         [], [], [], [], [], [], []
     for _ in range(cfg.rollout_steps):
@@ -135,7 +143,7 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
                          "terminated": terminated, "truncated": truncated})
         if cont == 0:                                            # граница эпизода -> следующий бой
             pointer = (pointer + 1) % len(scenarios)
-            sample = environment.reset(scenarios[order[pointer]][1])
+            sample = _begin(order[pointer])
         else:
             sample = nxt
     adv, ret = gae(rewards, values, next_values, alive, cfg.gamma, cfg.gae_lambda)

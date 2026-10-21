@@ -52,8 +52,9 @@ class FightEnv:
         self.t = 0
         self.phi_s = 0.0
 
-    def reset(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Новый бой из снимка сцены; первое наблюдение фиксированной схемы, Phi(s0) посчитан."""
+    def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
+        """Новый бой из снимка сцены; Phi(s0) посчитан. start_index — единая сигнатура
+        вызова с PolyFightEnv (WP5), но моноакторный курсор жёстко привязан к герою."""
         self.state = Simulation.of(BattleContext.from_payload(payload))
         self.t = 0
         if self.team is not None:

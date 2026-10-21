@@ -31,13 +31,15 @@ class PolyFightEnv(FightEnv):
         super().__init__(rounds_cap, clear_bonus, death_penalty, gamma, phi, team)
         self.actor: Optional[str] = None       # кто ходит сейчас (любая сторона)
 
-    def reset(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Новый бой: курсор на вершине инициативы, первое наблюдение — с его лица."""
+    def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
+        """Новый бой: курсор на start_index-м живом по инициативе (WP5 — ротация старта),
+        первое наблюдение с его лица; start_index берётся по модулю состава."""
         self.state = Simulation.of(BattleContext.from_payload(payload))
         self.t = 0
         if self.team is not None:
             self.team.reset()
-        self.actor = self.state.next_to_act()
+        living = list(self.state.living_in_order)
+        self.actor = living[int(start_index) % len(living)] if living else None
         obs = self._observe()
         self.phi_s = self._phi(obs)
         return obs

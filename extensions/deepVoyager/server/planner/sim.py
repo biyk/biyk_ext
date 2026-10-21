@@ -1,6 +1,6 @@
-# planner/sim.py — симуляция одного раунда боя: команды ходят по инициативе (коммит №2).
-# Отдельной модели боя нет: Simulation пересобирает BattleContext, поэтому Scorer и quin
-# работают на симулированном состоянии как на живом. Урон — ожиданием (planner/dice.py).
+# planner/sim.py — симуляция раунда: ходы по инициативе; Simulation пересобирает
+# BattleContext глазами актёра (src/оружие/скорость — per-token, WP2), поэтому Scorer
+# и quin работают на симулированном состоянии как на живом. Урон — ожиданием (dice.py).
 import math
 from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
@@ -12,7 +12,7 @@ from planner.explore import best_strike, legal_steps
 from planner.geometry import DIR_VECTORS, Cell, apply_moves, cell_distance, within_reach
 from planner.initiative import (Unit, allies_of, are_hostile, living_order,
                                 next_living, roll_initiatives)
-from planner.payload import parse_tokens
+from planner.payload import actor_gear, parse_tokens
 from planner.pathfinding import PathfindingService
 from planner.points import tuning
 from planner.scoring import Scorer
@@ -32,12 +32,12 @@ class Simulation:
     def of(cls, context: BattleContext, env_seed=None) -> "Simulation":
         """Команда героя (src + союзники) против врагов; инициатива — поле или d20 от env_seed."""
         hostile = {t.id for t in context.hostile_targets()}
-        hero_disp = context.src.disposition
         units = {t.id: Unit(t.id, context.cell_of(t), float(t.hp_current), t.sim_speed_steps,
                             t.sim_damage_avg, t.sim_reach_cells, t.sim_hit_chance,
                             t.id in hostile, t.initiative,
                             t.id != context.src_id and t.id not in hostile
-                            and t.disposition == hero_disp and t.disposition != 0)
+                            and t.disposition == context.src.disposition
+                            and t.disposition != 0)
                  for t in context.tokens}
         best = max(context.weapons, key=lambda w: w.expected_damage, default=None)
         if best and context.src_id in units:      # урон героя — из его оружия, а не из «1d8»
@@ -96,13 +96,14 @@ class Simulation:
         return {**self.base.raw, "npcs": npcs}
 
     def context_for(self, unit_id: str) -> BattleContext:
-        """Тот же бой, но после симулированных ходов; src — указанный токен."""
+        """Тот же бой глазами актёра: src, его per-token оружие и скорость (WP2)."""
         raw, target = self._raw(), self._target_id
-        if target is not None and not self.units[target].is_alive:
-            target = None              # мёртвая цель не должна возвращаться в hostile_targets
+        # мёртвая цель не должна возвращаться в hostile_targets
+        if target is not None and not self.units[target].is_alive: target = None
+        weapons, speed = actor_gear(raw, unit_id, self.base.weapons, self.base.speed_steps)
         return BattleContext(scene=self.base.scene, tokens=tuple(parse_tokens({"npcs": raw["npcs"]})),
                              walls=self.base.walls, src_id=unit_id, target_id=target, raw=raw,
-                             speed_steps=self.base.speed_steps, weapons=self.base.weapons)
+                             speed_steps=speed, weapons=weapons)
 
     @property
     def pf(self):

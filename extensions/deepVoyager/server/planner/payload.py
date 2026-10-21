@@ -7,8 +7,9 @@
 # дефолты из points.json, поэтому контракт /plan остаётся прежним.
 # Модель боя и её методы — в planner/context.py; здесь только «данные -> объекты».
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence, Tuple
 
+from planner.armament import Weapon, parse_weapons
 from planner.dice import average
 from planner.points import tuning
 
@@ -65,6 +66,21 @@ def _number(value: Any, as_int: bool = True) -> Any:
         return int(float(value)) if as_int else float(value)
     except (TypeError, ValueError):
         return 0 if as_int else 0.0
+
+
+def actor_gear(data: Dict[str, Any], unit_id: str, base_weapons: Sequence[Weapon],
+               base_speed_steps: int) -> Tuple[Tuple[Weapon, ...], int]:
+    """Оружие и скорость актёра из ЕГО записи npcs[] (WP2 «универсальный солдат»).
+
+    Per-token weapons/speed зеркалируют viewpoint: A2 с луком видит свой арсенал,
+    а не базовый payload['weapons']. Legacy-сцены (ho_*) без полей на токенах —
+    откат на базу, формат наблюдения и старые бои не меняются.
+    """
+    entry = next((n for n in data.get("npcs") or [] if n.get("id") == unit_id), None) or {}
+    weapons = parse_weapons(entry.get("weapons")) or tuple(base_weapons)
+    ft = _number(entry.get("speed"))
+    speed = int(ft // tuning().feet_per_cell) if ft else int(base_speed_steps)
+    return weapons, speed
 
 
 def parse_tokens(data: Dict[str, Any]) -> List[Token]:

@@ -10,14 +10,38 @@ import os
 from statistics import mean
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, encode, paths, play, provenance
-from arent import slots as slots_mod
+from arent import backend, encode, encode_v3, net, paths, play, provenance, spec, spec3
+from arent import slots as slots_mod, slots_v3
 from arent.net import GROUPS, Y_KEY
 from arent.observe import observe
 from planner.context import BattleContext
+from planner.scoring import Scorer
 from planner.sim import Simulation
 
 Row = Dict[str, Any]
+
+
+def _schema_of(model) -> int:
+    """Версия задачи модели (2 = клетка, 3 = move-plan); старые веса без cfg -> 2."""
+    return int(getattr(getattr(model, "cfg", None), "schema", spec.SCHEMA))
+
+
+def _round(model: Any, state: Simulation, schema: int) -> Tuple[Simulation, float]:
+    """Один раунд героя: v3 идёт через move-plan и apply_actor_seq (удар из attack_cell,
+    затем отступление), v2 — по-прежнему через клетку и advance. Ответ врагов — foes_act."""
+    ctx = state.context_for(state.hero_id)
+    obs = observe(ctx)
+    if schema == spec3.SCHEMA:
+        slots = slots_v3.build(ctx, obs)
+        out = model.predict(encode_v3.observation(ctx, obs, slots))
+        yk = net.y_key(schema)
+        actions = slots_v3.decode(slots, {yk[group]: out[yk[group]] for group in GROUPS})
+        moved, penalty = state.apply_actor_seq(state.hero_id, actions).foes_act()
+        return moved, Scorer().score(ctx, actions) + penalty
+    slots = slots_mod.build(ctx, obs)
+    out = model.predict(encode.observation(ctx, obs, slots))
+    actions = slots_mod.decode(slots, {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS})
+    return state.advance(actions)
 
 
 def fight(model: Any, payload: Dict[str, Any], rounds: int = 8) -> Dict[str, Any]:
@@ -29,15 +53,11 @@ def fight(model: Any, payload: Dict[str, Any], rounds: int = 8) -> Dict[str, Any
     врагов не осталось, или уперлись в потолок rounds.
     """
     state = Simulation.of(BattleContext.from_payload(payload))
+    schema = _schema_of(model)
     total, played = 0.0, 0
     foes_total = len(state.foes)
     while played < max(1, int(rounds)) and not state.hero_dead and state.foes:
-        ctx = state.context_for(state.hero_id)
-        obs = observe(ctx)
-        slots = slots_mod.build(ctx, obs)
-        out = model.predict(encode.observation(ctx, obs, slots))
-        actions = slots_mod.decode(slots, {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS})
-        state, value = state.advance(actions)
+        state, value = _round(model, state, schema)
         total += value
         played += 1
     return {"rounds": played, "value": round(total, 3), "survived": not state.hero_dead,

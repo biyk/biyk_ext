@@ -8,22 +8,50 @@ import json
 import os
 from typing import Any, Callable, Dict, Optional
 
-from arent import backend, encode, paths, slots as slots_mod
+from arent import backend, encode, encode_v3, net, paths, slots as slots_mod, slots_v3, spec, spec3
 from arent.net import GROUPS, Y_KEY
 from arent.observe import observe
 from planner.context import BattleContext
 
 
+def _schema_of(model) -> int:
+    """Версия задачи модели (2 = клетка, 3 = move-plan); старые веса без cfg -> 2."""
+    return int(getattr(getattr(model, "cfg", None), "schema", spec.SCHEMA))
+
+
 def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Один ход модели: (клетка, цель, оружие) -> действия + разбор «что выбрано»."""
+    """Один ход модели: (клетка/план, цель, оружие) -> действия + разбор «что выбрано».
+
+    Схема берётся из cfg модели, поэтому v3-чекпойнт декодируется через move-plan-слоты
+    (атака из attack_cell, затем отступление), а v2 — по-прежнему через клетки. Контракт
+    ответа (/plan-потребитель читает result["actions"]) одинаков в обеих схемах.
+    """
     ctx = BattleContext.from_payload(payload)
     obs = observe(ctx)
+    schema = _schema_of(model)
+    yk = net.y_key(schema)
+    if schema == spec3.SCHEMA:
+        slots = slots_v3.build(ctx, obs)
+        out = model.predict(encode_v3.observation(ctx, obs, slots))
+        label = {yk[group]: out[yk[group]] for group in GROUPS}
+        actions = slots_v3.decode(slots, label)
+        return {
+            "schema": schema, "actions": [a.to_dict() for a in actions], "y": label,
+            "value": out["value"],
+            "prob": {yk[group]: out[yk[group] + "Prob"] for group in GROUPS},
+            "names": {"cell": _plan(slots, label["plan"]),
+                      "target": _name(slots.targets, label["target"]),
+                      "weapon": _name(slots.weapons, label["weapon"])},
+            "counts": {"cells": slots.n_plans, "targets": len(slots.targets),
+                       "weapons": len(slots.weapons)},
+            "me": obs["me"]["name"], "src": ctx.src_id, "grid": obs["grid"],
+        }
     slots = slots_mod.build(ctx, obs)
     out = model.predict(encode.observation(ctx, obs, slots))
     label = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
     actions = slots_mod.decode(slots, label)
     return {
-        "actions": [a.to_dict() for a in actions], "y": label, "value": out["value"],
+        "schema": schema, "actions": [a.to_dict() for a in actions], "y": label, "value": out["value"],
         "prob": {Y_KEY[group]: out[Y_KEY[group] + "Prob"] for group in GROUPS},
         "names": {"cell": _cell(slots, label["cell"]), "target": _name(slots.targets, label["target"]),
                   "weapon": _name(slots.weapons, label["weapon"])},
@@ -43,6 +71,16 @@ def _cell(slots: Any, index: int) -> str:
         return "нет клетки"
     dirs = slots.cells[index]["dirs"]
     return "стоять" if not dirs else "->".join(dirs)
+
+
+def _plan(slots: Any, index: int) -> str:
+    """Разбор move-plan'а (схема 3): подход к позиции удара и, если есть, отступление."""
+    if not 0 <= index < getattr(slots, "n_plans", 0):
+        return "нет плана"
+    plan = slots.plans[index]
+    inward = "->".join(plan["dirs_in"]) or "стоять"
+    outward = "->".join(plan["dirs_out"])
+    return inward if not outward else f"{inward} | уход {outward}"
 
 
 def read_payload(path: str) -> Dict[str, Any]:

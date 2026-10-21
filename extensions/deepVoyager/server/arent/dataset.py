@@ -63,18 +63,55 @@ def is_independent(name: str) -> bool:
     return str(name).startswith(INDEPENDENT_PREFIXES)
 
 
+def scenario_sources(count: int, seed: int
+                     ) -> Tuple[List[Tuple[str, Dict[str, Any]]], List[Dict[str, Any]]]:
+    """F-A: независимые КОМАНДные сцены из генератора scenarios.generate.
+
+    Возвращает (pool, manifest): pool — [(name, payload)] для обучающей разметки/PPO, где
+    каждая сцена уже бой 1..6 на 1..6 (своих актёров больше одного, в отличие от 15 рукописных
+    арен «герой против N»); manifest — params каждой сцены (seed/архетип/состав/роли), чтобы
+    зафиксировать происхождение. Имена gen_* не зарезервированы, поэтому ho_/ho2_ сюда не
+    попадают по построению; валидность (есть кого бить, лидер жив, есть оружие) проверяем
+    ровно как abset.build_set, но НЕ пишем арены на диск — обучение ест пул напрямую.
+    """
+    from playground import arena
+    from arent import scenarios
+    pool: List[Tuple[str, Dict[str, Any]]] = []
+    manifest: List[Dict[str, Any]] = []
+    for name, raw, params in scenarios.generate(count, seed):
+        if is_independent(name):
+            continue
+        payload = arena.build_payload(raw, name)
+        ctx = BattleContext.from_payload(payload)
+        if not ctx.hostile_targets() or not ctx.src.is_alive or not payload.get("weapons"):
+            continue
+        pool.append((name, payload))
+        manifest.append(dict(params, group_id=params.get("group_id") or name))
+    return pool, manifest
+
+
 def sources(want_arenas: Optional[List[str]] = None, use_live: bool = True,
-            exclude_independent: bool = False) -> Iterator[Tuple[str, Dict[str, Any]]]:
-    """(имя, payload) по всем источникам состояний: арены + живые снимки.
+            exclude_independent: bool = False, scenario_pool: Optional[List] = None,
+            include_arenas: bool = True) -> Iterator[Tuple[str, Dict[str, Any]]]:
+    """(имя, payload) по всем источникам состояний: сценарии + арены + живые снимки.
 
     exclude_independent=True убирает зарезервированный набор (ho_*) — так обучению
     (gen/rl) не достаются сцены, зарезервированные под честную оценку bc2↔PPO.
-    """
+    scenario_pool — независимые командные сцены F-A; отдаём их ПЕРВЫМИ, чтобы при ограничении
+    --count тренировочная выборка состояла из боёв с союзниками, а не из старых 1-на-N арен.
+    include_arenas=False — пропустить рукописные арены (режим «только сгенерированные сцены»)."""
     from playground import arena
-    for name in arena_names(want_arenas):
-        if exclude_independent and is_independent(name):
-            continue
-        yield name, arena.load_arena(name)
+    if scenario_pool:
+        for item in scenario_pool:
+            name, payload = item[0], item[1]
+            if exclude_independent and is_independent(name):
+                continue
+            yield name, payload
+    if include_arenas:
+        for name in arena_names(want_arenas):
+            if exclude_independent and is_independent(name):
+                continue
+            yield name, arena.load_arena(name)
     if use_live:
         for name, payload in payload_files():
             if exclude_independent and is_independent(name):
@@ -121,7 +158,9 @@ def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int 
              teacher_rounds: int = 1, teacher_limit: Optional[float] = 1.0,
              want_arenas: Optional[List[str]] = None, use_live: bool = True,
              shallow_k: Optional[int] = None, top_k: Optional[int] = None,
-             teacher: str = DEFAULT_TEACHER
+             teacher: str = DEFAULT_TEACHER, scenario_pool: Optional[List] = None,
+             scenario_manifest: Optional[List[Dict[str, Any]]] = None,
+             include_arenas: bool = True
              ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Сгенерировать не более count примеров; статистика — почему остальные не вышли.
 
@@ -136,10 +175,14 @@ def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int 
     stats = {"skip": {}, "sources": {}, "schema": spec.SCHEMA, "seed": seed,
              "teacher": teacher_impl.name, "teacher_rounds": teacher_rounds,
              "shallow_k": shallow_k, "top_k": top_k,
-             "count": count, "per_src": per_src, "rounds_max": rounds_max}
+             "count": count, "per_src": per_src, "rounds_max": rounds_max,
+             "scenario_pool": len(scenario_pool or []), "include_arenas": include_arenas}
+    if scenario_manifest is not None:
+        stats["scenarios"] = scenario_manifest      # фиксация id/seed/состава каждой сцены
     with pinned(rounds=teacher_rounds, time_limit_sec=teacher_limit,
                 shallow_k=shallow_k, top_k=top_k):
-        for name, payload in sources(want_arenas, use_live, exclude_independent=True):
+        for name, payload in sources(want_arenas, use_live, exclude_independent=True,
+                                     scenario_pool=scenario_pool, include_arenas=include_arenas):
             scene_seed = seed ^ zlib.crc32(name.encode("utf-8"))
             for state_payload, meta in variants(payload, rng, count=per_src,
                                                 rounds_max=rounds_max):
@@ -152,7 +195,9 @@ def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int 
                 stats["sources"][name] = stats["sources"].get(name, 0) + 1
                 samples.append(sample)
                 if len(samples) >= count:
+                    stats["groups"] = len({s["meta"].get("arena") for s in samples})
                     return samples, stats
+    stats["groups"] = len({s["meta"].get("arena") for s in samples})
     return samples, stats
 
 

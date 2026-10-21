@@ -43,6 +43,12 @@ def parser() -> argparse.ArgumentParser:
     gen.add_argument("--top-k", type=int, default=defaults.get("top_k"))
     gen.add_argument("--arena", nargs="*", default=None, help="имена арен playground")
     gen.add_argument("--no-live", action="store_true", help="не брать снимки из data/payloads")
+    gen.add_argument("--scenarios", type=int, default=0,
+                    help="F-A: независимых КОМАНДных сцен (1..6 на 1..6) из генератора в выборку")
+    gen.add_argument("--scenario-seed", dest="scenario_seed", type=int, default=7,
+                    help="seed генератора сценариев (scenarios.generate)")
+    gen.add_argument("--scenarios-only", dest="scenarios_only", action="store_true",
+                    help="размечать только сгенерированные сцены (без рукописных арен и live)")
     gen.add_argument("--append", action="store_true",
                     help="дописать в существующую выборку, пропустив уже размеченные состояния")
 
@@ -144,6 +150,10 @@ def parser() -> argparse.ArgumentParser:
                      help="продолжить с ppo_state.pt (оптимизатор/итерация/RNG), если он есть")
     rlp.add_argument("--arena", nargs="*", default=None, help="имена арен playground")
     rlp.add_argument("--no-live", action="store_true", help="не брать снимки из data/payloads")
+    rlp.add_argument("--scenarios", type=int, default=0,
+                     help="F-A: обучать PPO на сгенерированных командных боях вместо пула арен")
+    rlp.add_argument("--scenario-seed", dest="scenario_seed", type=int, default=7,
+                     help="seed генератора сценариев для rl")
     rlp.add_argument("--device", choices=["auto", "cuda", "cpu"], help="куда класть сеть (RL требует torch)")
     rlp.add_argument("--kind", default="torch", choices=["auto", "torch", "pure"])
 
@@ -185,11 +195,21 @@ def parser() -> argparse.ArgumentParser:
 
 def _gen(args) -> int:
     started = time.monotonic()
+    scenario_pool = scenario_manifest = None
+    if args.scenarios and args.scenarios > 0:
+        scenario_pool, scenario_manifest = dataset.scenario_sources(
+            args.scenarios, args.scenario_seed)
+        print(f"F-A: сгенерировано независимых командных сцен {len(scenario_pool)} "
+              f"(seed={args.scenario_seed}, запрошено {args.scenarios})")
     samples, stats = dataset.generate(count=args.count, seed=args.seed, per_src=args.per_src,
                                       rounds_max=args.rounds_max, teacher_rounds=args.teacher_rounds,
                                       teacher_limit=args.teacher_limit, want_arenas=args.arena,
-                                      use_live=not args.no_live, shallow_k=args.shallow_k,
-                                      top_k=args.top_k, teacher=args.teacher)
+                                      use_live=not args.no_live and not args.scenarios_only,
+                                      shallow_k=args.shallow_k,
+                                      top_k=args.top_k, teacher=args.teacher,
+                                      scenario_pool=scenario_pool,
+                                      scenario_manifest=scenario_manifest,
+                                      include_arenas=not args.scenarios_only)
     took = time.monotonic() - started
     if args.append:
         path, added, total = dataset.append(samples, args.name, stats)
@@ -199,6 +219,8 @@ def _gen(args) -> int:
         path = dataset.save(samples, args.name, stats)
         print(f"примеров {len(samples)} за {took:.1f} с ({len(samples) / max(took, 1e-9):.2f} шт/с) "
               f"-> {path}")
+    print(f"фактических независимых сцен (групп) в выборке: {stats.get('groups')} "
+          f"(не ориентир на --count={args.count})")
     print(json.dumps(stats, ensure_ascii=False, indent=1, sort_keys=True))
     return 0 if samples else 1
 
@@ -260,9 +282,16 @@ def _rl(args) -> int:
     if args.no_vref:
         rcfg.use_vref = False
     warm = None if args.no_warm else (args.warm or None)
+    scenario_sources = None
+    if args.scenarios and args.scenarios > 0:
+        pool, _manifest = dataset.scenario_sources(args.scenarios, args.scenario_seed)
+        scenario_sources = [(n, p) for n, p in pool]
+        print(f"F-A: PPO на {len(scenario_sources)} сгенерированных командных боях "
+              f"(seed={args.scenario_seed}), пул арен заменён")
     result = rl.run(name=args.name, warm=warm, rcfg=rcfg, net_cfg=net.default_config(),
                     kind=args.kind, device=args.device, arenas=args.arena,
-                    use_live=not args.no_live, resume=args.resume)
+                    use_live=not args.no_live, resume=args.resume,
+                    scenario_sources=scenario_sources)
     best = result.get("best") or {}
     print(json.dumps({"model": result["checkpoint"], "model_best": result["best_checkpoint"],
                       "best_closed_loop": best}, ensure_ascii=False, indent=1, sort_keys=True))

@@ -30,6 +30,8 @@ param(
     [string]$Kind = "auto",
     [string]$Bc2Name = "bc_v2",   # BC parent for the v2 schema; built by gen+train when absent
     [int]$BcSamples = 600,        # scenarios for the BC v2 dataset (only used when bc_v2 is absent)
+    [int]$Schema = 2,             # task schema: 2 = cell-action (default), 3 = move-plan (team)
+    [int]$BcScenarios = 150,      # schema 3: team scenarios generated for the BC/PPO pool
     [string]$Out = "",         # the ONE output file (default <root>\result.zip)
     [switch]$Train,            # kept for backward compat; PPO training is the DEFAULT now (see -EvalOnly)
     [switch]$EvalOnly,         # escape hatch: skip training, only compare existing checkpoints on ho_*
@@ -48,6 +50,17 @@ $script:shaText = ""
 $script:setSha = ""
 $script:flags = @{ sameSet = $false; allHo = $false; independent = $false }
 function Say($m) { $script:log += (Get-Date).ToString("HH:mm:ss") + " " + $m; Write-Output $m }
+
+# ---- schema 3 defaults: distinct run names + evaluate only on the ho3_ holdout ----------
+# v2 stays the untouched default (rollback). Under -Schema 3 the BC/PPO parents move to
+# bc_v3/ppo_v3 so they never collide with a v2 state\, and the fair comparison set becomes
+# exactly the frozen ho3_* arenas (ho_/ho2_ are already used). Caller-supplied names win.
+$script:hoBare = if ($Schema -eq 3) { 'ho3_' } else { 'ho2?_' }
+$script:hoPattern = '^' + $script:hoBare
+if ($Schema -eq 3) {
+    if ($Bc2Name -eq 'bc_v2') { $Bc2Name = 'bc_v3' }
+    if ($PpoName -eq 'ppo_v2') { $PpoName = 'ppo_v3' }
+}
 
 # ---- paths --------------------------------------------------------------------------
 if (-not $Server) { $Server = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent }  # ...\server
@@ -92,7 +105,8 @@ function Eval-Of($dir) {
 function Invoke-Eval($ckptPath, $evalName) {
     $helper = Join-Path $PSScriptRoot "run_logged.ps1"
     $logPath = Join-Path $Work ("eval_" + $evalName + ".log")
-    $a = '"' + $main + '" --home "' + $State + '" evaluate --independent --no-live --model "' + $ckptPath + '" --name ' + $evalName + ' --rounds ' + $Rounds + ' --kind ' + $Kind
+    $pre = if ($Schema -eq 3) { ' --independent-prefix ho3_' } else { '' }
+    $a = '"' + $main + '" --home "' + $State + '" evaluate --independent' + $pre + ' --no-live --model "' + $ckptPath + '" --name ' + $evalName + ' --rounds ' + $Rounds + ' --kind ' + $Kind
     & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $a -Log $logPath | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "evaluate failed for $ckptPath (exit $LASTEXITCODE)" }
 }
@@ -106,8 +120,9 @@ function Detect-Device {
 function Invoke-Train($name, $iters, $device) {
     $helper = Join-Path $PSScriptRoot "run_logged.ps1"
     $logPath = Join-Path $Work ("rl_" + $name + ".log")
-    $a = '"' + $main + '" --home "' + $State + '" rl --warm ' + $Bc2Name + ' --name ' + $name + ' --iters ' + $iters + ' --rounds ' + $Rounds + ' --replays 3 --team-reward --kind torch --device ' + $device
-    Write-Output ("[train] arent rl --warm " + $Bc2Name + " --name " + $name + " --iters " + $iters + " --team-reward --device " + $device + "   (live copy -> rl_" + $name + ".log inside result.zip)")
+    $v3 = if ($Schema -eq 3) { ' --schema 3 --scenarios ' + $BcScenarios + ' --no-live' } else { '' }
+    $a = '"' + $main + '" --home "' + $State + '" rl --warm ' + $Bc2Name + ' --name ' + $name + ' --iters ' + $iters + ' --rounds ' + $Rounds + ' --replays 3 --team-reward --kind torch --device ' + $device + $v3
+    Write-Output ("[train] arent rl --warm " + $Bc2Name + " --name " + $name + " --iters " + $iters + " --team-reward --device " + $device + $v3 + "   (live copy -> rl_" + $name + ".log inside result.zip)")
     & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $a -Log $logPath
     if ($LASTEXITCODE -ne 0) { throw "PPO training failed (exit $LASTEXITCODE) - see rl_" + $name + ".log" }
 }
@@ -116,20 +131,24 @@ function Invoke-Train($name, $iters, $device) {
 function Invoke-Bc($device) {
     $helper = Join-Path $PSScriptRoot "run_logged.ps1"
     $genLog = Join-Path $Work "bc_gen.log"; $trLog = Join-Path $Work "bc_train.log"
-    $a = '"' + $main + '" --home "' + $State + '" gen --name ' + $Bc2Name + ' --count ' + $BcSamples + ' --no-live'
-    Write-Output ("[bc] arent gen --name " + $Bc2Name + " --count " + $BcSamples + "   (-> bc_gen.log inside result.zip)")
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $a -Log $genLog
+    # v2 labels the arena+live pool with the default schema; v3 labels generated TEAM battles
+    # (scenarios-only) with the move-plan schema and the strengthened battlecast teacher (F-D).
+    $gen = '"' + $main + '" --home "' + $State + '" gen --name ' + $Bc2Name + ' --count ' + $BcSamples + ' --no-live'
+    if ($Schema -eq 3) { $gen += ' --schema 3 --scenarios ' + $BcScenarios + ' --scenarios-only --teacher battlecast --teacher-rounds 1 --rounds-max 2 --per-src 4' }
+    Write-Output ("[bc] arent gen --name " + $Bc2Name + " --count " + $BcSamples + $(if ($Schema -eq 3) { ' --schema 3 --scenarios ' + $BcScenarios + ' --scenarios-only --teacher battlecast' } else { '' }) + "   (-> bc_gen.log inside result.zip)")
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $gen -Log $genLog
     if ($LASTEXITCODE -ne 0) { throw "BC gen failed (exit $LASTEXITCODE) - see bc_gen.log" }
-    $a = '"' + $main + '" --home "' + $State + '" train --dataset ' + $Bc2Name + ' --name ' + $Bc2Name + ' --kind auto --device ' + $device
+    $tr = '"' + $main + '" --home "' + $State + '" train --dataset ' + $Bc2Name + ' --name ' + $Bc2Name + ' --kind auto --device ' + $device
+    if ($Schema -eq 3) { $tr += ' --schema 3' }
     Write-Output ("[bc] arent train --dataset " + $Bc2Name + " --name " + $Bc2Name + "   (-> bc_train.log inside result.zip)")
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $a -Log $trLog
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Script $pv -Arg $tr -Log $trLog
     if ($LASTEXITCODE -ne 0) { throw "BC train failed (exit $LASTEXITCODE) - see bc_train.log" }
 }
 function Groups-Leak-Ho($m) {
     if (-not $m -or -not $m.split) { return -1 }
     $keys = @()
     foreach ($k in @("train_group_keys","val_group_keys","train","val","holdout")) { if ($m.split.$k) { $keys += $m.split.$k } }
-    $leak = $keys | Where-Object { $_ -match "(^|:)ho2?_" }
+    $leak = $keys | Where-Object { $_ -match (("(^|:)" + $script:hoBare)) }
     return @($leak).Count
 }
 function Torch-Ok {
@@ -176,6 +195,7 @@ try {
     if (-not (Test-Path $main)) { throw "no arent main.py at $main (server unpacked wrong?)" }
     if (-not (Test-Path $runs)) { throw "no state\runs at $runs (models live outside server on purpose - check the archive carries state\)" }
     Say "root=$Root"; Say "server=$Server"; Say "state=$State"; Say "venv=$Venv"; Say "mode=$Mode"
+    Say ("schema=" + $Schema + " bc=" + $Bc2Name + " ppo=" + $PpoName + " eval_prefix=" + $script:hoPattern)
 
     # ---- venv: build only if the backend is actually missing ------------------------
     if ($SkipEnv) { Say "SkipEnv set - not touching the venv" }
@@ -262,7 +282,7 @@ try {
     $setsha = @($script:results | ForEach-Object { $_.eval.testset_sha } | Select-Object -Unique)
     $sameSet = ($setsha.Count -eq 1)
     $allHo = $true
-    foreach ($r in $script:results) { if (@($r.eval.rows | Where-Object { $_.name -notmatch "^ho2?_" }).Count -ne 0) { $allHo = $false } }
+    foreach ($r in $script:results) { if (@($r.eval.rows | Where-Object { $_.name -notmatch $script:hoPattern }).Count -ne 0) { $allHo = $false } }
     $leaks = @($script:results | Where-Object { $_.leak -ne 0 }).Count
     $independent = ($sameSet -and $allHo -and ($leaks -eq 0))
     $script:setSha = ($setsha -join ",")
@@ -292,6 +312,7 @@ try {
     $mnote = if ($script:trained) { "state\ now holds a NEW '$PpoName' checkpoint (team-reward PPO warm from $Bc2Name, ho_*/ho2_* never in its training/selection); '$Bc2Name' was NOT overwritten. The returned state\ is the backup." } else { "returned state\ contains every model+dataset; it is the backup. Nothing here trained or overwrote weights." }
     $manifest = [ordered]@{
         kind = "handoff_independent_comparison"; mode = $mode; trained_ppo = $script:trained
+        schema = $Schema; eval_prefix_pattern = $script:hoPattern
         same_testset = $sameSet; eval_scenes_all_ho = $allHo; ho_leak_in_any_training = ($leaks -gt 0)
         fully_independent = $independent; rounds_cap = $Rounds; eval_kind = $Kind
         models = @($script:results | ForEach-Object { [ordered]@{

@@ -19,6 +19,7 @@ param(
     [string]$OutDir = "",
     [string]$Name = "",
     [string]$StateSeed = "",          # OPTIONAL v1-era dir with model_best.json etc. to carry over
+    [int]$Schema = 2,                 # 2 = v2 stack (default); 3 = schema-3 archive (RUN.bat trains v3)
     [switch]$Lean                     # explicit code-only request (v2 default is already lean)
 )
 $ErrorActionPreference = "Stop"
@@ -26,7 +27,7 @@ $ErrorActionPreference = "Stop"
 $arent = Split-Path $PSScriptRoot -Parent
 $server = Split-Path $arent -Parent
 $moduleRoot = Split-Path (Split-Path (Split-Path $server -Parent) -Parent) -Parent
-if (-not $Name) { $Name = "arent4060-" + (Get-Date).ToString("yyyyMMdd") }
+if (-not $Name) { $Name = "arent4060" + $(if ($Schema -eq 3) { "-v3" } else { "" }) + "-" + (Get-Date).ToString("yyyyMMdd") }
 if (-not $OutDir) { $OutDir = Join-Path $moduleRoot "temp" }
 if (-not $StateSeed) {
     $cand = Join-Path $env:TEMP "arent_ro"
@@ -69,6 +70,12 @@ $global:LASTEXITCODE = 0
 Copy-Item (Join-Path $PSScriptRoot "RUN.bat") (Join-Path $stage "RUN.bat")
 if (Test-Path (Join-Path $PSScriptRoot "START_HERE.txt")) {
     Copy-Item (Join-Path $PSScriptRoot "START_HERE.txt") (Join-Path $stage "START_HERE.txt")
+}
+# a schema-3 archive carries schema.txt so a bare double-click of RUN.bat trains v3 (bc_v3 +
+# ppo_v3, evaluated on ho3_*). Absent/2 = the untouched v2 default. RUN.bat --v2 overrides it.
+if ($Schema -eq 3) {
+    [System.IO.File]::WriteAllText((Join-Path $stage "schema.txt"), "3",
+                                   [System.Text.UTF8Encoding]::new($false))
 }
 
 # --- state\ starts EMPTY in v2 (RUN.bat trains bc_v2 + ppo_v2 on the 4060) ------------------
@@ -123,6 +130,13 @@ $must = @("RUN.bat",
           "server\arent\pack\verify_zip.ps1", "server\arent\pack\run_logged.ps1",
           "server\arent\pack\no_quickedit.ps1",
           "server\planner\service.py", "server\playground\arena.py")
+if ($Schema -eq 3) {
+    # the move-plan / LOS / F-D teacher stack the v3 launcher runs on must ship with the archive
+    $must += @("server\planner\los.py", "server\arent\spec3.py", "server\arent\slots_v3.py",
+               "server\arent\encode_v3.py", "server\arent\battlecast.py",
+               "server\arent\battlecast_heuristics.py", "server\arent\polyenv.py",
+               "server\arent\teachers.py", "server\arent\holdout.py")
+}
 foreach ($rel in $must) {
     if (-not (Test-Path (Join-Path $stage $rel))) { throw "pack: missing $rel" }
 }
@@ -149,8 +163,12 @@ foreach ($group in @("RUN.bat", "server/arent/main.py", "server/playground/arena
 }
 $ho = $entries | Where-Object { $_.FullName -replace "\\", "/" -like "*playground/arenas/ho_*" }
 $ho2 = $entries | Where-Object { $_.FullName -replace "\\", "/" -like "*playground/arenas/ho2_*" }
+$ho3 = $entries | Where-Object { $_.FullName -replace "\\", "/" -like "*playground/arenas/ho3_*" }
 $log += ("ho_* arenas             : {0}" -f $ho.Count)
 $log += ("ho2_* arenas            : {0}" -f $ho2.Count)
+$log += ("ho3_* arenas            : {0}" -f $ho3.Count)
+$sv = if ($Schema -eq 3) { '  (RUN.bat trains bc_v3+ppo_v3, compares on ho3_* only)' } else { '  (v2 default stack)' }
+$log += ("schema                  : " + $Schema + $sv)
 $archive.Dispose()
 Remove-Item $stage -Recurse -Force
 

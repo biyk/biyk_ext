@@ -18,6 +18,7 @@ rem
 rem   So just DOUBLE-CLICK RUN.bat - no typing (that already trains PPO + fair-compares).
 rem   First run only, to change the 4060 build:  RUN.bat --cpu  |  RUN.bat --lite  |  RUN.bat --offline
 rem   Only a quick re-compare, no training:       RUN.bat --eval-only
+rem   Force task schema (else uses schema.txt):   RUN.bat --v3    |  RUN.bat --v2
 rem   More/fewer PPO iterations:                  RUN.bat 300     (RUN.bat --train still works too)
 setlocal enableextensions
 cd /d "%~dp0"
@@ -30,12 +31,17 @@ set "MODE=cuda"
 set "HX="
 set "ITERS="
 set "EVALONLY="
+set "SCHEMAARG="
+set "SV="
 :parse
 if "%~1"=="" goto parsed
 if /i "%~1"=="--cpu" set "MODE=cpu"& shift & goto parse
 if /i "%~1"=="--lite" set "MODE=lite"& shift & goto parse
 if /i "%~1"=="--offline" set "MODE=offline"& shift & goto parse
 if /i "%~1"=="--train" shift & goto parse
+if /i "%~1"=="--v3" set "SCHEMAARG=-Schema 3"& shift & goto parse
+if /i "%~1"=="--schema3" set "SCHEMAARG=-Schema 3"& shift & goto parse
+if /i "%~1"=="--v2" set "SCHEMAARG="& set "V2FORCE=1"& shift & goto parse
 if /i "%~1"=="--eval-only" set "EVALONLY=1"& set "HX=-EvalOnly"& shift & goto parse
 if /i "%~1"=="--no-train" set "EVALONLY=1"& set "HX=-EvalOnly"& shift & goto parse
 set "A=%~1"
@@ -43,17 +49,23 @@ if not "x%A:~0,2%"=="x--" set "ITERS=%A%"
 shift
 goto parse
 :parsed
+rem default schema for a bare double-click: a shipped schema.txt holding 3 makes this a v3 box;
+rem an explicit --v3 / --v2 overrides it, and --v2 wins even when schema.txt says 3.
+if defined V2FORCE set "SCHEMAARG="
+if not defined SCHEMAARG if exist "%~dp0schema.txt" set /p SV=<"%~dp0schema.txt"
+if not defined SCHEMAARG if "%SV%"=="3" set "SCHEMAARG=-Schema 3"
 if defined ITERS set "HX=%HX% -Iters %ITERS%"
 
 echo [run] folder: %~dp0
 echo [run] live log + a backup of your models go INSIDE result.zip - you send back one file.
-if defined EVALONLY (echo [run] mode: EVALUATE-ONLY - only compare bc_v2 + ppo on ho_*/ho2_*) else (echo [run] mode: FULL - train BC v2 if absent, then team-reward PPO, then compare. first run LONG; re-run skips finished steps)
+if defined EVALONLY (echo [run] mode: EVALUATE-ONLY - only compare the checkpoints on the independent set) else (echo [run] mode: FULL - train BC if absent, then team-reward PPO, then compare. first run LONG; re-run skips finished steps)
+if "%SCHEMAARG%"=="-Schema 3" (echo [run] schema: 3 - move-plan action space, team scenarios, fair comparison on ho3_* only) else (echo [run] schema: 2 - v2 cell-action stack, comparison on ho_*/ho2_*)
 echo.
 
 if not exist "%ARENT%\main.py" goto :no_server
 powershell -NoProfile -ExecutionPolicy Bypass -File "%ARENT%\pack\no_quickedit.ps1" 1>nul 2>nul
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%ARENT%\pack\handoff.ps1" -Mode %MODE% %HX%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ARENT%\pack\handoff.ps1" -Mode %MODE% %SCHEMAARG% %HX%
 set "RC=%errorlevel%"
 
 echo.

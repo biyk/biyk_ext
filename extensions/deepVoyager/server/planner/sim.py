@@ -9,9 +9,10 @@ from planner.action import ACTION_MOVE, ACTION_TARGET, ACTION_USE, Action
 from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import best_strike, legal_steps
-from planner.geometry import DIR_VECTORS, Cell, apply_moves, cell_distance, within_reach
+from planner.geometry import DIR_VECTORS, Cell, apply_moves, cell_distance
 from planner.initiative import (Unit, allies_of, are_hostile, living_order,
                                 next_living, roll_initiatives)
+from planner.los import sight_segments, striking_distance
 from planner.payload import actor_gear, parse_tokens
 from planner.pathfinding import PathfindingService
 from planner.points import tuning
@@ -26,6 +27,7 @@ class Simulation:
                  initiative_order: Tuple[str, ...] = ()):
         self.base, self.units, self.hero_id = base, units, hero_id
         self._target_id, self.hero_dead, self._pf = target_id, hero_dead, None
+        self._sight = None
         self.initiative_order = tuple(initiative_order)
 
     @classmethod
@@ -112,6 +114,13 @@ class Simulation:
             self._pf = PathfindingService(self.context_for(self.hero_id))._finder
         return self._pf
 
+    @property
+    def sight(self):
+        """Стены обзора один раз на состояние: позиция меняется, стены — нет (base.walls)."""
+        if self._sight is None:
+            self._sight = sight_segments(self.base)
+        return self._sight
+
     def apply_hero(self, actions: List[Action]) -> "Simulation":
         """Ход героя (частный случай apply_actor для src) — контракт одиночного актёра."""
         return self.apply_actor(self.hero_id, actions)
@@ -130,8 +139,8 @@ class Simulation:
             foe = units.get(aimed or "")
             reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
             if foe is None or not foe.is_alive or not are_hostile(actor, foe, self.hero_id) \
-                    or not within_reach(cell, foe.cell, reach):
-                continue        # не достать или свой: ход состоялся, урона нет
+                    or not striking_distance(self.base, cell, foe.cell, reach, self.sight):
+                continue        # не достать (дистанция/LOS) или свой: ход состоялся, урона нет
             # своего КД у актёра в данных нет (долг) — попадание по общему правилу
             damage = (weapon.expected_damage if weapon else t.unknown_damage_avg) * t.hit_chance
             units[aimed] = replace(foe, hp=foe.hp - damage)
@@ -145,7 +154,8 @@ class Simulation:
         где актёр находится В МОМЕНТ удара. Это делает выразимой последовательность
         «атаковать с исходной позиции -> отступить» и «выйти из укрытия -> выстрелить ->
         вернуться»: удар проверяется по позиции атаки, а не по финальной позиции.
-        Урон — ожиданием (как apply_actor); LOS/укрытие добавляет F-C в том же месте.
+        Урон — ожиданием (как apply_actor); доступность удара (дистанция + линия видимости из
+        позиции удара) задаёт единое правило planner/los.striking_distance (F-C).
         """
         t = tuning()
         actor = self.units[actor_id]
@@ -165,8 +175,8 @@ class Simulation:
                 foe = units.get(aimed or "")
                 reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
                 if foe is None or not foe.is_alive or not are_hostile(actor, foe, self.hero_id) \
-                        or not within_reach(cell, foe.cell, reach):
-                    continue        # удар из ТЕКУЩЕЙ клетки: не достал или свой — урона нет
+                        or not striking_distance(self.base, cell, foe.cell, reach, self.sight):
+                    continue        # удар из ТЕКУЩЕЙ клетки: дистанция/LOS/свой — урона нет
                 damage = (weapon.expected_damage if weapon else t.unknown_damage_avg) * t.hit_chance
                 units[aimed] = replace(foe, hp=foe.hp - damage)
         return self._clone(units)
@@ -192,11 +202,11 @@ class Simulation:
             if not hero.is_alive:
                 break                          # дожимать мёртвого смысла нет
             unit = foe
-            if not within_reach(unit.cell, hero.cell, unit.reach_cells):
+            if not striking_distance(self.base, unit.cell, hero.cell, unit.reach_cells, self.sight):
                 unit = self._approach(unit, hero.cell)
                 units[unit.id] = unit
             hero = units[self.hero_id]
-            if within_reach(unit.cell, hero.cell, unit.reach_cells):
+            if striking_distance(self.base, unit.cell, hero.cell, unit.reach_cells, self.sight):
                 penalty += t.damage_penalty * unit.chance      # штраф за сам факт урона
                 units[self.hero_id] = replace(hero, hp=hero.hp - unit.damage_avg * unit.chance)
         dead = not units[self.hero_id].is_alive

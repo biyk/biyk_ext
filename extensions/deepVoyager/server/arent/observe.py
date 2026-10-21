@@ -14,6 +14,7 @@ from libs.quin import SimplePathfinder
 from planner.armament import SURE, best_attack
 from planner.context import BattleContext, Token
 from planner.geometry import cell_distance
+from planner.los import has_los, sight_segments      # единый механизм LOS (F-C); реэкспорт
 from planner.points import tuning
 from arent import spec
 
@@ -32,22 +33,6 @@ def _number(raw: Dict[str, Any], key: str) -> float:
         return float(raw.get(key) or 0)
     except (TypeError, ValueError):
         return 0.0
-
-
-def sight_segments(ctx: BattleContext) -> List[Segment]:
-    """Стены, мешающие обзору: тот же геометрический тест, что у quin, но по флагу sight."""
-    return [((w.ax, w.ay), (w.bx, w.by)) for w in ctx.walls if w.sight > 0]
-
-
-def _center(ctx: BattleContext, cell: Cell) -> Point:
-    gs = ctx.scene.grid_size
-    return (cell[1] + 0.5) * gs, (cell[0] + 0.5) * gs
-
-
-def has_los(ctx: BattleContext, a: Cell, b: Cell, segments: List[Segment]) -> bool:
-    """Видно ли центр клетки b из центра клетки a: прямая не пересекает ни одной стены."""
-    p1, p2 = _center(ctx, a), _center(ctx, b)
-    return not any(SimplePathfinder._segment_intersect(p1, p2, s[0], s[1]) for s in segments)
 
 
 def _walls_in_view(ctx: BattleContext, me_cell: Cell) -> float:

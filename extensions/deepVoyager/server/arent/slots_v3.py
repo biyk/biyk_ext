@@ -14,6 +14,7 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import reachable_paths
 from planner.geometry import Cell, apply_moves, cell_distance
+from planner.los import los_clear
 from planner.pathfinding import PathfindingService
 from arent import spec, spec3
 
@@ -133,8 +134,13 @@ def attackable_v3(slots: SlotsV3, ctx: BattleContext, plan_i: int, target_i: int
     enemy, weapon = slots.targets[target_i], slots.weapons[weapon_i]
     if not enemy["alive"]:
         return False
-    dist = cell_distance(slots.plans[plan_i]["attack_cell"], _cell_of(ctx, enemy["id"]))
-    return dist <= float(weapon["doubtCells"]) + 0.5
+    # F-C: проверяем доступность ИЗ ПОЗИЦИИ АТАКИ (attack_cell), а не конечной клетки
+    # (end_cell): «вышел из-за угла — выстрелил — вернулся» легально, если на момент
+    # выстрела есть линия видимости. То же правило, что у sim.apply_actor_seq.
+    attack_cell = slots.plans[plan_i]["attack_cell"]
+    at = _cell_of(ctx, enemy["id"])
+    dist = cell_distance(attack_cell, at)
+    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, attack_cell, at)
 
 
 def _real(index: int, count: int) -> int:

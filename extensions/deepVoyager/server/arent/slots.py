@@ -16,6 +16,7 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import reachable_paths
 from planner.geometry import Cell, apply_moves, cell_distance
+from planner.los import los_clear
 from planner.pathfinding import PathfindingService
 from arent import spec
 
@@ -91,7 +92,7 @@ def ensure_cell(slots: Slots, src_cell: Cell, cell: Cell, dirs: List[str]) -> in
 
 def attackable(slots: Slots, ctx: BattleContext, cell_i: int, target_i: int,
                weapon_i: int) -> bool:
-    """Легально ли три: цель жива, клетка в слотах, оружие до цели достает."""
+    """Легально ли три: цель жива, клетка в слотах, оружие достает И есть линия видимости."""
     if cell_i < 0 or target_i < 0 or weapon_i < 0:
         return False
     if not (0 <= cell_i < slots.n_cells):
@@ -100,8 +101,13 @@ def attackable(slots: Slots, ctx: BattleContext, cell_i: int, target_i: int,
     weapon = slots.weapons[weapon_i]
     if not enemy["alive"]:
         return False
-    dist = cell_distance(slots.cells[cell_i]["cell"], _cell_of(ctx, enemy["id"]))
-    return dist <= float(weapon["doubtCells"]) + 0.5
+    cell = slots.cells[cell_i]["cell"]
+    at = _cell_of(ctx, enemy["id"])
+    dist = cell_distance(cell, at)
+    # F-C: то же правило, что у исполнения урона (planner/sim) и наблюдения (observe):
+    # дистанция И линия видимости из выбранной клетки. Маска больше не разрешает выстрел
+    # сквозь стену, который симуляция потом обнуляет.
+    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, cell, at)
 
 
 def decode(slots: Slots, label: Dict[str, int]) -> List[Action]:

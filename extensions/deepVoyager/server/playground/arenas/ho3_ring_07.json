@@ -1,0 +1,286 @@
+{
+ "comment": "gen arch=ring side_a=3 side_b=3 field=small walls=scatter deploy=corner layout=structured",
+ "scene": {
+  "width": 700,
+  "height": 750,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [
+  {
+   "id": "w4",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 100
+    },
+    "B": {
+     "x": 150,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 0
+  },
+  {
+   "id": "w0",
+   "points": {
+    "A": {
+     "x": 350,
+     "y": 350
+    },
+    "B": {
+     "x": 400,
+     "y": 350
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w3",
+   "points": {
+    "A": {
+     "x": 300,
+     "y": 550
+    },
+    "B": {
+     "x": 300,
+     "y": 600
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w8",
+   "points": {
+    "A": {
+     "x": 450,
+     "y": 450
+    },
+    "B": {
+     "x": 450,
+     "y": 500
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w9",
+   "points": {
+    "A": {
+     "x": 350,
+     "y": 200
+    },
+    "B": {
+     "x": 350,
+     "y": 250
+    }
+   },
+   "move": 1,
+   "sight": 0
+  }
+ ],
+ "tokens": [
+  {
+   "id": "A1",
+   "name": "melee-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    2
+   ],
+   "hp": 10,
+   "speed": 25,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.63,
+   "initiative": 22,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "mobile_archer-2",
+   "disposition": -1,
+   "cell": [
+    2,
+    3
+   ],
+   "hp": 9,
+   "speed": 30,
+   "damage": "1d8",
+   "reachFt": 60,
+   "hitChance": 0.5,
+   "initiative": 16,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "A3",
+   "name": "reach-3",
+   "disposition": -1,
+   "cell": [
+    3,
+    2
+   ],
+   "hp": 14,
+   "speed": 25,
+   "damage": "1d8+2",
+   "reachFt": 10,
+   "hitChance": 0.46,
+   "initiative": 28,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "F1",
+   "name": "fast-1",
+   "disposition": 1,
+   "cell": [
+    12,
+    11
+   ],
+   "hp": 7,
+   "speed": 30,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.66,
+   "initiative": 17,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "name": "melee-2",
+   "disposition": 1,
+   "cell": [
+    11,
+    9
+   ],
+   "hp": 11,
+   "speed": 30,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.54,
+   "initiative": 5,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ]
+  },
+  {
+   "id": "F3",
+   "name": "fast-3",
+   "disposition": 1,
+   "cell": [
+    12,
+    9
+   ],
+   "hp": 7,
+   "speed": 30,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.52,
+   "initiative": 19,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  }
+ ]
+}

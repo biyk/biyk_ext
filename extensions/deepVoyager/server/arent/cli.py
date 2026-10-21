@@ -189,9 +189,11 @@ def parser() -> argparse.ArgumentParser:
                       help="дедлайн планировщика на план для учителя (напр. --limit greedy 0.5)")
     abs_.add_argument("--name", default="abset", help="подпапка в runs/ для fixed_set.json/abset.json")
 
-    hld = sub.add_parser("holdout", help="создать замороженный командный holdout v2 (ho2_* арены)")
+    hld = sub.add_parser("holdout", help="создать замороженный командный holdout (ho2_*/ho3_* арены)")
     hld.add_argument("--count", type=int, default=holdout.HOLDOUT_COUNT, help="число сцен в наборе")
     hld.add_argument("--seed", type=int, default=holdout.HOLDOUT_SEED, help="фиксированное семя набора")
+    hld.add_argument("--prefix", default=holdout.HOLDOUT_PREFIX,
+                     help="префикс имён: ho2_ (v2) или ho3_ (схема 3); оба зарезервированы как independent")
     hld.add_argument("--out", help="каталог арен (по умолчанию playground/arenas)")
     hld.add_argument("--manifest", help="куда писать манифест происхождения набора")
 
@@ -379,9 +381,10 @@ def _abset(args) -> int:
 
 
 def _holdout(args) -> int:
-    """Создать/обновить замороженный командный holdout v2 (ho2_*). Набор детерминирован seed."""
-    res = holdout.author(count=args.count, seed=args.seed, out_dir=args.out, manifest=args.manifest)
-    print(f"заморожено ho2_* арен: {res['written']} -> {res['dir']}")
+    """Создать/обновить замороженный командный holdout (ho2_*/ho3_*). Набор детерминирован seed."""
+    res = holdout.author(count=args.count, seed=args.seed, out_dir=args.out,
+                         manifest=args.manifest, prefix=args.prefix)
+    print(f"заморожено {args.prefix}* арен: {res['written']} -> {res['dir']}")
     print("  " + ", ".join(res["names"]))
     if res["manifest"]:
         print(f"  манифест -> {res['manifest']}")

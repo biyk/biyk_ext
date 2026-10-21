@@ -1,0 +1,196 @@
+{
+ "comment": "gen arch=pair side_a=2 side_b=2 field=small walls=scatter deploy=corner layout=random",
+ "scene": {
+  "width": 800,
+  "height": 700,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [
+  {
+   "id": "w0",
+   "points": {
+    "A": {
+     "x": 50,
+     "y": 650
+    },
+    "B": {
+     "x": 100,
+     "y": 650
+    }
+   },
+   "move": 1,
+   "sight": 0
+  },
+  {
+   "id": "w9",
+   "points": {
+    "A": {
+     "x": 600,
+     "y": 300
+    },
+    "B": {
+     "x": 600,
+     "y": 350
+    }
+   },
+   "move": 1,
+   "sight": 0
+  },
+  {
+   "id": "w6",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 250
+    },
+    "B": {
+     "x": 150,
+     "y": 250
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w7",
+   "points": {
+    "A": {
+     "x": 300,
+     "y": 350
+    },
+    "B": {
+     "x": 350,
+     "y": 350
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w4",
+   "points": {
+    "A": {
+     "x": 250,
+     "y": 200
+    },
+    "B": {
+     "x": 250,
+     "y": 250
+    }
+   },
+   "move": 1,
+   "sight": 0
+  }
+ ],
+ "tokens": [
+  {
+   "id": "A1",
+   "name": "fast-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    2
+   ],
+   "hp": 9,
+   "speed": 40,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.6,
+   "initiative": 18,
+   "weapons": [
+    {
+     "id": "gsword",
+     "name": "Двуручный",
+     "damage": "2d6+3",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "tank-2",
+   "disposition": -1,
+   "cell": [
+    4,
+    2
+   ],
+   "hp": 45,
+   "speed": 15,
+   "damage": "2d6+3",
+   "reachFt": 5,
+   "hitChance": 0.42,
+   "initiative": 24,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "F1",
+   "name": "reach-1",
+   "disposition": 1,
+   "cell": [
+    10,
+    8
+   ],
+   "hp": 13,
+   "speed": 15,
+   "damage": "1d8+2",
+   "reachFt": 10,
+   "hitChance": 0.46,
+   "initiative": 25,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "name": "fast-2",
+   "disposition": 1,
+   "cell": [
+    10,
+    13
+   ],
+   "hp": 9,
+   "speed": 35,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.53,
+   "initiative": 7,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  }
+ ]
+}

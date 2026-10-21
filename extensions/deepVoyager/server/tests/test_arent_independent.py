@@ -37,7 +37,8 @@ def test_is_independent_matches_only_the_reserved_prefix():
     assert dataset.is_independent("ho_bridge_crossing") is True
     assert dataset.is_independent("ho_x") is True
     assert dataset.is_independent("ho2_line_00") is True     # командный holdout v2 тоже в резерве
-    for name in ("cap_20261019_live", "arena1_live", "bridge", "", "HO_uppercase", "ho2", "h2o_x"):
+    assert dataset.is_independent("ho3_line_00") is True     # независимый holdout схемы 3 в резерве
+    for name in ("cap_20261019_live", "arena1_live", "bridge", "", "HO_uppercase", "ho2", "h2o_x", "ho3"):
         assert dataset.is_independent(name) is False
 
 

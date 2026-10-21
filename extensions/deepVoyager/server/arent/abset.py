@@ -39,7 +39,7 @@ def build_set(count: int, seed: int) -> List[Tuple[str, Dict[str, Any], Dict[str
         ctx = BattleContext.from_payload(payload)
         if not ctx.hostile_targets() or not ctx.src.is_alive:
             continue
-        assert not name.startswith(("ho_", "ho2_")), f"holdout просочился в набор: {name}"
+        assert not name.startswith(("ho_", "ho2_", "ho3_")), f"holdout просочился в набор: {name}"
         out.append((name, payload, params))
     return out
 

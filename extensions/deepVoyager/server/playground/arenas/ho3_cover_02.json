@@ -1,0 +1,339 @@
+{
+ "comment": "gen arch=cover side_a=2 side_b=2 field=large walls=ring deploy=diagonal layout=structured",
+ "scene": {
+  "width": 1350,
+  "height": 1450,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [
+  {
+   "id": "w29",
+   "points": {
+    "A": {
+     "x": 450,
+     "y": 1300
+    },
+    "B": {
+     "x": 500,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w57",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 800
+    },
+    "B": {
+     "x": 100,
+     "y": 850
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w37",
+   "points": {
+    "A": {
+     "x": 850,
+     "y": 1300
+    },
+    "B": {
+     "x": 900,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w24",
+   "points": {
+    "A": {
+     "x": 200,
+     "y": 1300
+    },
+    "B": {
+     "x": 250,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w22",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 1300
+    },
+    "B": {
+     "x": 150,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w43",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 100
+    },
+    "B": {
+     "x": 100,
+     "y": 150
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w59",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 900
+    },
+    "B": {
+     "x": 100,
+     "y": 950
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w5",
+   "points": {
+    "A": {
+     "x": 350,
+     "y": 100
+    },
+    "B": {
+     "x": 400,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w47",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 300
+    },
+    "B": {
+     "x": 100,
+     "y": 350
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w6",
+   "points": {
+    "A": {
+     "x": 400,
+     "y": 100
+    },
+    "B": {
+     "x": 450,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w41",
+   "points": {
+    "A": {
+     "x": 1050,
+     "y": 1300
+    },
+    "B": {
+     "x": 1100,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w1",
+   "points": {
+    "A": {
+     "x": 150,
+     "y": 100
+    },
+    "B": {
+     "x": 200,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w45",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 200
+    },
+    "B": {
+     "x": 100,
+     "y": 250
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w34",
+   "points": {
+    "A": {
+     "x": 700,
+     "y": 1300
+    },
+    "B": {
+     "x": 750,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 1
+  }
+ ],
+ "tokens": [
+  {
+   "id": "A1",
+   "name": "melee-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    24
+   ],
+   "hp": 10,
+   "speed": 15,
+   "damage": "1d8",
+   "reachFt": 5,
+   "hitChance": 0.61,
+   "initiative": 15,
+   "weapons": [
+    {
+     "id": "bow",
+     "name": "Длинный лук",
+     "damage": "1d8+2",
+     "attackBonus": 4,
+     "sureFt": 30,
+     "doubtFt": 120
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "melee-2",
+   "disposition": -1,
+   "cell": [
+    2,
+    23
+   ],
+   "hp": 6,
+   "speed": 20,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.62,
+   "initiative": 13,
+   "weapons": [
+    {
+     "id": "jav",
+     "name": "Дротики",
+     "damage": "1d6",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ]
+  },
+  {
+   "id": "F1",
+   "name": "ranged-1",
+   "disposition": 1,
+   "cell": [
+    26,
+    2
+   ],
+   "hp": 13,
+   "speed": 25,
+   "damage": "1d6+2",
+   "reachFt": 30,
+   "hitChance": 0.54,
+   "initiative": 30,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ]
+  },
+  {
+   "id": "F2",
+   "name": "melee-2",
+   "disposition": 1,
+   "cell": [
+    25,
+    2
+   ],
+   "hp": 6,
+   "speed": 30,
+   "damage": "1d8",
+   "reachFt": 5,
+   "hitChance": 0.6,
+   "initiative": 22,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ]
+  }
+ ]
+}

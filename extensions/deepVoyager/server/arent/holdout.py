@@ -1,13 +1,13 @@
-# arent/holdout.py — авторинг замороженного КОМАНДного holdout v2 (ho2_*).
+# arent/holdout.py — авторинг замороженного КОМАНДного holdout (ho2_* v2 / ho3_* схема 3).
 #
 # Зачем отдельный набор: ho_* — одиночный герой (наследуемая оценка), а v2 учится на
 # командном бою 1..6 на 1..6 с инициативой. Честная оценка bc_v2↔PPO обязана идти на
 # тех же командных конфигурациях, но физически отделённых от обучения. Здесь мы ОДИН раз
-# собираем N валидных сцен из фиксированного seed, переименовываем в ho2_*, проставляем
-# каждому токену ЯВНУЮ инициативу (1..30 из crc32(имя:id) — стабильно между процессами,
-# не через hash()) и пишем в playground/arenas. Дальше файлы неприкосновенны: обучение и
-# abset их не видят (dataset.is_independent отсекает ho2_, scenarios.write_arenas их не
-# перезапишет). Повторный запуск с тем же seed воспроизводит набор байт-в-байт.
+# собираем N валидных сцен из фиксированного seed, переименовываем в ho2_* (или ho3_* для
+# схемы 3), проставляем каждому токену ЯВНУЮ инициативу (1..30 из crc32(имя:id) — стабильно
+# между процессами, не через hash()) и пишем в playground/arenas. Дальше файлы неприкосновенны:
+# обучение и abset их не видят (dataset.is_independent отсекает ho2_/ho3_, scenarios.write_arenas
+# их не перезапишет). Повторный запуск с тем же seed воспроизводит набор байт-в-байт.
 import copy
 import json
 import os
@@ -20,6 +20,12 @@ from playground import arena
 HOLDOUT_PREFIX = "ho2_"
 HOLDOUT_SEED = 20261021          # фиксированное семя: набор однажды заморожен
 HOLDOUT_COUNT = 12               # размер независимого командного набора
+
+# Независимый holdout схемы 3: СВОЙ seed (не пересекается с ho2_), поэтому старые наборы
+# считаются уже использованными, а честное сравнение v3 идёт ровно на ho3_*.
+V3_PREFIX = "ho3_"
+V3_SEED = 20261022
+V3_COUNT = 12
 
 
 def initiative_for(arena_name: str, token_id: str) -> int:
@@ -34,12 +40,12 @@ def stamp_initiative(raw: Dict[str, Any], arena_name: str) -> Dict[str, Any]:
     return raw
 
 
-def build(count: int = HOLDOUT_COUNT, seed: int = HOLDOUT_SEED
+def build(count: int = HOLDOUT_COUNT, seed: int = HOLDOUT_SEED, prefix: str = HOLDOUT_PREFIX
           ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """count валидных командных сцен как ho2_*; каждая с явной инициативой у всех токенов."""
+    """count валидных командных сцен как prefix* (ho2_/ho3_); каждая с явной инициативой у всех токенов."""
     out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
     for i, (_gen_name, raw, params) in enumerate(scenarios.generate(count, seed)):
-        name = f"{HOLDOUT_PREFIX}{params['archetype']}_{i:02d}"
+        name = f"{prefix}{params['archetype']}_{i:02d}"
         stamped = stamp_initiative(copy.deepcopy(raw), name)
         payload = arena.build_payload(stamped, name)                 # валидируем разбор
         ctx = scenarios._bc(payload)
@@ -51,8 +57,9 @@ def build(count: int = HOLDOUT_COUNT, seed: int = HOLDOUT_SEED
 
 
 def write(scenes: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],
-          out_dir: Optional[str] = None, manifest: Optional[str] = None) -> Dict[str, Any]:
-    """Пишет ho2_* арены (это И есть holdout — его можно создавать) + манифест происхождения."""
+          out_dir: Optional[str] = None, manifest: Optional[str] = None,
+          prefix: str = HOLDOUT_PREFIX) -> Dict[str, Any]:
+    """Пишет ho2_*/ho3_* арены (это И есть holdout — его можно создавать) + манифест происхождения."""
     directory = out_dir or arena.ARENAS_DIR
     os.makedirs(directory, exist_ok=True)
     names = []
@@ -64,12 +71,12 @@ def write(scenes: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],
     if manifest:
         os.makedirs(os.path.dirname(manifest), exist_ok=True)
         with open(manifest, "w", encoding="utf-8") as f:
-            json.dump({"prefix": HOLDOUT_PREFIX, "seed": scenes[0][2]["seed"] if scenes else None,
+            json.dump({"prefix": prefix, "seed": scenes[0][2]["seed"] if scenes else None,
                        "count": len(names), "arenas": names}, f, ensure_ascii=False, indent=1)
     return {"written": len(names), "dir": directory, "names": names, "manifest": manifest}
 
 
 def author(count: int = HOLDOUT_COUNT, seed: int = HOLDOUT_SEED, out_dir: Optional[str] = None,
-           manifest: Optional[str] = None) -> Dict[str, Any]:
+           manifest: Optional[str] = None, prefix: str = HOLDOUT_PREFIX) -> Dict[str, Any]:
     """Собрать и заморозить набор одной командой (CLI `arent holdout`)."""
-    return write(build(count, seed), out_dir, manifest)
+    return write(build(count, seed, prefix), out_dir, manifest, prefix)

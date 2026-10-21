@@ -18,6 +18,7 @@ from planner.context import BattleContext
 #--- 1. резерв независимого набора -------------------------------------------
 @pytest.mark.parametrize("name,expected", [
     ("ho_open_duel", True), ("ho2_line_00", True), ("ho2_bridge_11", True),
+    ("ho3_line_00", True), ("ho3_cover_07", True),
     ("gen_line_003", False), ("corridor_archer", False), ("cap_live_01", False),
 ])
 def test_is_independent_catches_ho_and_ho2(name, expected):
@@ -73,11 +74,53 @@ def test_write_lays_files_without_touching_real_arenas(tmp_path):
         assert all(int(t.get("initiative", 0)) >= 1 for t in loaded["tokens"])
 
 
+#--- 3b. независимый holdout схемы 3 (ho3_*) ---------------------------------
+def test_v3_holdout_constants_are_reserved_and_distinct():
+    assert holdout.V3_PREFIX == "ho3_"
+    assert holdout.V3_SEED != holdout.HOLDOUT_SEED         # свой seed -> независим от ho2_
+    assert dataset.is_independent(holdout.V3_PREFIX + "line_00") is True
+
+
+def test_build_ho3_renames_and_stamps_every_token():
+    scenes = holdout.build(count=4, seed=holdout.V3_SEED, prefix=holdout.V3_PREFIX)
+    assert scenes and len(scenes) <= 4
+    for name, raw, params in scenes:
+        assert name.startswith("ho3_") and dataset.is_independent(name)
+        assert params["group_id"] == name
+        assert raw["tokens"] and all(int(t.get("initiative", 0)) >= 1 for t in raw["tokens"])
+
+
+def test_ho3_build_is_deterministic_and_disjoint_from_ho2():
+    one = holdout.build(count=3, seed=holdout.V3_SEED, prefix=holdout.V3_PREFIX)
+    two = holdout.build(count=3, seed=holdout.V3_SEED, prefix=holdout.V3_PREFIX)
+    assert [n for n, _r, _p in one] == [n for n, _r, _p in two]
+    assert [r["tokens"] for _n, r, _p in one] == [r["tokens"] for _n, r, _p in two]
+    ho2_names = {n for n, _r, _p in holdout.build(count=3, seed=holdout.HOLDOUT_SEED)}
+    ho3_names = {n for n, _r, _p in one}
+    assert not (ho2_names & ho3_names)                     # физические сцены не пересекаются
+
+
+def test_write_ho3_lays_files_under_reserved_prefix(tmp_path):
+    scenes = holdout.build(count=3, seed=holdout.V3_SEED, prefix=holdout.V3_PREFIX)
+    res = holdout.write(scenes, out_dir=str(tmp_path), prefix=holdout.V3_PREFIX)
+    assert res["written"] == len(scenes)
+    for name, _raw, _params in scenes:
+        path = tmp_path / f"{name}.json"
+        assert path.exists() and name.startswith("ho3_")
+
+
 #--- 4. CLI expose -----------------------------------------------------------
 def test_cli_exposes_holdout_command_with_defaults():
     args = parser().parse_args(["holdout"])
     assert args.cmd == "holdout" and args.count == holdout.HOLDOUT_COUNT
     assert args.seed == holdout.HOLDOUT_SEED
+    assert args.prefix == holdout.HOLDOUT_PREFIX
+
+
+def test_cli_holdout_accepts_ho3_prefix_and_seed():
+    args = parser().parse_args(["holdout", "--prefix", "ho3_", "--seed", str(holdout.V3_SEED),
+                               "--count", str(holdout.V3_COUNT)])
+    assert args.prefix == "ho3_" and args.seed == holdout.V3_SEED and args.count == holdout.V3_COUNT
 
 
 def test_cli_rl_defaults_to_team_reward_and_flags_can_disable():

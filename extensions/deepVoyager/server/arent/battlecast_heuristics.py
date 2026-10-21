@@ -10,15 +10,16 @@
 #  • сопротивления/уязвимости/иммунитеты (adjustForResistance) — у токенов нет resist;
 #  • состояния/кондиции (CONDITION_VALUES) — системы статусов нет;
 #  • AoE-заклинания (shouldUseAoE / bestAoEPosition) — действия только move/target/use-оружие;
-#  • командные тактики (packTacticsBonus / dispersionScore / allyAffinity) — союзники в
-#    Simulation не моделируются вовсе («союзников пока не симулируем (долг)»);
+#  • командные тактики верхнего уровня (совместный залп по одной цели с учётом порядка
+#    инициативы союзников) — одноходовой учитель оценивает EV самотеля, а не координированный
+#    план всех союзников; согласование команды реализуется на полиакторном RL-уровне.
 #  • выбор стратегии по модификатору INT — в payload нет интеллекта;
 #  • провоцированные атаки (oaRiskPenalty) и «отход без помех» (disengage) — отдельной
 #    механики opportunity attack у нас нет; вместо этого позиция штрафуется за реальный
 #    ожидаемый ответный огонь (e.dmgToMe в зоне досягаемости врага за ход) — это ровно то,
 #    что считает Simulation.foes_act, а не выдуманная формула OA.
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from planner.armament import Weapon
 from planner.geometry import Cell, cell_distance
@@ -56,22 +57,36 @@ def expected_hit_damage(weapon: Weapon, enemy_ac: float, fallback: float) -> flo
 
 
 def best_strike(cell: Cell, enemies: List[Enemy], weapons: List[Weapon],
-                fallback: float) -> Optional[Tuple[Enemy, Weapon, float]]:
-    """Лучшая атака из клетки по ожидаемому урону с приоритетом добивания.
+                fallback: float,
+                los: Optional[Callable[[Cell, Cell], bool]] = None,
+                ) -> Optional[Tuple[Enemy, Weapon, float]]:
+    """Лучшая атака из клетки по ожидаемому урону с приоритетом добить опасную цель.
 
     Легальность берём из НАШИХ зон попадания (weapon.mode_at): если ни одно оружие ни до
-    кого не достает из клетки — атаки нет (None). При равных EV выбирается цель ближе.
+    кого не достает из клетки — атаки нет (None). F-D добавляет два тактических критерия:
+    • линия видимости — если передан предикат los(клетка, клетка_врага), цель за стеной
+      не считается атакуемой, даже когда попадает в дистанционную зону (согласовано с F-C:
+      наблюдение, маски и исполнение урона сверяются с тем же правилом planner/los);
+    • ценность добивания — удар, снимающий противника, приносит не только плоский бонус
+      FINISH_VALUE (сокращение числа действующих врагов), но и его будущий ответный огонь
+      dmg_to_me (вероятность устранить угрозу до её следующего действия).
+    При равном EV фокус смещается к более опасной цели (dmg_to_me), затем к ближайшей —
+    команда концентрируется на реальной угрозе, но EV остаётся первичным, поэтому цель не
+    навязывается: более выгодный по уронам выстрел в другую цель всё равно победит.
     """
     best = None
     for enemy in enemies:
+        if los is not None and not los(cell, enemy.cell):
+            continue
         dist = cell_distance(cell, enemy.cell)
         for weapon in weapons:
             if weapon.mode_at(dist) is None:
                 continue
             ev = expected_hit_damage(weapon, enemy.ac, fallback)
             if weapon.expected_damage >= enemy.hp > 0:
-                ev += FINISH_VALUE
-            key = (ev, -dist)
+                # добить = убрать действующего противника И его будущий ответный огонь
+                ev += FINISH_VALUE + enemy.dmg_to_me
+            key = (ev, enemy.dmg_to_me, -dist)   # равный EV -> опаснее, затем ближе
             if best is None or key > best[0]:
                 best = (key, enemy, weapon, ev)
     if best is None:

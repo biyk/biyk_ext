@@ -14,6 +14,7 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import reachable_paths
 from planner.geometry import cell_distance
+from planner.los import has_los, sight_segments
 from planner.pathfinding import PathfindingService
 from planner.points import tuning
 from planner.scoring import Scorer
@@ -65,9 +66,14 @@ class BattlecastTeacher(TeacherPolicy):
         me_cell = ctx.src_cell
         pf = PathfindingService(ctx)._finder
         paths = reachable_paths(pf, me_cell, ctx.src_id, ctx.speed_steps)
+        # F-D: выбор цели согласован с F-C — атака считается только по клеткам с линией
+        # видимости (has_los из planner/los), поэтому учитель больше не «бьёт сквозь стену»,
+        # которую уже видят наблюдение, маски и исполнение урона.
+        segments = sight_segments(ctx)
+        los = lambda a, b: has_los(ctx, a, b, segments)   # noqa: E731
         best = None
         for cell, dirs in sorted(paths.items(), key=lambda kv: (len(kv[1]), kv[0])):
-            strike = best_strike(cell, enemies, weapons, fallback)
+            strike = best_strike(cell, enemies, weapons, fallback, los=los)
             if strike is not None:
                 target, weapon, ev = strike
                 approach = 0.0

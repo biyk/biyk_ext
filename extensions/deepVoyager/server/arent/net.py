@@ -22,6 +22,35 @@ SCHEMA = spec.SCHEMA
 GROUPS = ("cells", "targets", "weapons")           # как в примере выборки
 Y_KEY = {"cells": "cell", "targets": "target", "weapons": "weapon"}
 CONFIG_SECTIONS = ("net", "train", "backend")
+KNOWN_SCHEMAS = (2, 3)      # 2 = клетка-действие, 3 = move-plan (атака+финиш в бюджете хода)
+
+
+def _profile(schema: Optional[int] = None) -> Dict[str, Any]:
+    """Таблица схемы: dims/признаки голов/ключ метки клеток для активной версии задачи.
+
+    Значение по умолчанию = SCHEMA (схема 2), поэтому все прежние вызовы работают ровно как
+    раньше. Схема 3 меняет только голову клеток (move-plan: ширина признаков и ключ метки
+    plan); состояние/цели/оружие общие со схемой 2.
+    """
+    s = SCHEMA if schema is None else int(schema)
+    if s == 3:
+        from arent import spec3
+        return {"dims": spec3.dims3(),
+                "feats": {"cells": spec3.CELL3_FEATURES, "targets": spec.ENEMY_FEATURES,
+                          "weapons": spec.WEAPON_FEATURES},
+                "y_key": {"cells": "plan", "targets": "target", "weapons": "weapon"}}
+    return {"dims": spec.dims(),
+            "feats": {"cells": spec.CELL_FEATURES, "targets": spec.ENEMY_FEATURES,
+                      "weapons": spec.WEAPON_FEATURES},
+            "y_key": dict(Y_KEY)}
+
+
+def dims_for(schema: Optional[int] = None) -> Dict[str, int]:
+    return _profile(schema)["dims"]
+
+
+def y_key(schema: Optional[int] = None) -> Dict[str, str]:
+    return _profile(schema)["y_key"]
 
 
 @dataclass
@@ -39,6 +68,7 @@ class Config:
     val_frac: float = 0.85
     kind: str = "auto"        # auto | torch | pure
     device: str = "auto"      # auto | cuda | cpu
+    schema: int = 2           # версия задачи: 2 = клетка-действие, 3 = move-plan (см. spec3)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -72,14 +102,12 @@ def gen_defaults() -> Dict[str, Any]:
     return dict(raw_config().get("gen") or {})
 
 
-def group_total(group: str) -> int:
-    return spec.dims()[group]
+def group_total(group: str, schema: Optional[int] = None) -> int:
+    return dims_for(schema)[group]
 
 
-def slot_size(group: str) -> int:
-    feats = {"cells": spec.CELL_FEATURES, "targets": spec.ENEMY_FEATURES,
-             "weapons": spec.WEAPON_FEATURES}
-    return len(feats[group])
+def slot_size(group: str, schema: Optional[int] = None) -> int:
+    return len(_profile(schema)["feats"][group])
 
 
 def label_index(y: Optional[int], total: int) -> int:
@@ -89,10 +117,10 @@ def label_index(y: Optional[int], total: int) -> int:
     return min(int(y), total - 1)
 
 
-def y_index(sample: Dict[str, Any], group: str) -> int:
-    """Индекс правильного слота в группе по разметке примера."""
-    y = (sample.get("y") or {}).get(Y_KEY[group])
-    return label_index(y, group_total(group))
+def y_index(sample: Dict[str, Any], group: str, schema: Optional[int] = None) -> int:
+    """Индекс правильного слота в группе по разметке примера (ключ метки — по схеме)."""
+    y = (sample.get("y") or {}).get(y_key(schema)[group])
+    return label_index(y, group_total(group, schema))
 
 
 def masked_argmax(logits: List[float], mask: List[int]) -> int:
@@ -116,11 +144,12 @@ def init_params(cfg: Config, dims: Dict[str, int] = None) -> Dict[str, Any]:
     Ключи: trunk1/b1 (состояние -> hidden), trunk2/b2 (hidden -> head),
     headW/headB/headU/headUB по группам слотов, valueW/valueB — оценка линии.
     """
-    d = dims or spec.dims()
+    d = dims or dims_for(getattr(cfg, "schema", SCHEMA))
+    schema = d.get("schema", getattr(cfg, "schema", SCHEMA))
     rng = random.Random(cfg.seed)
     head_w, head_b, head_u, head_ub = {}, {}, {}, {}
     for group in GROUPS:
-        cols = cfg.head + slot_size(group)
+        cols = cfg.head + slot_size(group, schema)
         head_w[group] = _matrix(cfg.head, cols, rng)
         head_b[group] = [0.0] * cfg.head
         head_u[group] = [round(rng.uniform(-0.1, 0.1), 6) for _ in range(cfg.head)]
@@ -136,25 +165,28 @@ def init_params(cfg: Config, dims: Dict[str, int] = None) -> Dict[str, Any]:
 
 def param_count(cfg: Config, dims: Dict[str, int] = None) -> int:
     """Сколько весов в модели такой конфигурации (для отчёта; сверяется тестом)."""
-    d = dims or spec.dims()
+    d = dims or dims_for(getattr(cfg, "schema", SCHEMA))
+    schema = d.get("schema", getattr(cfg, "schema", SCHEMA))
     total = cfg.hidden * (d["state"] + 1) + cfg.head * (cfg.hidden + 1) + cfg.head + 1
     for group in GROUPS:
-        total += cfg.head * (cfg.head + slot_size(group) + 1) + cfg.head + 1
+        total += cfg.head * (cfg.head + slot_size(group, schema) + 1) + cfg.head + 1
     return total
 
 
 def save(model: Any, path: str, metrics: Dict[str, Any] = None) -> str:
     """Чекпойнт модели: конфиг + параметры + метрики текущего состояния весов."""
-    return save_params(model.params, model.cfg, getattr(model, "name", "pure"), path, metrics)
+    return save_params(model.params, model.cfg, getattr(model, "name", "pure"), path, metrics,
+                       dims=getattr(model, "dims", None))
 
 
 def save_params(params: Dict[str, Any], cfg: "Config", backend_name: str, path: str,
-                metrics: Dict[str, Any] = None) -> str:
+                metrics: Dict[str, Any] = None, dims: Dict[str, int] = None) -> str:
     """Чекпойнт из готового словаря весов: так пишутся лучшая и последняя эпохи.
 
     Файл читаемый человеком, без bloat: только веса, размеры и то, чем они измерены.
     """
-    checkpoint = {"format": FORMAT, "schema": SCHEMA, "dims": spec.dims(),
+    schema = getattr(cfg, "schema", SCHEMA)
+    checkpoint = {"format": FORMAT, "schema": schema, "dims": dims or dims_for(schema),
                   "backend": backend_name, "config": cfg.to_dict(), "params": params,
                   "metrics": metrics or {}}
     parent = os.path.dirname(os.path.abspath(path))
@@ -164,13 +196,22 @@ def save_params(params: Dict[str, Any], cfg: "Config", backend_name: str, path: 
     return path
 
 
-def load(path: str) -> Dict[str, Any]:
-    """Чекпойнт -> dict; несовместимую схему молча не читаем (иначе сеть предсказывает мусор)."""
+def load(path: str, expect_schema: Optional[int] = None) -> Dict[str, Any]:
+    """Чекпойнт -> dict; несовместимую схему молча не читаем (иначе сеть предсказывает мусор).
+
+    Без expect_schema принимаем любую ИЗВЕСТНУЮ схему (файл сам описывает свою: конфиг и dims
+    дают сети нужную форму). expect_schema задан — требуем ровно её (тёплый старт/совместимость).
+    """
     with open(path, encoding="utf-8") as f:
         checkpoint = json.load(f)
     if int(checkpoint.get("format", 0)) != FORMAT:
         raise ValueError(f"Неизвестный формат чекпойнта: {checkpoint.get('format')!r}")
-    if int(checkpoint.get("schema", 0)) != SCHEMA:
-        raise ValueError(f"Чекпойнт схемы {checkpoint.get('schema')}, а ждём {SCHEMA}: "
-                         "нужна новая выборка (spec.SCHEMA менялся)")
+    got = int(checkpoint.get("schema", 0))
+    if expect_schema is not None:
+        if got != int(expect_schema):
+            raise ValueError(f"Чекпойнт схемы {got}, а ждём {int(expect_schema)}: "
+                             "нужна новая выборка (spec.SCHEMA менялся)")
+    elif got not in KNOWN_SCHEMAS:
+        raise ValueError(f"Неизвестная схема чекпойнта {got}: известны {KNOWN_SCHEMAS} "
+                         "(spec.SCHEMA меняется)")
     return checkpoint

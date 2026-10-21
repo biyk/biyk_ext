@@ -9,7 +9,7 @@ import math
 from typing import Any, Dict, List
 
 from arent import net
-from arent.net import GROUPS, Y_KEY, masked_argmax, y_index
+from arent.net import GROUPS, masked_argmax, y_index
 
 
 def _dot(a: List[float], b: List[float]) -> float:
@@ -49,6 +49,8 @@ class PurePolicy:
 
     def __init__(self, cfg: net.Config, params: Dict[str, Any] = None):
         self.cfg = cfg
+        self.dims = net.dims_for(cfg.schema)
+        self.ykey = net.y_key(cfg.schema)
         self.params = params if params is not None else net.init_params(cfg)
         self.grad = _zeros_like(self.params)
         self.vel = _zeros_like(self.params)
@@ -84,13 +86,15 @@ class PurePolicy:
         for group in GROUPS:
             allowed, values = logits[group]
             best = masked_argmax(values, [1] * len(values)) if allowed else -1
-            out[Y_KEY[group]] = allowed[best] if best >= 0 else -1
-            out[Y_KEY[group] + "Prob"] = round(_softmax(values)[best], 4) if best >= 0 else 0.0
+            out[self.ykey[group]] = allowed[best] if best >= 0 else -1
+            out[self.ykey[group] + "Prob"] = round(_softmax(values)[best], 4) if best >= 0 else 0.0
         return out
 
     def step_batch(self, batch: List[Dict[str, Any]], lr: float = None) -> Dict[str, Any]:
         """Один шаг оптимизатора по батчу: сумма градиентов, потом обновление."""
-        report = {"loss": 0.0, "cell": 0.0, "target": 0.0, "weapon": 0.0, "value": 0.0}
+        report = {"loss": 0.0, "value": 0.0}
+        for group in GROUPS:
+            report[self.ykey[group]] = 0.0
         for sample in batch:
             self._accumulate(sample, report)
         n = max(1, len(batch))
@@ -105,12 +109,12 @@ class PurePolicy:
         dt = [0.0] * len(t)
         for group in GROUPS:
             allowed, values = logits[group]
-            wanted = y_index(sample, group)
+            wanted = y_index(sample, group, self.cfg.schema)
             if not allowed or wanted not in allowed:
                 continue
             probs = _softmax(values)
             report["loss"] -= math.log(max(probs[allowed.index(wanted)], 1e-12))
-            report[Y_KEY[group]] -= math.log(max(probs[allowed.index(wanted)], 1e-12))
+            report[self.ykey[group]] -= math.log(max(probs[allowed.index(wanted)], 1e-12))
             for i, prob in zip(allowed, probs):
                 delta = prob - (1.0 if i == wanted else 0.0)
                 if delta:

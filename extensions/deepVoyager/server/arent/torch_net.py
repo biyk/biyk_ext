@@ -8,19 +8,19 @@ from typing import Any, Dict, List
 import torch
 import torch.nn.functional as F
 
-from arent import net, spec
-from arent.net import GROUPS, Y_KEY, y_index
+from arent import net
+from arent.net import GROUPS, y_index
 
 PAD = -1e30                      # вместо -inf: он остаётся конечным и не ломает sum
 
 
 def _module(cfg: net.Config) -> torch.nn.Module:
     """Ствол по состоянию + по голове на группу слотов + линейная голова стоимости."""
-    d = spec.dims()
+    d = net.dims_for(cfg.schema)
     layers = torch.nn.ModuleDict({
         "trunk1": torch.nn.Linear(d["state"], cfg.hidden),
         "trunk2": torch.nn.Linear(cfg.hidden, cfg.head),
-        "heads": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head + net.slot_size(g), cfg.head)
+        "heads": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head + net.slot_size(g, cfg.schema), cfg.head)
                                       for g in GROUPS}),
         "score": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head, 1) for g in GROUPS}),
         "value": torch.nn.Linear(cfg.head, 1),
@@ -35,6 +35,8 @@ class TorchPolicy:
 
     def __init__(self, cfg: net.Config, params: Dict[str, Any] = None, device: str = None):
         self.cfg = cfg
+        self.dims = net.dims_for(cfg.schema)
+        self.ykey = net.y_key(cfg.schema)
         cuda = torch.cuda.is_available()
         want = (device or "auto")
         self.device = torch.device("cuda" if want in ("auto", "cuda") and cuda else "cpu")
@@ -106,9 +108,9 @@ class TorchPolicy:
                 row, ok = logits[group][0], sample["mask"][group]
                 index = int(torch.argmax(row).item())
                 allowed = index < len(ok) and ok[index]
-                out[Y_KEY[group]] = index if allowed else -1
+                out[self.ykey[group]] = index if allowed else -1
                 prob = F.softmax(row, dim=0)[index] if allowed else 0.0
-                out[Y_KEY[group] + "Prob"] = round(float(prob.item()), 4)
+                out[self.ykey[group] + "Prob"] = round(float(prob.item()), 4)
         return out
 
     def step_batch(self, batch: List[Dict[str, Any]], lr: float = None) -> Dict[str, Any]:
@@ -116,7 +118,7 @@ class TorchPolicy:
             for group_ in self.optim.param_groups:
                 group_["lr"] = lr
         state, slots, masks = self._batch(batch)
-        targets = {g: torch.tensor([y_index(s, g) for s in batch], dtype=torch.long,
+        targets = {g: torch.tensor([y_index(s, g, self.cfg.schema) for s in batch], dtype=torch.long,
                                    device=self.device) for g in GROUPS}
         wanted = torch.tensor([float(s.get("value", 0.0)) for s in batch], dtype=torch.float32,
                               device=self.device)
@@ -125,7 +127,7 @@ class TorchPolicy:
         parts, total = {}, torch.zeros((), device=self.device)
         for group in GROUPS:
             loss = F.cross_entropy(logits[group], targets[group])
-            parts[Y_KEY[group]] = float(loss.item())
+            parts[self.ykey[group]] = float(loss.item())
             total = total + loss
         value_loss = F.mse_loss(value, wanted)
         # 0.5 — чтобы градиент был value_w * diff, как в pure_net._accumulate: иначе на

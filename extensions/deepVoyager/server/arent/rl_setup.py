@@ -11,7 +11,7 @@
 import os
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, net, paths, spec, states
+from arent import backend, net, paths, states
 from arent.splitting import split_source_names
 
 Source = Tuple[str, Dict[str, Any]]
@@ -31,13 +31,18 @@ def resolve_warm_path(warm: str) -> str:
 
 
 def _guard_compat(checkpoint: Dict[str, Any], net_cfg: net.Config, path: str) -> None:
-    """Не грузим чекпойнт другой архитектуры/схемы: сверяем dims и hidden/head."""
+    """Не грузим чекпойнт другой архитектуры/схемы: сверяем schema, dims и hidden/head."""
     saved = net.Config.from_dict(checkpoint.get("config") or {})
     if (saved.hidden, saved.head) != (net_cfg.hidden, net_cfg.head):
         raise RuntimeError(f"Чекпойнт {path}: hidden={saved.hidden}/head={saved.head}, "
                            f"просим {net_cfg.hidden}/{net_cfg.head}")
-    if checkpoint.get("dims") != spec.dims():
-        raise RuntimeError(f"Чекпойнт {path}: dims не совпадают с текущей схемой spec.dims()")
+    want_schema = getattr(net_cfg, "schema", net.SCHEMA)
+    if getattr(saved, "schema", 2) != want_schema:
+        raise RuntimeError(f"Чекпойнт {path}: схема {getattr(saved, 'schema', 2)}, просим "
+                           f"{want_schema} — веса другой схемы несовместимы")
+    if checkpoint.get("dims") != net.dims_for(want_schema):
+        raise RuntimeError(f"Чекпойнт {path}: dims не совпадают с текущей схемой "
+                           f"(schema={want_schema})")
 
 
 def warm_params(net_cfg: net.Config, warm: str,

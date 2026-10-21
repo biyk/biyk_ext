@@ -31,6 +31,9 @@ def _warm_params(cfg: net.Config, warm: str):
         raise RuntimeError(f"Чекпойнта нет: {warm} — имя прогона в runs/ или путь к model.json")
     checkpoint = net.load(path)
     saved = net.Config.from_dict(checkpoint.get("config") or {})
+    if getattr(saved, "schema", 2) != getattr(cfg, "schema", spec.SCHEMA):
+        raise RuntimeError(f"Чекпойнт {path}: схема {getattr(saved, 'schema', 2)}, просим "
+                           f"{getattr(cfg, 'schema', spec.SCHEMA)} — веса другой схемы несовместимы")
     if (saved.hidden, saved.head) != (cfg.hidden, cfg.head):
         raise RuntimeError(f"Чекпойнт {path}: hidden={saved.hidden}/head={saved.head}, "
                            f"просим {cfg.hidden}/{cfg.head} — веса другой формы")
@@ -148,7 +151,7 @@ def _finish(name: str, model: Any, cfg: net.Config, history: List[Row], best: Op
                "best_epoch": best["epoch"], "best_metric": metric, "best": best["val"] or best["train"],
                "best_is_last": best["epoch"] == final["epoch"],
                "model": checkpoint, "model_best": best_path or checkpoint,
-               "split": split_report, "dims": spec.dims()}
+               "split": split_report, "dims": net.dims_for(getattr(cfg, "schema", spec.SCHEMA))}
     provenance.write_json(paths.file_in(directory, "history.json"), history)
     provenance.write_json(paths.file_in(directory, "summary.json"), summary)
     say(f"чекпойнты {checkpoint} (последняя эпоха) и {best_path or checkpoint} "

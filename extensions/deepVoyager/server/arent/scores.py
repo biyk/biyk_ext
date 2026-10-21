@@ -4,26 +4,34 @@
 # ссылаются на них как на train.metrics / train.by_source (re-export в train.py).
 from typing import Any, Dict, List
 
-from arent.net import GROUPS, Y_KEY, y_index
+from arent import net
+from arent.net import GROUPS, y_index
 
 
 def metrics(model: Any, samples: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Доля угаданных слотов по головам + совместная + MAE стоимости."""
-    hits = {"cell": 0, "target": 0, "weapon": 0, "joint": 0}
+    """Доля угаданных слотов по головам + совместная + MAE стоимости.
+
+    Ключ метки группы клеток зависит от схемы (cell в v2, plan в v3), но отчёт всегда идёт
+    под стабильными именами cell/target/weapon/joint — их читает лог train.py, и для v2
+    числа совпадают с прежними бит-в-бит.
+    """
+    schema = getattr(getattr(model, "cfg", None), "schema", net.SCHEMA)
+    yk = net.y_key(schema)
+    hits = {group: 0 for group in GROUPS}
+    hits["joint"] = 0
     error = 0.0
     for sample in samples:
         out = model.predict(sample)
         good = []
         for group in GROUPS:
-            key = Y_KEY[group]
-            same = out[key] == y_index(sample, group)
+            same = out[yk[group]] == y_index(sample, group, schema)
             good.append(same)
-            hits[key] += 1 if same else 0
+            hits[group] += 1 if same else 0
         hits["joint"] += 1 if all(good) else 0      # все три головы сразу = повторенный план
         error += abs(out["value"] - float(sample.get("value", 0.0)))
     n = max(1, len(samples))
-    return {"cell": round(hits["cell"] / n, 3), "target": round(hits["target"] / n, 3),
-            "weapon": round(hits["weapon"] / n, 3), "joint": round(hits["joint"] / n, 3),
+    return {"cell": round(hits["cells"] / n, 3), "target": round(hits["targets"] / n, 3),
+            "weapon": round(hits["weapons"] / n, 3), "joint": round(hits["joint"] / n, 3),
             "value_mae": round(error / n, 4), "n": len(samples)}
 
 

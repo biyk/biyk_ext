@@ -121,10 +121,17 @@ def sources(want_arenas: Optional[List[str]] = None, use_live: bool = True,
             yield name, payload
 
 
-def independent_sources(want_arenas: Optional[List[str]] = None, use_live: bool = True
+def independent_sources(want_arenas: Optional[List[str]] = None, use_live: bool = True,
+                        prefixes: Optional[Tuple[str, ...]] = None
                         ) -> List[Tuple[str, Dict[str, Any]]]:
-    """Ровно зарезервированный независимый набор — тот же для bc2 и для PPO."""
-    return [(n, p) for n, p in sources(want_arenas, use_live) if is_independent(n)]
+    """Ровно зарезервированный независимый набор — тот же для bc2 и для PPO.
+
+    prefixes — необязательное сужение резерва (напр. ("ho3_",) — только независимый набор
+    схемы 3): сравнение v3 обязано идти ровно на ho3_, а не вперемешку с ho_/ho2_."""
+    rows = [(n, p) for n, p in sources(want_arenas, use_live) if is_independent(n)]
+    if prefixes:
+        rows = [(n, p) for n, p in rows if str(n).startswith(tuple(prefixes))]
+    return rows
 
 
 def sample_one(name: str, payload: Dict[str, Any], teacher: TeacherPolicy, meta: Dict[str, Any],

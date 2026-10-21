@@ -110,13 +110,15 @@ def run(name: str = "eval", model_path: Optional[str] = None, kind: str = "auto"
         arenas: Optional[List[str]] = None, use_live: bool = True, rounds: int = 8,
         out: Optional[str] = None, holdout_only: bool = False, holdout_frac: float = 0.3,
         split_seed: int = 7, independent: bool = False,
+        independent_prefix: Optional[List[str]] = None,
         log: Optional[Callable] = None) -> Dict[str, Any]:
     """Прогнать чекпойнтом по всем сценам (или по выделенному набору); сводка в runs/<имя>/eval.json.
 
     independent=True — только зарезервированный независимый набор (ho_*): физически
     отделён от обучения bc2 и PPO, значит обе модели идут по одному и тому же честному
-    множеству. holdout_only=True оставляет группы случайного split (независимы для PPO,
-    но не гарантированно чисты от bc2). independent важнее holdout_only.
+    множеству. independent_prefix сужает резерв по префиксу (напр. ["ho3_"] — только
+    независимый набор схемы 3). holdout_only=True оставляет группы случайного split (независимы
+    для PPO, но не гарантированно чисты от bc2). independent важнее holdout_only.
     """
     say = log or _echo
     # --model принимает и путь к model.json, и имя прогона (runs/<имя>/model.json) — как в play.
@@ -131,7 +133,11 @@ def run(name: str = "eval", model_path: Optional[str] = None, kind: str = "auto"
     model = backend.load_policy(model_path, kind=kind)
     if independent:
         from arent import dataset
-        sources = dataset.independent_sources(arenas, use_live)
+        if independent_prefix:
+            sources = dataset.independent_sources(arenas, use_live,
+                                                  prefixes=tuple(independent_prefix))
+        else:
+            sources = dataset.independent_sources(arenas, use_live)
     else:
         sources = _sources(arenas, use_live)
         if holdout_only:

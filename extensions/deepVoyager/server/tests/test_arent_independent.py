@@ -78,6 +78,18 @@ def test_independent_sources_is_exactly_the_reserved_set(monkeypatch):
     assert sorted(got) == ["ho2_line", "ho_one"]
 
 
+def test_independent_sources_prefix_filter_keeps_only_matching(monkeypatch):
+    # без filter — весь резерв; с prefixes=("ho3_",) — только ho3_* (схема 3 сравнивается на ho3_)
+    _patch_named_sources(monkeypatch, ["a", "ho_x", "ho2_y", "ho3_z", "ho3_w"])
+    allin = sorted(n for n, _p in dataset.independent_sources(use_live=False))
+    assert allin == ["ho2_y", "ho3_w", "ho3_z", "ho_x"]
+    only3 = sorted(n for n, _p in dataset.independent_sources(use_live=False, prefixes=("ho3_",)))
+    assert only3 == ["ho3_w", "ho3_z"]
+    # несколько префиксов
+    two = sorted(n for n, _p in dataset.independent_sources(use_live=False, prefixes=("ho_", "ho3_")))
+    assert two == ["ho3_w", "ho3_z", "ho_x"]
+
+
 def test_excluded_and_independent_are_disjoint_and_cover(monkeypatch):
     _patch_named_sources(monkeypatch, NAMES)
     train = {n for n, _p in dataset.sources(use_live=False, exclude_independent=True)}
@@ -136,3 +148,25 @@ def test_evaluate_independent_restricts_to_reserved_set(tmp_path, monkeypatch):
     with open(out, encoding="utf-8") as f:
         saved = json.load(f)
     assert saved["provenance"]["set_tag"] == "independent"
+
+
+#--- 5b. evaluate(independent, independent_prefix=ho3_) — только ho3_* --------
+def test_evaluate_independent_prefix_restricts_to_that_set(tmp_path, monkeypatch):
+    from arent import paths
+    paths.set_workspace(str(tmp_path))
+    monkeypatch.setattr(backend, "load_policy", lambda path, kind="auto": StubPolicy())
+
+    def fake_independent(want_arenas=None, use_live=True, prefixes=None):
+        rows = [("ho_x", _scene()), ("ho2_y", _scene()), ("ho3_z", _scene())]
+        if prefixes:
+            rows = [r for r in rows if str(r[0]).startswith(tuple(prefixes))]
+        return rows
+
+    monkeypatch.setattr(dataset, "independent_sources", fake_independent)
+    ckpt = paths.file_in(paths.run_dir("m"), "model.json")
+    with open(ckpt, "w", encoding="utf-8") as f:
+        f.write("{}")
+    report = evaluate.run(name="ind3", model_path=ckpt, independent=True,
+                          independent_prefix=["ho3_"], log=lambda *a: None)
+    assert {r["name"] for r in report["rows"]} == {"ho3_z"}
+    assert report["provenance"]["set_tag"] == "independent"

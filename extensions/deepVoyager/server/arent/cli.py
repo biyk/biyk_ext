@@ -97,6 +97,8 @@ def parser() -> argparse.ArgumentParser:
                     help="гонять только по независимому holdout-набору (те же frac/seed, что у rl)")
     ev.add_argument("--independent", action="store_true",
                     help="только зарезервированный независимый набор ho_* (вне bc2 и вне PPO)")
+    ev.add_argument("--independent-prefix", dest="independent_prefix", nargs="*", default=None,
+                    help="сузить резерв по префиксу (напр. --independent-prefix ho3_)")
     ev.add_argument("--holdout-frac", type=float, default=0.3, help="доля групп в holdout")
     ev.add_argument("--split-seed", type=int, default=7, help="seed группового split (как у rl)")
 
@@ -262,7 +264,8 @@ def _evaluate(args) -> int:
                           arenas=args.arena, use_live=not args.no_live, rounds=args.rounds,
                           out=args.out, holdout_only=args.holdout_only,
                           holdout_frac=args.holdout_frac, split_seed=args.split_seed,
-                          independent=args.independent)
+                          independent=args.independent,
+                          independent_prefix=args.independent_prefix)
     return 0 if report["fights"] else 1
 
 

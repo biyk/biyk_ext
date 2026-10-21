@@ -8,6 +8,8 @@
 # rules.hitChance.
 from typing import Any, Dict, List, Optional, Tuple
 
+from collections import deque
+
 from libs.quin import SimplePathfinder
 from planner.armament import SURE, best_attack
 from planner.context import BattleContext, Token
@@ -46,6 +48,40 @@ def has_los(ctx: BattleContext, a: Cell, b: Cell, segments: List[Segment]) -> bo
     """Видно ли центр клетки b из центра клетки a: прямая не пересекает ни одной стены."""
     p1, p2 = _center(ctx, a), _center(ctx, b)
     return not any(SimplePathfinder._segment_intersect(p1, p2, s[0], s[1]) for s in segments)
+
+
+def _walls_in_view(ctx: BattleContext, me_cell: Cell) -> float:
+    """Сколько стен, мешающих обзору, попадают в патч вокруг наблюдателя."""
+    n = 0
+    for w in ctx.walls:
+        if w.sight <= 0:
+            continue
+        cell = ctx.scene.cell_of((w.ax + w.bx) / 2, (w.ay + w.by) / 2)
+        if abs(cell[0] - me_cell[0]) <= spec.PATCH_R and abs(cell[1] - me_cell[1]) <= spec.PATCH_R:
+            n += 1
+    return float(n)
+
+
+def _bfs_steps(pf: SimplePathfinder, ctx: BattleContext, src: Cell, goal: Cell, cap: int) -> int:
+    """Клеток-шагов от src до goal по свободным клеткам (стены/край закрыты), не дальше cap."""
+    if src == goal:
+        return 0
+    seen, queue = {src}, deque([(src, 0)])
+    while queue:
+        (r, c), dist = queue.popleft()
+        if dist >= cap:
+            continue
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nxt = (r + dr, c + dc)
+            if nxt in seen or not (0 <= nxt[0] < ctx.scene.rows and 0 <= nxt[1] < ctx.scene.cols):
+                continue
+            if not pf._cell_valid(nxt[0], nxt[1], skip_npcs=True):
+                continue
+            if nxt == goal:
+                return dist + 1
+            seen.add(nxt)
+            queue.append((nxt, dist + 1))
+    return cap
 
 
 def _classify(ctx: BattleContext) -> Tuple[List[Token], List[Token], List[Token]]:
@@ -126,7 +162,8 @@ def weapon_entry(weapon, enemies: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def observe(ctx: BattleContext) -> Dict[str, Any]:
+def observe(ctx: BattleContext, initiative: Optional[Tuple[str, ...]] = None,
+            actor: Optional[str] = None) -> Dict[str, Any]:
     """Снимок боя глазами src-токена: hero / slots / enemies / allies / others / grid."""
     t = tuning()
     raws = _raw_npcs(ctx)
@@ -142,8 +179,9 @@ def observe(ctx: BattleContext) -> Dict[str, Any]:
                        hostile)
 
     enemies = sorted((build(tok, True) for tok in hostiles), key=lambda e: e["dist"])
+    ally_rows = [build(tok, False) for tok in allies][:spec.K_ALLIES]
     best = max(ctx.weapons, key=lambda w: w.expected_damage, default=None)
-    return {
+    result: Dict[str, Any] = {
         "schema": spec.SCHEMA, "src": ctx.src_id, "target": ctx.target_id,
         "scene": {"cols": ctx.scene.cols, "rows": ctx.scene.rows,
                   "cellFt": t.feet_per_cell, "gridSize": ctx.scene.grid_size},
@@ -161,13 +199,46 @@ def observe(ctx: BattleContext) -> Dict[str, Any]:
         },
         "weapons": [weapon_entry(w, enemies) for w in ctx.weapons],
         "enemies": enemies[:spec.K_TARGETS],
-        "allies": [build(tok, False) for tok in allies][:spec.K_ALLIES],
+        "allies": ally_rows,
         "others": [build(tok, False) for tok in others],
         "grid": _grid(ctx, me_cell, [(tok, "E") for tok in hostiles]
                       + [(tok, "A") for tok in allies] + [(tok, "T") for tok in others]),
     }
+    _stamp_features(result, ctx, me_cell, enemies, ally_rows, initiative, actor)
+    return result
 
 
-def observe_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Запрос /plan -> наблюдение v1 (JSON-пригодный словарь — для дампа и кодировщика)."""
-    return observe(BattleContext.from_payload(payload))
+def _stamp_features(result: Dict[str, Any], ctx: BattleContext, me_cell: Cell,
+                    enemies: List[Dict[str, Any]], ally_rows: List[Dict[str, Any]],
+                    initiative: Optional[Tuple[str, ...]], actor: Optional[str]) -> None:
+    """Дополняет наблюдение признаками v2: террейн (всегда) и инициативу (когда задан порядок)."""
+    me = result["me"]
+    live = [e for e in enemies if e["alive"]]
+    me["hasLosToNearestEnemy"] = 1.0 if any(e["los"] for e in live) else 0.0
+    me["wallsInView"] = _walls_in_view(ctx, me_cell)
+    near = min(live, key=lambda e: e["dist"], default=None)
+    if near is None:
+        me["pathLenFrac"] = 0.0
+    else:
+        goal = (me_cell[0] + near["dy"], me_cell[1] + near["dx"])
+        me["pathLenFrac"] = round(_bfs_steps(SimplePathfinder(ctx.raw), ctx, me_cell, goal,
+                                             spec.PATCH_SIZE) / spec.PATCH_SIZE, 4)
+    if not initiative:
+        return
+    rank = {uid: i for i, uid in enumerate(initiative)}
+    cur, big = (actor or ctx.src_id), len(initiative) + 1
+    for e in enemies:
+        e["initiativeIndex"] = rank.get(e["id"], 0)
+        e["isNextToAct"] = (e["id"] == cur)
+    for a in ally_rows:
+        a["initiativeIndex"] = rank.get(a["id"], 0)
+    team_a = [ctx.src_id] + [a["id"] for a in ally_rows]
+    cur_rank = rank.get(cur, big)
+    acted = sum(1 for uid in team_a if rank.get(uid, big) < cur_rank)
+    me["alliesActedFraction"] = round(acted / len(team_a), 4) if team_a else 0.0
+
+
+def observe_payload(payload: Dict[str, Any], initiative: Optional[Tuple[str, ...]] = None,
+                    actor: Optional[str] = None) -> Dict[str, Any]:
+    """Запрос /plan -> наблюдение v2 (JSON-пригодный словарь — для дампа и кодировщика)."""
+    return observe(BattleContext.from_payload(payload), initiative, actor)

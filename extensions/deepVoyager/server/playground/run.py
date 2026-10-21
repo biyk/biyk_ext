@@ -15,7 +15,7 @@ from planner.action import ACTION_MOVE, Action
 from planner.context import BattleContext
 from planner.points import default_tuning, set_tuning
 from planner.service import PlannerService
-from planner.sim import rollout
+from planner.turns import rollout
 from playground.arena import ARENA_NAMES, load_arena
 
 #: колонки таблицы: (заголовок, ширина, ключ Row)

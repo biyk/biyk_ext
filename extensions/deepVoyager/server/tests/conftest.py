@@ -12,7 +12,7 @@ from arent import paths as arent_paths  # noqa: E402
 
 
 def make_npc(npc_id, x, y, size=50, disposition=0, hp=10, name=None,
-             speed=None, damage=None, reach_ft=None, hit_chance=None):
+             speed=None, damage=None, reach_ft=None, hit_chance=None, initiative=None):
     """Токен size×size в клетку, координаты — левый верхний угол (как в Foundry).
 
     speed/damage/reach_ft/hit_chance — необязательные параметры для симуляции хода
@@ -27,7 +27,8 @@ def make_npc(npc_id, x, y, size=50, disposition=0, hp=10, name=None,
         "hp": {"current": hp, "max": hp, "temp": 0},
     }
     for key, value in (("speed", speed), ("damage", damage),
-                       ("reachFt", reach_ft), ("hitChance", hit_chance)):
+                       ("reachFt", reach_ft), ("hitChance", hit_chance),
+                       ("initiative", initiative)):
         if value is not None:
             npc[key] = value
     return npc

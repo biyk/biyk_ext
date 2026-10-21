@@ -1,0 +1,23 @@
+{
+  "comment": "Независимый набор (ho_*). Клещи в коридоре: узкий проход (стены сверху и снизу), ближники с обеих сторон. Позиционная развилка — к кому сближаться первым, учитывая, что сзади тоже угроза.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "LEFT",
+  "walls": [
+    {"id": "top", "points": {"A": {"x": 0, "y": 225}, "B": {"x": 500, "y": 225}}, "move": 1, "sight": 1},
+    {"id": "bottom", "points": {"A": {"x": 0, "y": 275}, "B": {"x": 500, "y": 275}}, "move": 1, "sight": 1}
+  ],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 4], "hp": 30},
+    {"id": "LEFT", "name": "Боец слева", "disposition": 1, "cell": [5, 1], "hp": 16,
+     "speed": 30, "damage": "1d8+2", "reachFt": 5, "hitChance": 0.65},
+    {"id": "RIGHT", "name": "Боец справа", "disposition": 1, "cell": [5, 8], "hp": 16,
+     "speed": 30, "damage": "1d8+2", "reachFt": 5, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d8+2", "attackBonus": 4, "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

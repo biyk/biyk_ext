@@ -62,24 +62,42 @@ def _sources(arenas: Optional[List[str]], use_live: bool):
     return list(dataset.sources(arenas, use_live))
 
 
+def holdout_names(names: List[str], holdout_frac: float, seed: int) -> set:
+    """Holdout-множество имён — то же, что режет rl (стабильно по frac/seed, val_frac не влияет)."""
+    from arent.splitting import split_source_names
+    _train, _val, holdout = split_source_names(names, holdout_frac, 0.0, seed)
+    return set(holdout)
+
+
 def _provenance(model_path: Optional[str], sources: List[Tuple[str, Dict[str, Any]]],
-                rounds: int) -> Dict[str, Any]:
+                rounds: int, set_tag: str = "all") -> Dict[str, Any]:
     """Якоря оценки: хеш конкретной модели, тестового набора и конфига — чтобы итог
-    нельзя было приписать не той весовой паре. testset = сами payload'ы сцен (не имена)."""
+    нельзя было приписать не той весовой паре. testset = сами payload'ы сцен (не имена).
+
+    set_tag ('independent'/'holdout'/'all') фиксирует, по какому множеству считан итог —
+    честное bc2↔PPO-сравнение валидно только при одинаковом set_tag='independent'."""
     names = [str(name) for name, _payload in sources]
     fingerprint = sorted([[str(name), payload] for name, payload in sources], key=lambda r: r[0])
     config = {"rounds": rounds, "sources": sorted(names), "model": model_path}
     return {"model_path": os.path.abspath(model_path) if model_path else None,
             "model_sha256": provenance.sha256_file(model_path) if model_path else None,
-            "test_sources": sorted(names),
+            "set_tag": set_tag, "test_sources": sorted(names),
             "testset_sha256": provenance.sha256_obj(fingerprint),
             "eval_config": config, "eval_config_sha256": provenance.sha256_obj(config)}
 
 
 def run(name: str = "eval", model_path: Optional[str] = None, kind: str = "auto",
         arenas: Optional[List[str]] = None, use_live: bool = True, rounds: int = 8,
-        out: Optional[str] = None, log: Optional[Callable] = None) -> Dict[str, Any]:
-    """Прогнать чекпойнтом по всем сценам; вернуть и записать сводку в runs/<имя>/eval.json."""
+        out: Optional[str] = None, holdout_only: bool = False, holdout_frac: float = 0.3,
+        split_seed: int = 7, independent: bool = False,
+        log: Optional[Callable] = None) -> Dict[str, Any]:
+    """Прогнать чекпойнтом по всем сценам (или по выделенному набору); сводка в runs/<имя>/eval.json.
+
+    independent=True — только зарезервированный независимый набор (ho_*): физически
+    отделён от обучения bc2 и PPO, значит обе модели идут по одному и тому же честному
+    множеству. holdout_only=True оставляет группы случайного split (независимы для PPO,
+    но не гарантированно чисты от bc2). independent важнее holdout_only.
+    """
     say = log or _echo
     # --model принимает и путь к model.json, и имя прогона (runs/<имя>/model.json) — как в play.
     requested = model_path
@@ -91,10 +109,18 @@ def run(name: str = "eval", model_path: Optional[str] = None, kind: str = "auto"
     if not model_path:
         raise RuntimeError("Чекпойнта нет: сначала arent train (или укажите --model)")
     model = backend.load_policy(model_path, kind=kind)
-    sources = _sources(arenas, use_live)
+    if independent:
+        from arent import dataset
+        sources = dataset.independent_sources(arenas, use_live)
+    else:
+        sources = _sources(arenas, use_live)
+        if holdout_only:
+            keep = holdout_names([str(n) for n, _p in sources], holdout_frac, split_seed)
+            sources = [(n, p) for n, p in sources if str(n) in keep]
     if not sources:
         raise RuntimeError("Нет сцен: арены playground пусты и живых снимков нет")
-    say(f"оценка {getattr(model, 'name', 'pure')} на {model_path}: {len(sources)} сцен, "
+    tag = "independent" if independent else ("holdout" if holdout_only else "all")
+    say(f"оценка {getattr(model, 'name', 'pure')} [{tag}] на {model_path}: {len(sources)} сцен, "
         f"потолок {rounds} раундов")
     rows: List[Row] = []
     for scene_name, payload in sources:
@@ -103,7 +129,7 @@ def run(name: str = "eval", model_path: Optional[str] = None, kind: str = "auto"
         say(f"{scene_name}: раундов {row['rounds']}, ценность {row['value']}, "
             f"выжил {int(row['survived'])}, зачищено {int(row['cleared'])}")
     report = summarize(rows, model=getattr(model, "name", "pure"), rounds_cap=rounds)
-    report["provenance"] = _provenance(model_path, sources, rounds)
+    report["provenance"] = _provenance(model_path, sources, rounds, set_tag=tag)
     _write(paths.file_in(paths.run_dir(name), "eval.json"), report)
     say(f"итог: боёв {report['fights']}, выживаемость {report['survival_rate']}, "
         f"побед {report['clear_rate']}, средняя ценность {report['mean_value']}")

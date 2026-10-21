@@ -14,8 +14,9 @@ from planner.explore import BruteForceExplorer
 from planner.points import set_tuning, tuning
 from planner.scoring import Scorer
 from planner.service import PlannerService, PlanResult
-from planner.sim import rollout
+from planner.turns import rollout
 from planner.strategy import StrategyEnumerator
+from arent.teachers import TeacherPolicy, register
 
 
 @contextmanager
@@ -51,8 +52,9 @@ class Labeled:
     depth: int
 
 
-class Teacher:
-    """Планировщик в режиме учителя.
+@register("greedy")
+class Teacher(TeacherPolicy):
+    """Планировщик в режиме учителя (политика по умолчанию, имя в реестре — greedy).
 
     rounds=1 — детерминированный перебор (quin-маршруты + все достижимые клетки) без
     случайных прогулок и без дедлайна: разметка воспроизводима и считается за миллисекунды.
@@ -89,3 +91,9 @@ class Teacher:
         value = result.value if result.depth > 1 else rollout(ctx, result.actions, self.value_rounds)
         return Labeled(ctx=ctx, actions=result.actions, value=value,
                        score=result.score, depth=result.depth)
+
+    def plan(self, ctx: BattleContext) -> List[Action]:
+        """Тот же выбор, что label, но по готовому контексту — для closed-loop сравнения."""
+        if self.rounds > 1:
+            return PlannerService(time_limit_sec=self.time_limit_sec).plan_result(ctx).actions
+        return (self._greedy_best(ctx) or PlanResult()).actions

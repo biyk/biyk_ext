@@ -16,7 +16,7 @@ from planner.context import BattleContext
 from planner.lookahead import FirstLayer, Lookahead
 from planner.points import default_tuning, set_tuning, tuning
 from planner.service import PlannerService
-from planner.sim import rollout
+from planner.turns import rollout
 from planner.strategy import StrategyEnumerator
 
 SWORD = make_weapon("sword", damage="1d6+2")       # ожидание 5.5, со шансом 3.575

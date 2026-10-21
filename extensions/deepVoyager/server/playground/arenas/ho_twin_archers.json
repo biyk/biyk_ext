@@ -1,0 +1,21 @@
+{
+  "comment": "Независимый набор (ho_*). Два лучника по диагоналям (северо-запад и юго-восток), герой с луком в центре. Приоритет цели под двумя угрозами с разных сторон — другой рисунок, чем archer_pair.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "ARCH_NW",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [5, 5], "hp": 24},
+    {"id": "ARCH_NW", "name": "Лучник СЗ", "disposition": 1, "cell": [1, 1], "hp": 8,
+     "speed": 0, "damage": "1d6+3", "reachFt": 30, "hitChance": 0.65},
+    {"id": "ARCH_SE", "name": "Лучник ЮВ", "disposition": 1, "cell": [8, 8], "hp": 8,
+     "speed": 0, "damage": "1d6+3", "reachFt": 30, "hitChance": 0.65}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+2", "attackBonus": 4,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

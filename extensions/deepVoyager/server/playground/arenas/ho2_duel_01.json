@@ -1,0 +1,398 @@
+{
+ "comment": "gen arch=duel ours=6 foes=5 field=medium walls=ring deploy=diagonal layout=random",
+ "scene": {
+  "width": 1100,
+  "height": 1100,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [
+  {
+   "id": "w15",
+   "points": {
+    "A": {
+     "x": 850,
+     "y": 100
+    },
+    "B": {
+     "x": 900,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w40",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 450
+    },
+    "B": {
+     "x": 100,
+     "y": 500
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w1",
+   "points": {
+    "A": {
+     "x": 150,
+     "y": 100
+    },
+    "B": {
+     "x": 200,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w41",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 500
+    },
+    "B": {
+     "x": 100,
+     "y": 550
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w48",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 850
+    },
+    "B": {
+     "x": 100,
+     "y": 900
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w7",
+   "points": {
+    "A": {
+     "x": 450,
+     "y": 100
+    },
+    "B": {
+     "x": 500,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w25",
+   "points": {
+    "A": {
+     "x": 500,
+     "y": 950
+    },
+    "B": {
+     "x": 550,
+     "y": 950
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w34",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 150
+    },
+    "B": {
+     "x": 100,
+     "y": 200
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w32",
+   "points": {
+    "A": {
+     "x": 850,
+     "y": 950
+    },
+    "B": {
+     "x": 900,
+     "y": 950
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w30",
+   "points": {
+    "A": {
+     "x": 750,
+     "y": 950
+    },
+    "B": {
+     "x": 800,
+     "y": 950
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w13",
+   "points": {
+    "A": {
+     "x": 750,
+     "y": 100
+    },
+    "B": {
+     "x": 800,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w2",
+   "points": {
+    "A": {
+     "x": 200,
+     "y": 100
+    },
+    "B": {
+     "x": 250,
+     "y": 100
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w37",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 300
+    },
+    "B": {
+     "x": 100,
+     "y": 350
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w17",
+   "points": {
+    "A": {
+     "x": 100,
+     "y": 950
+    },
+    "B": {
+     "x": 150,
+     "y": 950
+    }
+   },
+   "move": 1,
+   "sight": 1
+  }
+ ],
+ "tokens": [
+  {
+   "id": "A",
+   "name": "Капитан",
+   "disposition": -1,
+   "cell": [
+    2,
+    19
+   ],
+   "hp": 45,
+   "initiative": 1
+  },
+  {
+   "id": "AL1",
+   "name": "tank-1",
+   "disposition": -1,
+   "cell": [
+    3,
+    19
+   ],
+   "hp": 43,
+   "speed": 15,
+   "damage": "2d6+2",
+   "reachFt": 5,
+   "hitChance": 0.51,
+   "initiative": 1
+  },
+  {
+   "id": "AL2",
+   "name": "fast-2",
+   "disposition": -1,
+   "cell": [
+    2,
+    18
+   ],
+   "hp": 8,
+   "speed": 30,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.55,
+   "initiative": 17
+  },
+  {
+   "id": "AL3",
+   "name": "mobile_archer-3",
+   "disposition": -1,
+   "cell": [
+    3,
+    17
+   ],
+   "hp": 7,
+   "speed": 35,
+   "damage": "1d8",
+   "reachFt": 60,
+   "hitChance": 0.54,
+   "initiative": 5
+  },
+  {
+   "id": "AL4",
+   "name": "melee-4",
+   "disposition": -1,
+   "cell": [
+    3,
+    18
+   ],
+   "hp": 12,
+   "speed": 20,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.59,
+   "initiative": 6
+  },
+  {
+   "id": "AL5",
+   "name": "mobile_archer-5",
+   "disposition": -1,
+   "cell": [
+    2,
+    17
+   ],
+   "hp": 11,
+   "speed": 35,
+   "damage": "1d6+2",
+   "reachFt": 60,
+   "hitChance": 0.61,
+   "initiative": 22
+  },
+  {
+   "id": "F1",
+   "name": "fast-1",
+   "disposition": 1,
+   "cell": [
+    17,
+    2
+   ],
+   "hp": 12,
+   "speed": 30,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.56,
+   "initiative": 4
+  },
+  {
+   "id": "F2",
+   "name": "reach-2",
+   "disposition": 1,
+   "cell": [
+    17,
+    3
+   ],
+   "hp": 10,
+   "speed": 15,
+   "damage": "1d8+2",
+   "reachFt": 10,
+   "hitChance": 0.58,
+   "initiative": 24
+  },
+  {
+   "id": "F3",
+   "name": "reach-3",
+   "disposition": 1,
+   "cell": [
+    18,
+    4
+   ],
+   "hp": 15,
+   "speed": 25,
+   "damage": "1d8+2",
+   "reachFt": 10,
+   "hitChance": 0.52,
+   "initiative": 2
+  },
+  {
+   "id": "F4",
+   "name": "melee-4",
+   "disposition": 1,
+   "cell": [
+    16,
+    2
+   ],
+   "hp": 7,
+   "speed": 15,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.51,
+   "initiative": 23
+  },
+  {
+   "id": "F5",
+   "name": "fast-5",
+   "disposition": 1,
+   "cell": [
+    19,
+    3
+   ],
+   "hp": 9,
+   "speed": 40,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.6,
+   "initiative": 25
+  }
+ ],
+ "hero": {
+  "id": "A",
+  "speed": 40,
+  "weapons": [
+   {
+    "id": "jav",
+    "name": "Дротики",
+    "damage": "1d6",
+    "attackBonus": 3,
+    "sureFt": 30,
+    "doubtFt": 60
+   }
+  ]
+ }
+}

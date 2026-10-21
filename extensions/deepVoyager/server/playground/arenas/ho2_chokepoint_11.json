@@ -1,0 +1,143 @@
+{
+ "comment": "gen arch=chokepoint ours=2 foes=1 field=large walls=scatter deploy=corner layout=structured",
+ "scene": {
+  "width": 1550,
+  "height": 1550,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [
+  {
+   "id": "w3",
+   "points": {
+    "A": {
+     "x": 300,
+     "y": 650
+    },
+    "B": {
+     "x": 300,
+     "y": 700
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w9",
+   "points": {
+    "A": {
+     "x": 300,
+     "y": 500
+    },
+    "B": {
+     "x": 300,
+     "y": 550
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w0",
+   "points": {
+    "A": {
+     "x": 1350,
+     "y": 750
+    },
+    "B": {
+     "x": 1400,
+     "y": 750
+    }
+   },
+   "move": 1,
+   "sight": 1
+  },
+  {
+   "id": "w8",
+   "points": {
+    "A": {
+     "x": 1000,
+     "y": 1250
+    },
+    "B": {
+     "x": 1050,
+     "y": 1250
+    }
+   },
+   "move": 1,
+   "sight": 0
+  },
+  {
+   "id": "w7",
+   "points": {
+    "A": {
+     "x": 250,
+     "y": 1300
+    },
+    "B": {
+     "x": 300,
+     "y": 1300
+    }
+   },
+   "move": 1,
+   "sight": 0
+  }
+ ],
+ "tokens": [
+  {
+   "id": "A",
+   "name": "Капитан",
+   "disposition": -1,
+   "cell": [
+    2,
+    2
+   ],
+   "hp": 45,
+   "initiative": 27
+  },
+  {
+   "id": "AL1",
+   "name": "reach-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    3
+   ],
+   "hp": 11,
+   "speed": 25,
+   "damage": "1d8+2",
+   "reachFt": 10,
+   "hitChance": 0.52,
+   "initiative": 18
+  },
+  {
+   "id": "F1",
+   "name": "melee-1",
+   "disposition": 1,
+   "cell": [
+    28,
+    28
+   ],
+   "hp": 7,
+   "speed": 30,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.47,
+   "initiative": 10
+  }
+ ],
+ "hero": {
+  "id": "A",
+  "speed": 30,
+  "weapons": [
+   {
+    "id": "bow",
+    "name": "Длинный лук",
+    "damage": "1d8+2",
+    "attackBonus": 4,
+    "sureFt": 30,
+    "doubtFt": 120
+   }
+  ]
+ }
+}

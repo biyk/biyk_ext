@@ -1,0 +1,19 @@
+{
+  "comment": "Независимый набор (ho_*). Берсерк в последнем бою: тощий, но с убийственным уроном (4d6) и рывком (speed 40) почти вплотную. Стрелку нужно добить за пару выстрелов, не дав сблизиться — гонка на уничтожение.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "BERSERK",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [5, 8], "hp": 20},
+    {"id": "BERSERK", "name": "Берсерк", "disposition": 1, "cell": [5, 3], "hp": 10,
+     "speed": 40, "damage": "4d6", "reachFt": 5, "hitChance": 0.7}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+3", "attackBonus": 5,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

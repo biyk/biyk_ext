@@ -1,0 +1,23 @@
+{
+  "comment": "Независимый набор (ho_*). Копейный кордон в дверном проёме: двое копейщиков (reachFt 10) держат единственный проход. Мечник обязан зайти в мёртвую зону или бить в обход досягаемости — проверка оценки чужого reach.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "PIKE_A",
+  "walls": [
+    {"id": "up", "points": {"A": {"x": 250, "y": 0}, "B": {"x": 250, "y": 200}}, "move": 1, "sight": 1},
+    {"id": "down", "points": {"A": {"x": 250, "y": 300}, "B": {"x": 250, "y": 500}}, "move": 1, "sight": 1}
+  ],
+  "tokens": [
+    {"id": "A", "name": "Герой", "disposition": -1, "cell": [5, 1], "hp": 32},
+    {"id": "PIKE_A", "name": "Копейщик А", "disposition": 1, "cell": [4, 6], "hp": 16,
+     "speed": 15, "damage": "1d10+2", "reachFt": 10, "hitChance": 0.6},
+    {"id": "PIKE_B", "name": "Копейщик Б", "disposition": 1, "cell": [6, 6], "hp": 16,
+     "speed": 15, "damage": "1d10+2", "reachFt": 10, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "sword", "name": "Меч", "damage": "1d8+3", "attackBonus": 4, "sureFt": 5, "doubtFt": 5}
+    ]
+  }
+}

@@ -50,6 +50,11 @@ def me_features(obs: Dict[str, Any]) -> List[float]:
         _r(me["rangeCells"] / 24), _r(1.0), _r(0.0), _r(me["enemiesAlive"]),
         _r(me["alliesAlive"]), _r(charged), _r(me["incomingAvg"] / spec.DMG_SCALE),
         _r(charged / max(1, me["enemiesAlive"])), _r(nearest / D), _r(me["cr"] / 4),
+        # v2 team combat (значения приходят из observe/sim; до коммита №2 — 0):
+        # доля союзников, уже сходивших в раунде; LOS до ближайшего врага; доля пути до него;
+        # число стен в окне (норма /16). order == spec.ME_FEATURES.
+        _r(me.get("alliesActedFraction", 0.0)), 1.0 if me.get("hasLosToNearestEnemy") else 0.0,
+        _r(me.get("pathLenFrac", 0.0)), _r(me.get("wallsInView", 0.0) / 16.0),
     ]
 
 
@@ -64,6 +69,8 @@ def entity_slot(e: Dict[str, Any], index: int, total: int, target_id: Any, melee
         1.0 if e["canReachMe"] else 0.0, 1.0 if e["dist"] <= melee else 0.0,
         1.0 if e["hostile"] and e["dist"] <= 24 else 0.0, 1.0 if e["id"] == target_id else 0.0,
         0.0 if e["alive"] else 1.0, _r(e["dmgToMe"] / spec.DMG_SCALE),
+        # v2: индекс инициативы (норма по K_TARGETS) и «ходит следующим после актора».
+        _r(e.get("initiativeIndex", 0) / spec.K_TARGETS), 1.0 if e.get("isNextToAct") else 0.0,
     ]
 
 
@@ -73,6 +80,8 @@ def ally_slot(a: Dict[str, Any], index: int, total: int) -> List[float]:
         _r(a["hp"] / a["hpMax"]) if a["hpMax"] else 0.0, _r(a["ac"] / 20),
         _r(a["speedCells"] / 8), _r(a["dmgAvg"] / spec.DMG_SCALE), 1.0 if a["los"] else 0.0,
         1.0 if a["dist"] <= 2 else 0.0, _r(0.0),
+        # v2: индекс инициативы союзника (норма по K_ALLIES).
+        _r(a.get("initiativeIndex", 0) / spec.K_ALLIES),
     ]
 
 

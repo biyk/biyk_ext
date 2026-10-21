@@ -1,12 +1,12 @@
-# arent/spec.py — контракт наблюдения v1 и пространство действий.
+# arent/spec.py — контракт наблюдения v2 (командный бой) и пространство действий.
 #
-# Схема собранная по живому дампу сцены (CDP, 2026-10-19): hero / slots / enemies /
-# allies / others / grid. Здесь только числа и имена признаков — ни чтения payload,
-# ни сети. Изменение состава признака = смена SCHEMA: старые выборки перестают
-# соответствовать размерам сети, и это должно быть видно по номеру, а не по тишине.
+# Схема v2 добавляет признаки инициативы/акт-фракции/террейна под командный бой, но НЕ
+# раздувает патч поля (PATCH_R остаётся 5): вместо +168 grid-признаков — ~26 state-признаков
+# по слотам и ME. Изменение состава признака = смена SCHEMA: старые чекпойнты перестают
+# соответствовать размерам сети, и load обязан отказаться, а не предсказывать молча.
 from typing import Dict, Tuple
 
-SCHEMA = 1
+SCHEMA = 2
 
 # Сколько слотов отдаём под каждую группу. Сверх лимита берём ближайших по дистанции:
 # размер входа не должен расти вместе со сценой, иначе сеть зависела бы от арены.
@@ -37,15 +37,22 @@ ME_FEATURES: Tuple[str, ...] = (
     "dmgAvg", "toHit", "reachCells", "rangeCells", "attacks", "bonusAction",
     "enemiesAlive", "alliesAlive", "threatNow", "incomingAvg", "canBeCharged",
     "isolated", "cr",
+    # v2 team combat: доля союзников, уже сходивших в раунде + сводка террейна впереди
+    # (значения наполняет observe/sim в коммитах №2-№3; до того — 0, форма зафиксирована).
+    "alliesActedFraction", "hasLosToNearestEnemy", "pathLenFrac", "wallsInView",
 )
 ENEMY_FEATURES: Tuple[str, ...] = (
     "slotActive", "slotIndex", "dx", "dy", "dist", "hpFrac", "ac", "speedCells",
     "dmgAvg", "toHit", "reachCells", "rangeCells", "los", "canHitMe", "canReachMe",
     "inMyMelee", "inMyRange", "isTarget", "isDead", "dmgToMe",
+    # v2: позиция в порядке инициативы и «ходит следующим» (не вставай на линию огня).
+    "initiativeIndex", "isNextToAct",
 )
 ALLY_FEATURES: Tuple[str, ...] = (
     "slotActive", "slotIndex", "dx", "dy", "dist", "hpFrac", "ac", "speedCells",
     "dmgAvg", "los", "blocksMe", "isMe",
+    # v2: индекс инициативы союзника (кого ждать раньше/позже меня).
+    "initiativeIndex",
 )
 WEAPON_FEATURES: Tuple[str, ...] = (
     "slotActive", "slotIndex", "dmgAvg", "toHit", "melee", "sureCells", "doubtCells",

@@ -1,0 +1,202 @@
+{
+ "comment": "gen arch=ring ours=6 foes=6 field=large walls=open deploy=corner layout=structured",
+ "scene": {
+  "width": 1450,
+  "height": 1450,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [],
+ "tokens": [
+  {
+   "id": "A",
+   "name": "Капитан",
+   "disposition": -1,
+   "cell": [
+    2,
+    2
+   ],
+   "hp": 30,
+   "initiative": 13
+  },
+  {
+   "id": "AL1",
+   "name": "ranged-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    3
+   ],
+   "hp": 10,
+   "speed": 25,
+   "damage": "1d6+2",
+   "reachFt": 30,
+   "hitChance": 0.6,
+   "initiative": 2
+  },
+  {
+   "id": "AL2",
+   "name": "melee-2",
+   "disposition": -1,
+   "cell": [
+    3,
+    2
+   ],
+   "hp": 14,
+   "speed": 20,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.51,
+   "initiative": 28
+  },
+  {
+   "id": "AL3",
+   "name": "fast-3",
+   "disposition": -1,
+   "cell": [
+    3,
+    3
+   ],
+   "hp": 12,
+   "speed": 40,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.67,
+   "initiative": 22
+  },
+  {
+   "id": "AL4",
+   "name": "melee-4",
+   "disposition": -1,
+   "cell": [
+    2,
+    4
+   ],
+   "hp": 13,
+   "speed": 15,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.48,
+   "initiative": 21
+  },
+  {
+   "id": "AL5",
+   "name": "fast-5",
+   "disposition": -1,
+   "cell": [
+    3,
+    4
+   ],
+   "hp": 9,
+   "speed": 35,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.54,
+   "initiative": 25
+  },
+  {
+   "id": "F1",
+   "name": "fast-1",
+   "disposition": 1,
+   "cell": [
+    26,
+    26
+   ],
+   "hp": 6,
+   "speed": 40,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.62,
+   "initiative": 16
+  },
+  {
+   "id": "F2",
+   "name": "melee-2",
+   "disposition": 1,
+   "cell": [
+    25,
+    24
+   ],
+   "hp": 11,
+   "speed": 30,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.62,
+   "initiative": 2
+  },
+  {
+   "id": "F3",
+   "name": "fast-3",
+   "disposition": 1,
+   "cell": [
+    26,
+    24
+   ],
+   "hp": 11,
+   "speed": 40,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.55,
+   "initiative": 22
+  },
+  {
+   "id": "F4",
+   "name": "melee-4",
+   "disposition": 1,
+   "cell": [
+    25,
+    26
+   ],
+   "hp": 11,
+   "speed": 25,
+   "damage": "1d6",
+   "reachFt": 5,
+   "hitChance": 0.54,
+   "initiative": 7
+  },
+  {
+   "id": "F5",
+   "name": "melee-5",
+   "disposition": 1,
+   "cell": [
+    25,
+    25
+   ],
+   "hp": 12,
+   "speed": 30,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.48,
+   "initiative": 9
+  },
+  {
+   "id": "F6",
+   "name": "melee-6",
+   "disposition": 1,
+   "cell": [
+    26,
+    25
+   ],
+   "hp": 14,
+   "speed": 25,
+   "damage": "1d8",
+   "reachFt": 5,
+   "hitChance": 0.5,
+   "initiative": 13
+  }
+ ],
+ "hero": {
+  "id": "A",
+  "speed": 30,
+  "weapons": [
+   {
+    "id": "sword",
+    "name": "Меч",
+    "damage": "1d6+2",
+    "attackBonus": 3,
+    "sureFt": 5,
+    "doubtFt": 5
+   }
+  ]
+ }
+}

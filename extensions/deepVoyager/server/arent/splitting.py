@@ -144,3 +144,27 @@ def _assert_clean(train: List[Dict[str, Any]], val: List[Dict[str, Any]],
     report["exact_state_overlap"] = sorted(tr_sig & va_sig)
     report["train_samples"] = len(train)
     report["val_samples"] = len(val)
+
+
+def split_source_names(names: List[str], holdout_frac: float = 0.3,
+                       val_frac: float = 0.2, seed: int = 7) -> Tuple[List[str], List[str], List[str]]:
+    """Разделить ИМЕНА сценариев на train/val/holdout по группам (имя = независимая группа).
+
+    Тот же детерминизм по seed использует и rl (обучение), и evaluate (отчёт) — значит
+    holdout-множество одинаково для bc2 и ppo. Ни одно имя не попадает в две части.
+    holdout режется первым и NEVER не используется для rollout/награды/отбора чекпойнта.
+    """
+    uniq = sorted(set(str(n) for n in names))
+    order = list(uniq)
+    random.Random(seed).shuffle(order)
+    n = len(order)
+    n_hold = int(round(n * max(0.0, min(0.9, holdout_frac))))
+    n_val = int(round((n - n_hold) * max(0.0, min(0.9, val_frac))))
+    holdout = order[:n_hold]
+    val = order[n_hold:n_hold + n_val]
+    train = order[n_hold + n_val:]
+    if not train:                                   # крохотный пул: хотя бы одна группа в train
+        train, val = (val + train)[:1], val + train[1:]
+        if not train:
+            train, val, holdout = val, [], holdout
+    return train, val, holdout

@@ -43,6 +43,9 @@ def build(name: str, cfg: net.Config, dataset_file: Optional[str], split_report:
                 "parent_sha256": provenance.sha256_file(warm_from)}
     return {
         "manifest_schema": 1,
+        "schema": spec.SCHEMA,
+        "compatibility": {"from_schema": None, "reason": "v2 team combat, no warm-start",
+                          "breaks": ["single_actor_sc1_benchmarks"]},
         "run": name,
         "created_utc": provenance.now_utc(),
         "command": list(sys.argv),
@@ -72,12 +75,14 @@ def build_and_write(name: str, cfg: net.Config, dataset_file: Optional[str],
 
 
 def build_rl(name: str, net_cfg: net.Config, rcfg: Any, warm_from: Optional[str],
-             summary: Dict[str, Any], scenarios: Optional[list] = None) -> Dict[str, Any]:
+             summary: Dict[str, Any], scenarios: Optional[list] = None,
+             split: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """RL-прогон: method=ppo, родитель warm (BC), отпечаток сцен обучения, seeds раздельно.
 
     train_seed (инициализация сети/мультиномиальный sampling torch) и env_seed (порядок сцен
     в rollout) пишутся отдельными ключами — их нельзя путать. eval.json может отсутствовать
     (его делает отдельный шаг evaluate) — тогда sha честно None, не выдумываем.
+    split фиксирует, что holdout-сцены не участвовали ни в rollout, ни в отборе чекпойнта.
     """
     directory = paths.run_dir(name)
     scenarios = scenarios or []
@@ -87,11 +92,15 @@ def build_rl(name: str, net_cfg: net.Config, rcfg: Any, warm_from: Optional[str]
             "parent_sha256": provenance.sha256_file(warm_from)} if warm_from else None
     outputs = {f: provenance.sha256_file(paths.file_in(directory, f)) for f in RL_OUTPUTS}
     return {
-        "manifest_schema": 1, "run": name, "method": "ppo", "created_utc": provenance.now_utc(),
+        "manifest_schema": 1, "schema": spec.SCHEMA, "run": name, "method": "ppo",
+        "compatibility": {"from_schema": None, "reason": "v2 team combat, no warm-start",
+                          "breaks": ["single_actor_sc1_benchmarks"]},
+        "created_utc": provenance.now_utc(),
         "command": list(sys.argv), "workspace": paths.workspace(),
         "git": provenance.git_info(paths.source_dir()),
         "training_scenarios": {"count": len(scenarios), "sources": names,
                                "sha256": provenance.sha256_obj(fingerprint) if scenarios else None},
+        "split": split or {"method": "unknown"},
         "warm": warm,
         "seeds": {"train_seed": net_cfg.seed, "env_seed": getattr(rcfg, "seed", None)},
         "rl": rcfg.to_dict() if hasattr(rcfg, "to_dict") else dict(rcfg or {}),
@@ -106,6 +115,8 @@ def build_rl(name: str, net_cfg: net.Config, rcfg: Any, warm_from: Optional[str]
 
 
 def build_and_write_rl(name: str, net_cfg: net.Config, rcfg: Any, warm_from: Optional[str],
-                       summary: Dict[str, Any], scenarios: Optional[list] = None) -> str:
-    manifest = build_rl(name, net_cfg, rcfg, warm_from, summary, scenarios)
+                       summary: Dict[str, Any], scenarios: Optional[list] = None,
+                       split: Optional[Dict[str, Any]] = None) -> str:
+    manifest = build_rl(name, net_cfg, rcfg, warm_from, scenarios=scenarios, split=split,
+                        summary=summary)
     return provenance.write_json(paths.file_in(paths.run_dir(name), "run_manifest.json"), manifest)

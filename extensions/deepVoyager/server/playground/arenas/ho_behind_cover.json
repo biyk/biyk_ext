@@ -1,0 +1,21 @@
+{
+  "comment": "Независимый набор (ho_*). Лучник за укрытием: стена перекрывает прямую линию огня, цель в том же ряду за ней. Героем-лучником нужно ОБОЙТИ стену (низ/край), чтобы вообще получить легальный выстрел — оценка обходного манёвра, а не только прицела.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "SNIPER",
+  "walls": [
+    {"id": "screen", "points": {"A": {"x": 250, "y": 0}, "B": {"x": 250, "y": 350}}, "move": 1, "sight": 1}
+  ],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [1, 2], "hp": 22},
+    {"id": "SNIPER", "name": "Снайпер", "disposition": 1, "cell": [1, 8], "hp": 9,
+     "speed": 0, "damage": "1d6+4", "reachFt": 30, "hitChance": 0.7}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+2", "attackBonus": 4,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

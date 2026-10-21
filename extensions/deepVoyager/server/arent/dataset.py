@@ -10,12 +10,16 @@ import hashlib
 import json
 import os
 import random
+import zlib
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from arent import encode, paths, provenance, slots as slots_mod, spec
 from arent.observe import observe
 from arent.states import variants
-from arent.teacher import Teacher, pinned
+from arent.teacher import pinned
+from arent.teachers import DEFAULT_TEACHER, TeacherPolicy, get_teacher
+from planner.context import BattleContext
+from planner.sim import Simulation
 
 
 def payload_of(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -43,25 +47,56 @@ def arena_names(want: Optional[List[str]] = None) -> List[str]:
     return [n for n in names if not want or n in want]
 
 
-def sources(want_arenas: Optional[List[str]] = None, use_live: bool = True
-            ) -> Iterator[Tuple[str, Dict[str, Any]]]:
-    """(имя, payload) по всем источникам состояний: арены + живые снимки."""
+# Зарезервированный независимый набор (пункт 1 консультанта): арены с этими префиксами
+# Никогда не попадают ни в генерацию BC-выборки, ни в PPO train/val/reward/отбор
+# чекпойнта — они существуют ТОЛЬКО для финальной оценки bc_v2/bc2 и PPO на одинаковых,
+# физически отделённых сценариях. ho_ — прежний замороженный holdout (одиночный герой),
+# ho2_ — новый командный holdout v2 (1..6 на 1..6, у каждого токена явная инициатива).
+# Префиксы вместо списка-константы: арена добавляется одним файлом, а резерв держится
+# centrally (cap_* свежих снимков тем же механизмом).
+INDEPENDENT_PREFIXES = ("ho_", "ho2_")
+INDEPENDENT_PREFIX = INDEPENDENT_PREFIXES[0]      # обратная совместимость старых ссылок
+
+
+def is_independent(name: str) -> bool:
+    """Имя принадлежит зарезервированному независимому (holdout) набору ho_/ho2_?"""
+    return str(name).startswith(INDEPENDENT_PREFIXES)
+
+
+def sources(want_arenas: Optional[List[str]] = None, use_live: bool = True,
+            exclude_independent: bool = False) -> Iterator[Tuple[str, Dict[str, Any]]]:
+    """(имя, payload) по всем источникам состояний: арены + живые снимки.
+
+    exclude_independent=True убирает зарезервированный набор (ho_*) — так обучению
+    (gen/rl) не достаются сцены, зарезервированные под честную оценку bc2↔PPO.
+    """
     from playground import arena
     for name in arena_names(want_arenas):
+        if exclude_independent and is_independent(name):
+            continue
         yield name, arena.load_arena(name)
     if use_live:
         for name, payload in payload_files():
+            if exclude_independent and is_independent(name):
+                continue
             yield name, payload
 
 
-def sample_one(name: str, payload: Dict[str, Any], teacher: Teacher, meta: Dict[str, Any]
+def independent_sources(want_arenas: Optional[List[str]] = None, use_live: bool = True
+                        ) -> List[Tuple[str, Dict[str, Any]]]:
+    """Ровно зарезервированный независимый набор — тот же для bc2 и для PPO."""
+    return [(n, p) for n, p in sources(want_arenas, use_live) if is_independent(n)]
+
+
+def sample_one(name: str, payload: Dict[str, Any], teacher: TeacherPolicy, meta: Dict[str, Any],
+               initiative: Optional[Tuple[str, ...]] = None
                ) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Одно состояние -> пример выборки; причина пропуска, если примера не вышло."""
+    """Одно состояние (один микро-шаг нашего актёра) -> пример; причина пропуска, если не вышло."""
     labeled = teacher.label(payload)
     ctx = labeled.ctx
     if not ctx.weapons or not ctx.hostile_targets():
         return None, "no_attack"
-    obs = observe(ctx)
+    obs = observe(ctx, initiative, ctx.src_id)
     slots = slots_mod.build(ctx, obs)
     if not slots.cells or not slots.targets:
         return None, "no_slots"
@@ -85,25 +120,32 @@ def sample_one(name: str, payload: Dict[str, Any], teacher: Teacher, meta: Dict[
 def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int = 3,
              teacher_rounds: int = 1, teacher_limit: Optional[float] = 1.0,
              want_arenas: Optional[List[str]] = None, use_live: bool = True,
-             shallow_k: Optional[int] = None, top_k: Optional[int] = None
+             shallow_k: Optional[int] = None, top_k: Optional[int] = None,
+             teacher: str = DEFAULT_TEACHER
              ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Сгенерировать не более count примеров; статистика — почему остальные не вышли.
 
+    teacher — имя политики из реестра (arent.teachers); по умолчанию greedy — прежний
+    планировщик, поэтому без явного выбора конвейер размечает ровно как до реестра.
     shallow_k/top_k режут ширину симуляции в playout и в lookahead учителя: без них
     состояние стоит доли секунды, с ними — единицы секунд (замер 0.2 шт/с на 8 токенах).
     """
     rng = random.Random(seed)
-    teacher = Teacher(rounds=teacher_rounds, time_limit_sec=teacher_limit)
+    teacher_impl = get_teacher(teacher, rounds=teacher_rounds, time_limit_sec=teacher_limit)
     samples: List[Dict[str, Any]] = []
     stats = {"skip": {}, "sources": {}, "schema": spec.SCHEMA, "seed": seed,
-             "teacher_rounds": teacher_rounds, "shallow_k": shallow_k, "top_k": top_k,
+             "teacher": teacher_impl.name, "teacher_rounds": teacher_rounds,
+             "shallow_k": shallow_k, "top_k": top_k,
              "count": count, "per_src": per_src, "rounds_max": rounds_max}
     with pinned(rounds=teacher_rounds, time_limit_sec=teacher_limit,
                 shallow_k=shallow_k, top_k=top_k):
-        for name, payload in sources(want_arenas, use_live):
+        for name, payload in sources(want_arenas, use_live, exclude_independent=True):
+            scene_seed = seed ^ zlib.crc32(name.encode("utf-8"))
             for state_payload, meta in variants(payload, rng, count=per_src,
                                                 rounds_max=rounds_max):
-                sample, reason = sample_one(name, state_payload, teacher, meta)
+                order = Simulation.of(BattleContext.from_payload(state_payload),
+                                      env_seed=scene_seed).initiative_order
+                sample, reason = sample_one(name, state_payload, teacher_impl, meta, order)
                 if sample is None:
                     stats["skip"][reason] = stats["skip"].get(reason, 0) + 1
                     continue

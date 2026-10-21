@@ -1,0 +1,97 @@
+{
+ "comment": "gen arch=boss_adds ours=3 foes=2 field=small walls=open deploy=edge layout=structured",
+ "scene": {
+  "width": 700,
+  "height": 700,
+  "gridSize": 50
+ },
+ "target": "F1",
+ "walls": [],
+ "tokens": [
+  {
+   "id": "A",
+   "name": "Капитан",
+   "disposition": -1,
+   "cell": [
+    2,
+    7
+   ],
+   "hp": 30,
+   "initiative": 2
+  },
+  {
+   "id": "AL1",
+   "name": "melee-1",
+   "disposition": -1,
+   "cell": [
+    2,
+    8
+   ],
+   "hp": 8,
+   "speed": 25,
+   "damage": "1d4",
+   "reachFt": 5,
+   "hitChance": 0.45,
+   "initiative": 22
+  },
+  {
+   "id": "AL2",
+   "name": "reach-2",
+   "disposition": -1,
+   "cell": [
+    3,
+    7
+   ],
+   "hp": 18,
+   "speed": 20,
+   "damage": "1d8",
+   "reachFt": 10,
+   "hitChance": 0.48,
+   "initiative": 8
+  },
+  {
+   "id": "F1",
+   "name": "fast-1",
+   "disposition": 1,
+   "cell": [
+    11,
+    7
+   ],
+   "hp": 6,
+   "speed": 40,
+   "damage": "1d6+2",
+   "reachFt": 5,
+   "hitChance": 0.69,
+   "initiative": 11
+  },
+  {
+   "id": "F2",
+   "name": "melee-2",
+   "disposition": 1,
+   "cell": [
+    10,
+    5
+   ],
+   "hp": 13,
+   "speed": 25,
+   "damage": "1d8",
+   "reachFt": 5,
+   "hitChance": 0.45,
+   "initiative": 17
+  }
+ ],
+ "hero": {
+  "id": "A",
+  "speed": 30,
+  "weapons": [
+   {
+    "id": "sword",
+    "name": "Меч",
+    "damage": "1d6+2",
+    "attackBonus": 3,
+    "sureFt": 5,
+    "doubtFt": 5
+   }
+  ]
+ }
+}

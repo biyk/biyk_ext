@@ -23,6 +23,7 @@
     "seed": 7,
     "per_src": 6,
     "rounds_max": 3,
+    "teacher": "greedy",
     "teacher_rounds": 2,
     "teacher_limit": 1.0,
     "shallow_k": 3,

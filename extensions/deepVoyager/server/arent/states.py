@@ -24,13 +24,22 @@ def npc_map(payload: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return {str(n.get("id")): n for n in (payload.get("data") or {}).get("npcs") or []}
 
 
+def actor_ids(payload: Dict[str, Any]) -> List[str]:
+    """Кто из нашей команды может ходить: src плюс живые союзники той же диспозиции."""
+    ctx = BattleContext.from_payload(payload)
+    out = [ctx.src_id] if ctx.src.is_alive else []
+    for t in ctx.tokens:
+        if t.id == ctx.src_id or not t.is_alive or t.disposition == 0:
+            continue
+        if not ctx.is_hostile(t) and t.disposition == ctx.src.disposition:
+            out.append(t.id)
+    return out
+
+
 def src_candidates(payload: Dict[str, Any]) -> List[str]:
-    """Кто может ходить: исходный src плюс токены, чьё вооружение прислали."""
-    out = [payload.get("src")]
-    for token, raw in npc_map(payload).items():
-        if raw.get("weapons") and token != payload.get("src"):
-            out.append(token)
-    return [t for t in out if t]
+    """Кто может ходить: любой живой боец команды src (включая союзников без своего оружия —
+    rebuild подставит им арсенал из базы, поэтому разметка не потеряется)."""
+    return actor_ids(payload)
 
 
 def rebuild(base: Dict[str, Any], src_id: str, cells: Optional[Dict[str, Cell]] = None,

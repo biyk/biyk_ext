@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 ARENAS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arenas")
 DEFAULT_SCENE = {"width": 500, "height": 500, "gridSize": 50}
 # поля токена, которые /plan читает «как есть» для симуляции чужих ходов
-SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance")
+SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance", "initiative")
 
 
 def arena_file(name: str) -> str:

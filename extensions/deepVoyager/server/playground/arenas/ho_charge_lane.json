@@ -1,0 +1,19 @@
+{
+  "comment": "Независимый набор (ho_*). Галопом на сближение: быстрый кавалерист (speed 60) мчится из дальнего угла. Лучник должен выжать урон до контакта и не подпустить угрозу вплотную — проверка расчёта темпа, а не только дистанции.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "CAVALRY",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [5, 1], "hp": 20},
+    {"id": "CAVALRY", "name": "Кавалерист", "disposition": 1, "cell": [5, 9], "hp": 20,
+     "speed": 60, "damage": "2d8+3", "reachFt": 5, "hitChance": 0.6}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+3", "attackBonus": 5,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

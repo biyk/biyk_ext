@@ -35,6 +35,15 @@ def _entropy(probs: torch.Tensor, logp: torch.Tensor) -> torch.Tensor:
     return -(probs * logp).sum(-1)
 
 
+def joint_logp(table: Dict[str, list], action: Action) -> float:
+    """Joint logπ исполненной тройки из logp_table act(): сумма logπ по группам.
+
+    Индексы action — уже легализованные средой (legalize); все они лежат в маске, поэтому
+    gather из таблицы корректен. Это то же logπ, что _eval посчитает на обновлении.
+    """
+    return float(sum(table[group][int(action[Y_KEY[group]])] for group in GROUPS))
+
+
 class PPOAgent:
     """Актёр+критик PPO над одной TorchPolicy: act сэмплит, update оптимизирует суррогат."""
 
@@ -56,10 +65,16 @@ class PPOAgent:
     # ------------------------------------------------------------------ сэмпл хода
     @torch.no_grad()
     def act(self, sample: Dict[str, Any]) -> Dict[str, Any]:
-        """Один шаг: тройка индексов из masked-распределений + joint logπ, энтропия, V(s)."""
+        """Один шаг: тройка индексов из masked-распределений + joint logπ, энтропия, V(s).
+
+        Возвращает ещё logp_table — ряд logπ по всем слотам каждой группы: среда после
+        выборки может убрать нелегальную атаку (legalize), и тогда logπ берётся от
+        ИСПОЛНЕННОГО действия из той же таблицы (joint_logp), без второго прогона сети.
+        """
         state, slots, masks = self.policy._batch([sample])
         logits, value = self.policy._pass(state, slots, masks)
         action: Action = {}
+        table: Dict[str, list] = {}
         logp_sum, ent_sum = torch.zeros((), device=self.policy.device), torch.zeros(
             (), device=self.policy.device)
         for group in GROUPS:
@@ -67,11 +82,20 @@ class PPOAgent:
             index = torch.multinomial(probs, num_samples=1)         # [1,1] только по легальным
             logp_sum = logp_sum + _gather(logp, index)
             ent_sum = ent_sum + _entropy(probs, logp)
+            table[group] = [float(x) for x in logp[0].tolist()]
             action[Y_KEY[group]] = int(index.item())
         return {"action": action,
                 "logp": float(logp_sum.item()),
                 "entropy": float(ent_sum.item()),
-                "value": float(value.item())}
+                "value": float(value.item()),
+                "logp_table": table}
+
+    @torch.no_grad()
+    def value_of(self, sample: Dict[str, Any]) -> float:
+        """Только V(s) без сэмплирования: бутстрап на усечении не двигает sampling-RNG."""
+        state, slots, masks = self.policy._batch([sample])
+        _logits, value = self.policy._pass(state, slots, masks)
+        return float(value.item())
 
     # ------------------------------------------------------------------ логп/ценность батча
     def _eval(self, batch: List[Dict[str, Any]], actions: List[Action]):

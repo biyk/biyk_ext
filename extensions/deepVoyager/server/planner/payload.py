@@ -30,6 +30,7 @@ class Token:
     damage: str = ""        # строка кубика («1d8»); "" = «не прислано»
     reach_ft: float = 0.0   # досягаемость его атаки
     hit_chance: float = 0.0  # вероятность попадания; 0 = «не прислано»
+    initiative: int = 0     # явная инициатива (1..30); 0 = «не прислано» -> бросим d20
 
     @property
     def is_alive(self) -> bool:
@@ -85,6 +86,7 @@ def parse_tokens(data: Dict[str, Any]) -> List[Token]:
             damage=str(n.get("damage") or ""),
             reach_ft=_number(n.get("reachFt"), as_int=False),
             hit_chance=_number(n.get("hitChance"), as_int=False),
+            initiative=_number(n.get("initiative")),
         ))
     if not out:
         raise ValueError("No tokens in scene data")

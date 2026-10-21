@@ -1,0 +1,19 @@
+{
+  "comment": "Независимый набор (ho_*). Чистое поле против медленного танка: у героя лук и полный простор для кайтинга, угроза ползёт (speed 15) и бьёт сильно. Задача — держать дистанцию всё бой, а не разменяться.",
+  "scene": {"width": 500, "height": 500, "gridSize": 50},
+  "target": "TANK",
+  "walls": [],
+  "tokens": [
+    {"id": "A", "name": "Лучник", "disposition": -1, "cell": [5, 1], "hp": 22},
+    {"id": "TANK", "name": "Танк", "disposition": 1, "cell": [5, 8], "hp": 45,
+     "speed": 15, "damage": "2d8+3", "reachFt": 5, "hitChance": 0.55}
+  ],
+  "hero": {
+    "id": "A",
+    "speed": 30,
+    "weapons": [
+      {"id": "bow", "name": "Длинный лук", "damage": "1d8+3", "attackBonus": 5,
+       "sureFt": 30, "doubtFt": 120, "ranged": true}
+    ]
+  }
+}

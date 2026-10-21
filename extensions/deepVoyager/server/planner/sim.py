@@ -1,10 +1,8 @@
-# planner/sim.py — симуляция одного раунда боя (пункт 5 todo.md).
-#
-# Отдельной модели боя нет: Simulation пересобирает BattleContext, поэтому Scorer,
-# best_strike и quin работают на симулированном состоянии как на живом. Враги отвечают
-# одним жадным ходом, урон — ожиданием (planner/dice.py) с множителем rules.hitChance.
+# planner/sim.py — симуляция одного раунда боя: команды ходят по инициативе (коммит №2).
+# Отдельной модели боя нет: Simulation пересобирает BattleContext, поэтому Scorer и quin
+# работают на симулированном состоянии как на живом. Урон — ожиданием (planner/dice.py).
 import math
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
 
 from planner.action import ACTION_MOVE, ACTION_TARGET, ACTION_USE, Action
@@ -12,48 +10,42 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import best_strike, legal_steps
 from planner.geometry import DIR_VECTORS, Cell, apply_moves, cell_distance, within_reach
+from planner.initiative import (Unit, allies_of, are_hostile, living_order,
+                                next_living, roll_initiatives)
 from planner.payload import parse_tokens
 from planner.pathfinding import PathfindingService
 from planner.points import tuning
 from planner.scoring import Scorer
 
 
-@dataclass(frozen=True)
-class Unit:
-    """Юнит симуляции: клетка, hp и параметры, с которыми он ходит и бьёт."""
-    id: str
-    cell: Cell
-    hp: float
-    speed_steps: int
-    damage_avg: float
-    reach_cells: float
-    chance: float               # вероятность попадания его атаки
-    hostile_to_hero: bool
-
-    @property
-    def is_alive(self) -> bool:
-        return self.hp > 0
-
-
 class Simulation:
     """Состояние боя после симулированных ходов. Исходный контекст не мутируется."""
 
     def __init__(self, base: BattleContext, units: Dict[str, Unit], hero_id: str,
-                 target_id: Optional[str] = None, hero_dead: bool = False):
+                 target_id: Optional[str] = None, hero_dead: bool = False,
+                 initiative_order: Tuple[str, ...] = ()):
         self.base, self.units, self.hero_id = base, units, hero_id
         self._target_id, self.hero_dead, self._pf = target_id, hero_dead, None
+        self.initiative_order = tuple(initiative_order)
 
     @classmethod
-    def of(cls, context: BattleContext) -> "Simulation":
-        """Герой — src запроса, враги — hostile_targets(); союзников пока не симулируем (долг)."""
+    def of(cls, context: BattleContext, env_seed=None) -> "Simulation":
+        """Команда героя (src + союзники) против врагов; инициатива — поле или d20 от env_seed."""
         hostile = {t.id for t in context.hostile_targets()}
+        hero_disp = context.src.disposition
         units = {t.id: Unit(t.id, context.cell_of(t), float(t.hp_current), t.sim_speed_steps,
                             t.sim_damage_avg, t.sim_reach_cells, t.sim_hit_chance,
-                            t.id in hostile) for t in context.tokens}
+                            t.id in hostile, t.initiative,
+                            t.id != context.src_id and t.id not in hostile
+                            and t.disposition == hero_disp and t.disposition != 0)
+                 for t in context.tokens}
         best = max(context.weapons, key=lambda w: w.expected_damage, default=None)
         if best and context.src_id in units:      # урон героя — из его оружия, а не из «1d8»
             units[context.src_id] = replace(units[context.src_id], damage_avg=best.expected_damage)
-        return cls(context, units, context.src_id, context.target_id)
+        combatants = [(u.id, u.initiative) for u in units.values() if u.is_alive
+                      and (u.hostile_to_hero or u.ally_to_hero or u.id == context.src_id)]
+        order = roll_initiatives(combatants, env_seed)
+        return cls(context, units, context.src_id, context.target_id, initiative_order=order)
 
     @property
     def hero(self) -> Unit:
@@ -62,6 +54,18 @@ class Simulation:
     @property
     def foes(self) -> Tuple[Unit, ...]:
         return tuple(u for u in self.units.values() if u.hostile_to_hero and u.is_alive)
+
+    @property
+    def allies(self) -> Tuple[Unit, ...]:
+        """Живые союзники той же команды, что герой (сам герой и нейтральные не входят)."""
+        return allies_of(self.units)
+
+    @property
+    def living_in_order(self) -> Tuple[str, ...]:
+        return living_order(self.units, self.initiative_order)
+
+    def next_to_act(self, after_uid: Optional[str] = None) -> Optional[str]:
+        return next_living(self.units, self.initiative_order, after_uid)
 
     @property
     def cells(self) -> Dict[str, Cell]:
@@ -74,6 +78,10 @@ class Simulation:
     def _others(self, exclude: str) -> Dict[str, Cell]:
         """Клетки живых токенов: вставать на чужую клетку нельзя (D&D 5e)."""
         return {uid: u.cell for uid, u in self.units.items() if uid != exclude and u.is_alive}
+
+    def _clone(self, units: Dict[str, Unit], hero_dead: bool = False) -> "Simulation":
+        return Simulation(self.base, units, self.hero_id, self._target_id, hero_dead,
+                          self.initiative_order)
 
     def _raw(self) -> Dict[str, Any]:
         """Копия raw с симулированными позициями и hp — чтобы quin видел реальность."""
@@ -104,23 +112,29 @@ class Simulation:
         return self._pf
 
     def apply_hero(self, actions: List[Action]) -> "Simulation":
-        """Герой сходил: движение + удары. Мёртвый враг выпадет из foes (hp <= 0)."""
+        """Ход героя (частный случай apply_actor для src) — контракт одиночного актёра."""
+        return self.apply_actor(self.hero_id, actions)
+
+    def apply_actor(self, actor_id: str, actions: List[Action]) -> "Simulation":
+        """Актёр actor_id сходил: движение + удары по врагам ЕГО команды. Мёртвый выпадет из foes."""
         t = tuning()
+        actor = self.units[actor_id]
         dirs = [a.conf.get("direction") for a in actions if a.action == ACTION_MOVE]
-        cell = apply_moves(self.hero.cell, [d for d in dirs if d in DIR_VECTORS])
-        units = {**self.units, self.hero_id: replace(self.hero, cell=cell)}
+        cell = apply_moves(actor.cell, [d for d in dirs if d in DIR_VECTORS])
+        units = {**self.units, actor_id: replace(actor, cell=cell)}
         aimed = next((a.conf.get("id") for a in reversed(actions) if a.action == ACTION_TARGET),
                      self._target_id)
         for a in (x for x in actions if x.action == ACTION_USE):
             weapon = self.base.weapon(a.conf.get("itemId", ""))
             foe = units.get(aimed or "")
             reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
-            if foe is None or not foe.is_alive or not within_reach(cell, foe.cell, reach):
-                continue        # не достать: ход состоялся, урона нет
-            # своего КД у героя в данных нет (долг) — попадание по общему правилу
+            if foe is None or not foe.is_alive or not are_hostile(actor, foe, self.hero_id) \
+                    or not within_reach(cell, foe.cell, reach):
+                continue        # не достать или свой: ход состоялся, урона нет
+            # своего КД у актёра в данных нет (долг) — попадание по общему правилу
             damage = (weapon.expected_damage if weapon else t.unknown_damage_avg) * t.hit_chance
             units[aimed] = replace(foe, hp=foe.hp - damage)
-        return Simulation(self.base, units, self.hero_id, self._target_id)
+        return self._clone(units)
 
     def _approach(self, unit: Unit, hero_cell: Cell) -> Unit:
         """Жадное сближение: шаг, строго уменьшающий дистанцию, пока идёт."""
@@ -151,8 +165,7 @@ class Simulation:
                 penalty += t.damage_penalty * unit.chance      # штраф за сам факт урона
                 units[self.hero_id] = replace(hero, hp=hero.hp - unit.damage_avg * unit.chance)
         dead = not units[self.hero_id].is_alive
-        return (Simulation(self.base, units, self.hero_id, self._target_id, dead),
-                penalty + (t.death_penalty if dead else 0.0))
+        return (self._clone(units, dead), penalty + (t.death_penalty if dead else 0.0))
 
     def advance(self, actions: List[Action]) -> Tuple["Simulation", float]:
         """Прогон раунда: значение = очки плана глазами Scorer + ответ врагов."""
@@ -184,17 +197,3 @@ class Simulation:
             scored.append((-self.round_value(actions), cell, actions))
         scored.sort(key=lambda s: (s[0], s[1]))
         return [actions for _v, _c, actions in scored[:max(1, t.shallow_k)]]
-
-
-def rollout(context: BattleContext, actions: List[Action], rounds: int) -> float:
-    """Метрика линии: план + жадная политика героя ещё N раундов — одной шкалой для
-    greedy (rounds=1) и lookahead: считает симуляция, а не оценка планировщика."""
-    state, total, line = Simulation.of(context), 0.0, list(actions)
-    for _ in range(max(1, int(rounds))):
-        state, value = state.advance(line)
-        total += value
-        if state.hero_dead:
-            break
-        options = state.hero_options()
-        line = options[0] if options else []
-    return total

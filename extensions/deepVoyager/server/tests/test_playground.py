@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from arent import paths
+from arent import dataset, paths
 from arent.dataset import generate
 from planner.context import BattleContext
 from playground.arena import ARENA_NAMES, load_arena
@@ -29,8 +29,14 @@ def test_arena_library_is_broad_enough_to_train():
 
 
 @pytest.mark.parametrize("name", ARENA_NAMES)
-def test_arena_is_learnable_by_gen(name, tmp_path):
-    """Каждая арена обязана выдать хотя бы один размеченный пример, а не только валидный payload."""
+def test_arena_is_learnable_by_gen(name, tmp_path, monkeypatch):
+    """Каждая арена обязана выдать хотя бы один размеченный пример, а не только валидный payload.
+
+    Зарезервированные ho_* (независимый набор) генерация обычно вычищает по префиксу —
+    но сама арена всё равно должна быть обучаемой, поэтому на время проверки глушим фильтр
+    резерва (dataset.is_independent -> False): тестируем арену, а не политики отбора.
+    """
+    monkeypatch.setattr(dataset, "is_independent", lambda _n: False)
     paths.set_workspace(str(tmp_path))
     samples, stats = generate(count=4, seed=11, per_src=3, rounds_max=1,
                               teacher_rounds=1, teacher_limit=0.3,

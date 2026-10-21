@@ -9,7 +9,8 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.points import tuning
 from planner.scoring import Scorer
-from planner.sim import Simulation, rollout
+from planner.sim import Simulation
+from planner.turns import rollout
 
 DAMAGE_SWORD = "1d6+2"                 # ожидание 5.5, с hitChance 0.65 -> 3.575
 

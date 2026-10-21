@@ -36,8 +36,9 @@ class TeamReward:
         self.reset()
 
     def reset(self) -> None:
-        """Новый бой: окно событий пусто (пат считается заново)."""
+        """Новый бой: окно событий пусто (пат считается заново), внутрираундовый флаг чист."""
         self._recent: deque = deque(maxlen=self.draw_window)
+        self._pending = False
 
     def _alive(self, units: Dict[str, Unit], hero_id: str, side: int) -> Dict[str, Unit]:
         return {u.id: u for u in units.values()
@@ -54,21 +55,35 @@ class TeamReward:
         return None
 
     def step(self, prev: Dict[str, Unit], nxt: Dict[str, Unit], hero_id: str,
-             raw_value: float = 0.0) -> Tuple[float, Optional[str]]:
-        """(награда за шаг, исход-терминал|None). События: убили/попали/живые враги/пат."""
+             raw_value: float = 0.0, tick: bool = True) -> Tuple[float, Optional[str]]:
+        """(награда за шаг, исход-терминал|None). События: убили/попали/живые враги/пат.
+
+        tick=False — ход актёра в середине раунда (WP3/WP4): плотные события считаем сразу,
+        а окно пата двигаем только на закрытии раунда (tick=True), иначе draw_window
+        считался бы в ходах, а не в раундах. Событием раунда считается урон ЛЮБОЙ стороне
+        (командный бой: нас бьют — тоже движение, а не пат).
+        """
         foes_before = self._alive(prev, hero_id, 1)
         foes_after = self._alive(nxt, hero_id, 1)
         own_after = self._alive(nxt, hero_id, 0)
+        own_before = self._alive(prev, hero_id, 0)
         kills = sum(1 for uid in foes_before if uid not in foes_after)
         hits = sum(1 for uid, u in foes_before.items()
                    if uid in nxt and nxt[uid].hp < u.hp)
+        own_hits = sum(1 for uid, u in own_before.items()
+                       if uid in nxt and nxt[uid].hp < u.hp)
         dense = (self.points["kill"] * kills + self.points["hit"] * hits
                  + self.points["living_cost"] * len(foes_after))
-        eventful = bool(kills or hits)
-        self._recent.append(eventful)
+        eventful = bool(kills or hits or own_hits)
+        if tick:
+            self._recent.append(eventful or self._pending)
+            self._pending = False
+        else:
+            self._pending = self._pending or eventful
         outcome = self._outcome(foes_after, own_after)
-        if outcome is None and len(self._recent) == self.draw_window and not any(self._recent):
-            outcome = "draw"                                 # пат: четыре раунда без событий
+        if tick and outcome is None and len(self._recent) == self.draw_window \
+                and not any(self._recent):
+            outcome = "draw"                                 # пат: окно тихих раундов
         if outcome:
             dense += self.points[outcome]
         dense += self.raw_weight * float(raw_value) / self.reward_scale   # сырой подмес (выкл.)

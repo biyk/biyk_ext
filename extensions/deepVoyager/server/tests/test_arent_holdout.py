@@ -80,8 +80,12 @@ def test_cli_exposes_holdout_command_with_defaults():
     assert args.seed == holdout.HOLDOUT_SEED
 
 
-def test_cli_rl_defaults_to_legacy_and_flags_team_reward():
-    assert parser().parse_args(["rl"]).team_reward is False
-    on = parser().parse_args(["rl", "--team-reward", "--draw-window", "6",
-                              "--reward-scale", "50"])
-    assert on.team_reward is True and on.draw_window == 6 and on.reward_scale == 50
+def test_cli_rl_defaults_to_team_reward_and_flags_can_disable():
+    # WP4: без флагов дефолты RlConfig (team ±5, polyactor) не перебиваются;
+    # legacy-путь A/B включается явными --no-team-reward / --mono-actor
+    ns = parser().parse_args(["rl"])
+    assert ns.team_reward is None and ns.polyactor is None
+    off = parser().parse_args(["rl", "--no-team-reward", "--mono-actor",
+                               "--draw-window", "6", "--reward-scale", "50"])
+    assert off.team_reward is False and off.polyactor is False
+    assert off.draw_window == 6 and off.reward_scale == 50

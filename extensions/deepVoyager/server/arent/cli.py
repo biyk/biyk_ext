@@ -109,8 +109,14 @@ def parser() -> argparse.ArgumentParser:
     rlp.add_argument("--lr", type=float, help="шаг актёра-критика")
     rlp.add_argument("--clear-bonus", type=float, help="терминальная награда за зачистку")
     rlp.add_argument("--death-penalty", type=float, help="терминальная награда за гибель")
-    rlp.add_argument("--team-reward", action="store_true",
-                     help="v2: командная награда ±5 (исход/kill/hit/living + окно пата) вместо одиночного героя")
+    rlp.add_argument("--team-reward", dest="team_reward", action="store_true", default=None,
+                     help="командная награда ±5 (по умолчанию включена)")
+    rlp.add_argument("--no-team-reward", dest="team_reward", action="store_false",
+                     help="legacy-путь: одиночный герой ±1 (clear_bonus/death_penalty)")
+    rlp.add_argument("--polyactor", dest="polyactor", action="store_true", default=None,
+                     help="ход каждого живого актёра по инициативе (по умолчанию включён)")
+    rlp.add_argument("--mono-actor", dest="polyactor", action="store_false",
+                     help="legacy-бейзлайн A/B: монокторный шаг + foes_act-эвристика")
     rlp.add_argument("--reward-scale", type=float, help="делитель сырого значения симуляции для полосы ±5")
     rlp.add_argument("--draw-window", type=int, help="раундов подряд без событий -> пат (DRAW)")
     rlp.add_argument("--holdout-frac", type=float, help="доля групп сцен, зарезервированных под оценку")
@@ -222,7 +228,7 @@ def _rl(args) -> int:
               "vf_coef": args.vf, "ppo_epochs": args.ppo_epochs, "minibatch": args.minibatch,
               "rounds_cap": args.rounds, "replays": args.replays, "seed": args.seed,
               "lr": args.lr, "clear_bonus": args.clear_bonus, "death_penalty": args.death_penalty,
-              "use_team_reward": args.team_reward,
+              "use_team_reward": args.team_reward, "polyactor": args.polyactor,
               "reward_scale": args.reward_scale, "draw_window": args.draw_window,
               "holdout_frac": args.holdout_frac, "val_frac": args.val_frac,
               "variants_per_src": args.variants}

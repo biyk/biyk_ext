@@ -106,7 +106,10 @@ def test_to_dict_exposes_scale_and_points():
 #--- 4. интеграция со средой ------------------------------------------------
 def _far_scene(hero_hp=50):
     hero = make_npc("A", 0, 0, disposition=-1, hp=hero_hp, speed=30, damage="1d8")
-    foe = make_npc("B", 450, 0, disposition=1, hp=999, speed=0, damage="1d8")
+    foe = make_npc("B", 450, 0, disposition=1, hp=999, speed=5, damage="1d8")
+    # speed=5ft — клетка за раунд, reachFt=5 — достает только вплотную: до 9 клеток
+    # добежит не раньше 9-го раунда, первые раунды честно тихие (пат ловится окном)
+    foe["reachFt"] = 5
     return make_scene_payload(npcs=[hero, foe], weapons=[make_weapon("sword", damage="1d6+2")],
                               token="B")
 

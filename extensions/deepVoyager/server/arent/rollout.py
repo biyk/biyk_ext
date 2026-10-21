@@ -39,7 +39,7 @@ class RlConfig:
     target_kl: float = 0.03
     clear_bonus: float = 1.0           # терминал: зачистил живым (legacy-путь, team выкл.)
     death_penalty: float = -1.0        # терминал: погиб (legacy-путь, team выкл.)
-    use_team_reward: bool = False      # v2: командная награда ±5 вместо одиночного героя
+    use_team_reward: bool = True       # WP4: командная награда ±5 — дефолт RL-контура (legacy — по флагу)
     polyactor: bool = True             # WP3: шаг за каждого живого актёра; False — legacy мон.actor+foes_act
     reward_scale: float = 100.0        # сырое значение симуляции -> полоса ±5 (при raw_weight>0)
     draw_window: int = 4               # раундов подряд без событий -> пат (DRAW)

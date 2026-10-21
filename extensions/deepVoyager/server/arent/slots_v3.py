@@ -85,6 +85,44 @@ def plan_index(slots: SlotsV3, attack_cell: Cell, end_cell: Cell) -> int:
                  if p["attack_cell"] == attack_cell and p["end_cell"] == end_cell), -1)
 
 
+def split_turn(ctx: BattleContext, actions: List[Any]) -> Tuple[Cell, Cell, List[str], List[str]]:
+    """Разрезать ход учителя на (attack_cell, end_cell, dirs_in, dirs_out) по первому USE.
+
+    MOVE до первого USE — подход к позиции атаки, MOVE после — отступление. v2-ход учителя
+    (все move перед use) даёт end_cell == attack_cell."""
+    origin = ctx.src_cell
+    use_at = next((i for i, a in enumerate(actions) if a.action == ACTION_USE), None)
+    if use_at is None:
+        in_order, out_order = [a for a in actions if a.action == ACTION_MOVE], []
+    else:
+        in_order = [a for a in actions[:use_at] if a.action == ACTION_MOVE]
+        out_order = [a for a in actions[use_at + 1:] if a.action == ACTION_MOVE]
+    dirs_in = [a.conf.get("direction") for a in in_order if a.conf.get("direction")]
+    dirs_out = [a.conf.get("direction") for a in out_order if a.conf.get("direction")]
+    attack_cell = apply_moves(origin, dirs_in)
+    end_cell = apply_moves(attack_cell, dirs_out)
+    return attack_cell, end_cell, dirs_in, dirs_out
+
+
+def ensure_plan(slots: SlotsV3, ctx: BattleContext, actions: List[Any]) -> int:
+    """Гарантировать план учителя в слотах (аналог slots.ensure_cell); вернуть его индекс.
+
+    Перебор plan'ов усекается до K_MOVEPLAN по коротким маршрутам, а учитель часто выбирает
+    дальнюю клетку (стрелять из-за укрытия / отойти) — без вставки её (attack,end) нет в
+    слотах, label_of вернул бы None и пример потерялся. Вытесняем последний (наименее
+    приоритетный) план, если мест нет.
+    """
+    attack_cell, end_cell, dirs_in, dirs_out = split_turn(ctx, actions)
+    index = plan_index(slots, attack_cell, end_cell)
+    if index >= 0:
+        return index
+    entry = _plan(ctx, ctx.src_cell, attack_cell, end_cell, dirs_in, dirs_out, len(dirs_in))
+    if len(slots.plans) >= spec3.K_MOVEPLAN:
+        slots.plans.pop()
+    slots.plans.append(entry)
+    return len(slots.plans) - 1
+
+
 def attackable_v3(slots: SlotsV3, ctx: BattleContext, plan_i: int, target_i: int,
                   weapon_i: int) -> bool:
     """Легально ли три: цель жива, план в слотах, оружие ДОСТАЁТ ЦЕЛЬ ИЗ ПОЗИЦИИ АТАКИ."""
@@ -123,22 +161,10 @@ def decode(slots: SlotsV3, label: Dict[str, int]) -> List[Any]:
 def label_of(ctx: BattleContext, slots: SlotsV3, actions: List[Any]) -> Optional[Dict[str, int]]:
     """Последовательность действий -> (plan,target,weapon); None, если endpoints нет в слотах.
 
-    Делим по первому USE: MOVE до него — подход к позиции атаки, MOVE после — отступление.
-    v2-план учителя (все move перед use) даёт end_cell == attack_cell — он отображается в v3.
+    Делим по первому USE (см. split_turn). v2-план учителя (все move перед use) даёт
+    end_cell == attack_cell — он отображается в v3. Вызывать ПОСЛЕ ensure_plan.
     """
-    origin = ctx.src_cell
-    use_at = next((i for i, a in enumerate(actions) if a.action == ACTION_USE), None)
-    moves = [a.conf.get("direction") for a in actions if a.action == ACTION_MOVE
-             and a.conf.get("direction")]
-    if use_at is None:
-        dirs_in, dirs_out = moves, []
-    else:
-        in_order = [a for a in actions[:use_at] if a.action == ACTION_MOVE]
-        out_order = [a for a in actions[use_at + 1:] if a.action == ACTION_MOVE]
-        dirs_in = [a.conf.get("direction") for a in in_order if a.conf.get("direction")]
-        dirs_out = [a.conf.get("direction") for a in out_order if a.conf.get("direction")]
-    attack_cell = apply_moves(origin, dirs_in)
-    end_cell = apply_moves(attack_cell, dirs_out)
+    attack_cell, end_cell, _in, _out = split_turn(ctx, actions)
     plan_i = plan_index(slots, attack_cell, end_cell)
     if plan_i < 0:
         return None

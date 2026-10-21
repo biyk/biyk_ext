@@ -17,7 +17,7 @@ import random
 from dataclasses import asdict, dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
 
-from arent import env
+from arent import env, polyenv
 from arent.team_reward import TeamReward
 from arent.torch_rl import PPOAgent, joint_logp
 
@@ -40,6 +40,7 @@ class RlConfig:
     clear_bonus: float = 1.0           # терминал: зачистил живым (legacy-путь, team выкл.)
     death_penalty: float = -1.0        # терминал: погиб (legacy-путь, team выкл.)
     use_team_reward: bool = False      # v2: командная награда ±5 вместо одиночного героя
+    polyactor: bool = True             # WP3: шаг за каждого живого актёра; False — legacy мон.actor+foes_act
     reward_scale: float = 100.0        # сырое значение симуляции -> полоса ±5 (при raw_weight>0)
     draw_window: int = 4               # раундов подряд без событий -> пат (DRAW)
     rounds_cap: int = 8                # техническое усечение (truncated), не конец игры
@@ -93,12 +94,22 @@ def _team_reward(cfg: RlConfig) -> Optional[TeamReward]:
     return TeamReward(draw_window=cfg.draw_window, reward_scale=cfg.reward_scale)
 
 
+def _make_env(cfg: RlConfig, team: Optional[TeamReward],
+              phi: Optional[Any] = None) -> env.FightEnv:
+    """Среда rollout: полиакторный обход (WP3, основной путь) или legacy-мон.actor для A/B."""
+    klass = polyenv.PolyFightEnv if cfg.polyactor else env.FightEnv
+    return klass(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty, cfg.gamma, phi, team=team)
+
+
 def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: RlConfig,
             rng: random.Random, phi: Optional[Any] = None,
             diag: Optional[List[Row]] = None) -> List[Row]:
-    """rollout_steps шагов round-robin по сценам; исполненное действие и его logπ в буфере."""
-    environment = env.FightEnv(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty, cfg.gamma, phi,
-                               team=_team_reward(cfg))
+    """rollout_steps шагов round-robin по сценам; исполненное действие и его logπ в буфере.
+
+    Шаг — ход текущего актёра по инициативе (обе стороны одной политикой: self-play),
+    поэтому observation/logπ берутся с лица того, кто реально сейчас ходит.
+    """
+    environment = _make_env(cfg, _team_reward(cfg), phi)
     order = list(range(len(scenarios)))
     rng.shuffle(order)
     pointer, sample = 0, environment.reset(scenarios[order[0]][1])

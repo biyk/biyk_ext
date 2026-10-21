@@ -126,7 +126,7 @@ class Simulation:
         aimed = next((a.conf.get("id") for a in reversed(actions) if a.action == ACTION_TARGET),
                      self._target_id)
         for a in (x for x in actions if x.action == ACTION_USE):
-            weapon = self.base.weapon(a.conf.get("itemId", ""))
+            weapon = self.context_for(actor_id).weapon(a.conf.get("itemId", ""))
             foe = units.get(aimed or "")
             reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
             if foe is None or not foe.is_alive or not are_hostile(actor, foe, self.hero_id) \

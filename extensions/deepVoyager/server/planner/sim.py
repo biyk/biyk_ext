@@ -137,6 +137,40 @@ class Simulation:
             units[aimed] = replace(foe, hp=foe.hp - damage)
         return self._clone(units)
 
+    def apply_actor_seq(self, actor_id: str, actions: List[Action]) -> "Simulation":
+        """SCHEMA=3 (F-B): действия исполняются СТРОГО по порядку.
+
+        В отличие от apply_actor (все перемещения сворачиваются в конечную клетку, и удар
+        считается из неё), здесь MOVE сдвигает текущую клетку, а USE резолвится из клетки,
+        где актёр находится В МОМЕНТ удара. Это делает выразимой последовательность
+        «атаковать с исходной позиции -> отступить» и «выйти из укрытия -> выстрелить ->
+        вернуться»: удар проверяется по позиции атаки, а не по финальной позиции.
+        Урон — ожиданием (как apply_actor); LOS/укрытие добавляет F-C в том же месте.
+        """
+        t = tuning()
+        actor = self.units[actor_id]
+        cell = actor.cell
+        units = {**self.units}
+        aimed = self._target_id
+        for a in actions:
+            if a.action == ACTION_MOVE:
+                d = a.conf.get("direction")
+                if d in DIR_VECTORS:
+                    cell = apply_moves(cell, [d])
+                    units[actor_id] = replace(units[actor_id], cell=cell)
+            elif a.action == ACTION_TARGET:
+                aimed = a.conf.get("id")
+            elif a.action == ACTION_USE:
+                weapon = self.context_for(actor_id).weapon(a.conf.get("itemId", ""))
+                foe = units.get(aimed or "")
+                reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
+                if foe is None or not foe.is_alive or not are_hostile(actor, foe, self.hero_id) \
+                        or not within_reach(cell, foe.cell, reach):
+                    continue        # удар из ТЕКУЩЕЙ клетки: не достал или свой — урона нет
+                damage = (weapon.expected_damage if weapon else t.unknown_damage_avg) * t.hit_chance
+                units[aimed] = replace(foe, hp=foe.hp - damage)
+        return self._clone(units)
+
     def _approach(self, unit: Unit, hero_cell: Cell) -> Unit:
         """Жадное сближение: шаг, строго уменьшающий дистанцию, пока идёт."""
         for _ in range(unit.speed_steps):

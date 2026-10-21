@@ -33,8 +33,8 @@ def test_every_generated_scenario_is_a_valid_fight():
         payload = arena.build_payload(raw, name)
         ctx = scenarios._bc(payload)
         assert ctx.hostile_targets(), f"{name}: нет живых врагов"
-        assert ctx.src.is_alive, f"{name}: капитан не жив на старте"
-        assert payload.get("weapons"), f"{name}: у капитана нет оружия"
+        assert ctx.src.is_alive, f"{name}: первый токен не жив на старте"
+        assert payload.get("weapons"), f"{name}: у src нет оружия"
         assert params["n_foes"] == len(ctx.hostile_targets())
 
 
@@ -63,16 +63,16 @@ def test_pool_varies_structure_not_just_seed():
     scen = _pool(count=40, seed=11)
     foe_counts = {p["n_foes"] for _n, _r, p in scen}
     ally_counts = {p["n_allies"] for _n, _r, p in scen}
-    classes = {c for _n, _r, p in scen for c in p["foe_classes"]} | \
-              {c for _n, _r, p in scen for c in p["ally_classes"]}
-    arsenals = {p["arsenal"] for _n, _r, p in scen}
+    classes = {c for _n, _r, p in scen for c in p["side_b_classes"]} | \
+              {c for _n, _r, p in scen for c in p["side_a_classes"]}
+    arsenals = {a for _n, _r, p in scen for a in p["side_a_arsenals"]}
     fields = {p["field_profile"] for _n, _r, p in scen}
     walls = {p["wall_profile"] for _n, _r, p in scen}
     deploy = {p["deployment"] for _n, _r, p in scen}
     assert len(foe_counts) >= 2, "число врагов не варьируется"
     assert len(ally_counts) >= 2, "число своих не варьируется (нет союзников)"
     assert classes >= {"melee", "ranged"} or len(classes) >= 3, "классы однообразны"
-    assert len(arsenals) >= 2, "оружие капитана однообразно"
+    assert len(arsenals) >= 2, "арсеналы однообразны"
     assert len(fields) >= 2, "размер поля не варьируется"
     assert len(walls) >= 2, "профиль стен не варьируется"
     assert len(deploy) >= 2, "deployment не варьируется"
@@ -148,11 +148,11 @@ def test_structured_teams_start_separated():
 
 #--- 7. write_arenas не пишет зарезервированные имена ------------------------
 def test_write_arenas_refuses_to_emit_reserved_names(tmp_path):
-    good = ("gen_duel_001", {"hero": {}, "tokens": []}, {"group_id": "gen_duel_001",
+    good = ("gen_duel_001", {"tokens": []}, {"group_id": "gen_duel_001",
             "seed": 1, "archetype": "duel"})
-    evil = ("ho_imposter", {"hero": {}, "tokens": []}, {"group_id": "ho_imposter",
+    evil = ("ho_imposter", {"tokens": []}, {"group_id": "ho_imposter",
             "seed": 1, "archetype": "x"})
-    evil2 = ("ho2_imposter", {"hero": {}, "tokens": []}, {"group_id": "ho2_imposter",
+    evil2 = ("ho2_imposter", {"tokens": []}, {"group_id": "ho2_imposter",
              "seed": 1, "archetype": "x"})
     report = scenarios.write_arenas([good, evil, evil2], out_dir=str(tmp_path))
     assert report["written"] == 1

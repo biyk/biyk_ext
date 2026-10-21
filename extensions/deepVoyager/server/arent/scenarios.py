@@ -11,7 +11,6 @@
 #     шёл на идентичном старте.
 # Реестр ролей/архетипов/арсеналов — в scenario_units.py, геометрия — в scenario_layout.py.
 # ho_*/ho2_* (замороженные независимые наборы) не производятся и не перезаписываются.
-import copy
 import json
 import os
 import random
@@ -20,11 +19,20 @@ from typing import Any, Dict, List, Optional, Tuple
 from arent import scenario_layout as sl
 from arent.scenario_units import (
     ARCHETYPES, ARSENAL_NAMES, CLASS_NAMES, HERO_ARSENALS, TACTICAL,
-    UNIT_CLASSES, make_unit, stats, team_sizes,
+    UNIT_CLASSES, make_unit, mirror_size, stats,
 )
 from playground import arena
 
 GEN_PREFIX = "gen_"
+
+
+def _token(unit: Dict[str, Any], cell) -> Dict[str, Any]:
+    """Юнит + клетка -> запись арены: равные права сторон, у каждого своё оружие."""
+    return {"id": unit["id"], "name": unit["name"], "disposition": unit["disposition"],
+            "cell": list(cell), "hp": unit["hp"], "speed": unit["speed"],
+            "damage": unit["damage"], "reachFt": unit["reachFt"],
+            "hitChance": unit["hitChance"], "initiative": unit["initiative"],
+            "weapons": unit["weapons"]}
 
 # Реэкспорт реестра: прежние потребители (тесты, abset) обращаются через scenarios.*.
 __all__ = ["ARCHETYPES", "HERO_ARSENALS", "TACTICAL", "UNIT_CLASSES",
@@ -51,44 +59,37 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None
 
     field_profile, rows, cols = sl.pick_field(rng)
     wall_profile = sl.pick_wall_profile(rng)
-    n_ours, n_foes = team_sizes(rng)
+    n_side = mirror_size(rng)                           # зеркальный состав: n на n
 
-    foes = [make_unit(rng.choice(spec["classes"]), rng, i + 1, 1, "F") for i in range(n_foes)]
-    allies = [make_unit(rng.choice(CLASS_NAMES), rng, i + 1, -1, "AL") for i in range(n_ours - 1)]
-    ally_arsenals = [rng.choice(ARSENAL_NAMES) for _ in allies]
+    def pick_arsenal() -> str:
+        name = rng.choice(ARSENAL_NAMES)
+        if arch in ("line", "cover") and rng.random() < 0.5:   # зеркально обеим сторонам
+            name = rng.choice(["bow", "mixed", "javelins"])
+        return name
 
-    cap_cls = rng.choice(CLASS_NAMES)
-    hero_hp = rng.choice([18, 24, 30, 36, 45])
-    arsenal_name = rng.choice(ARSENAL_NAMES)
-    if arch in ("line", "cover") and rng.random() < 0.5:      # против линии чаще дать ответный огонь
-        arsenal_name = rng.choice(["bow", "mixed", "javelins"])
-    weapons = copy.deepcopy(HERO_ARSENALS[arsenal_name])
+    side_a = [make_unit(rng.choice(CLASS_NAMES), rng, i + 1, -1, "A", pick_arsenal())
+              for i in range(n_side)]
+    side_b = [make_unit(rng.choice(spec["classes"]), rng, i + 1, 1, "F", pick_arsenal())
+              for i in range(n_side)]
 
     mode = spec["deploy"] if not do_random else rng.choice(sl.DEPLOYMENTS)
     jitter = 2 if do_random else 0
-    our_cells, foe_cells, used_mode = sl.place(
-        rng, rows, cols, n_ours, sl.CLUSTER, n_foes, sl.FORMATIONS[spec["formation"]], mode, jitter)
+    formation = sl.FORMATIONS[spec["formation"]]
+    a_cells, b_cells, used_mode = sl.place(
+        rng, rows, cols, n_side, formation, n_side, formation, mode, jitter)
 
-    tokens: List[Dict[str, Any]] = [
-        {"id": "A", "name": "Капитан", "disposition": -1, "cell": list(our_cells[0]), "hp": hero_hp}]
-    for ally, (r, c) in zip(allies, our_cells[1:]):
-        tokens.append({"id": ally["id"], "name": ally["name"], "disposition": -1, "cell": [r, c],
-                       "hp": ally["hp"], "speed": ally["speed"], "damage": ally["damage"],
-                       "reachFt": ally["reachFt"], "hitChance": ally["hitChance"]})
-    for foe, (r, c) in zip(foes, foe_cells):
-        tokens.append({"id": foe["id"], "name": foe["name"], "disposition": 1, "cell": [r, c],
-                       "hp": foe["hp"], "speed": foe["speed"], "damage": foe["damage"],
-                       "reachFt": foe["reachFt"], "hitChance": foe["hitChance"]})
+    tokens: List[Dict[str, Any]] = []
+    for unit, cell in zip(side_a + side_b, list(a_cells) + list(b_cells)):
+        tokens.append(_token(unit, cell))
 
     raw = {
-        "comment": f"gen arch={arch} ours={n_ours} foes={n_foes} field={field_profile} "
+        "comment": f"gen arch={arch} side_a={n_side} side_b={n_side} field={field_profile} "
                    f"walls={wall_profile} deploy={used_mode} "
                    f"layout={'random' if do_random else 'structured'}",
         "scene": {"width": cols * sl.GRID, "height": rows * sl.GRID, "gridSize": sl.GRID},
-        "target": foes[0]["id"] if foes else None,
+        "target": side_b[0]["id"] if side_b else None,
         "walls": sl.build_walls(rng, wall_profile, rows, cols),
         "tokens": tokens,
-        "hero": {"id": "A", "speed": rng.choice([30, 30, 30, 40]), "weapons": weapons},
     }
     name = f"{GEN_PREFIX}{arch}_{seq:03d}"
     params = {
@@ -96,11 +97,11 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None
         "field": [rows, cols], "field_profile": field_profile,
         "wall_profile": wall_profile, "n_walls": len(raw["walls"]),
         "deployment": used_mode, "layout": "random" if do_random else "structured",
-        "n_allies": n_ours, "n_foes": n_foes,
-        "hero_class": cap_cls, "arsenal": arsenal_name, "hero_hp": hero_hp,
-        "ally_classes": [a["_class"] for a in allies], "ally_arsenals": ally_arsenals,
-        "ally_stats": [stats(a) for a in allies],
-        "foe_classes": [f["_class"] for f in foes], "foe_stats": [stats(f) for f in foes],
+        # n_allies/n_foes сохранены как имена-стажы (split/тесты), но теперь sides равны
+        "n_allies": n_side, "n_foes": n_side,
+        "side_a_classes": [u["_class"] for u in side_a], "side_b_classes": [u["_class"] for u in side_b],
+        "side_a_arsenals": [u["arsenal"] for u in side_a], "side_b_arsenals": [u["arsenal"] for u in side_b],
+        "side_a_stats": [stats(u) for u in side_a], "side_b_stats": [stats(u) for u in side_b],
     }
     return name, raw, params
 

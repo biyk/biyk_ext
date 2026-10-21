@@ -11,7 +11,8 @@ from typing import Any, Dict, List
 ARENAS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arenas")
 DEFAULT_SCENE = {"width": 500, "height": 500, "gridSize": 50}
 # поля токена, которые /plan читает «как есть» для симуляции чужих ходов
-SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance", "initiative")
+# (weapons — свой арсенал токена: «универсальный солдат» ходит от лица любого из них)
+SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance", "initiative", "weapons")
 
 
 def arena_file(name: str) -> str:
@@ -78,18 +79,26 @@ def _wall(raw: Dict[str, Any], index: int, where: str) -> Dict[str, Any]:
 
 
 def build_payload(raw: Dict[str, Any], where: str) -> Dict[str, Any]:
-    """Описание арены -> запрос, который понимает эндпоинт /plan."""
+    """Описание арены -> запрос, который понимает эндпоинт /plan.
+
+    Герой-блок необязателен (WP1 симметрии): без raw['hero'] src — первый токен,
+    его speed и его weapons; старым аренам (ho_*) hero-блок задаёт src и оружие.
+    """
     scene = {**DEFAULT_SCENE, **(raw.get("scene") or {})}
     grid = int(scene["gridSize"])
-    hero = _require(raw, "hero", where)
+    hero = raw.get("hero") or {}
     tokens = _require(raw, "tokens", where)
-    src_id = str(_require(hero, "id", where))
+    src_id = str(hero.get("id") or tokens[0]["id"])
     npcs = [_npc(tok, grid, where) for tok in tokens]
     if not any(n["id"] == src_id for n in npcs):
         raise ValueError(f"арена {where}: герой {src_id!r} не среди tokens[]")
+    lead = next(n for n in npcs if n["id"] == src_id)
+    weapons = hero.get("weapons") or lead.get("weapons")
+    if not weapons:
+        raise ValueError(f"арена {where}: нет оружия ни у hero, ни у первого токена")
     return {
         "src": src_id, "token": raw.get("target"), "mode": raw.get("mode", "direct"),
-        "speed": hero.get("speed", 30), "weapons": _require(hero, "weapons", where),
+        "speed": hero.get("speed") or lead.get("speed") or 30, "weapons": weapons,
         "data": {"scene": scene, "npcs": npcs,
                  "walls": [_wall(w, i, where) for i, w in enumerate(raw.get("walls") or [])]},
     }

@@ -4,6 +4,7 @@
 # тактические архетипы (рисунок построения + каноническая сторона deployment), вооружение
 # и распределение размеров команд. Геометрия поля/стен/расстановки — в scenario_layout.py,
 # сборка payload — в scenarios.py.
+import copy
 import random
 from typing import Any, Dict, Sequence, Tuple
 
@@ -69,16 +70,37 @@ def team_sizes(rng: random.Random) -> Tuple[int, int]:
     return MAX_TEAM, MAX_TEAM
 
 
-def make_unit(cls: str, rng: random.Random, num: int, disposition: int, prefix: str) -> Dict[str, Any]:
-    """Юнит роли cls из общего пула: hp/speed/damage/reach/hitChance из диапазонов UNIT_CLASSES."""
+def mirror_size(rng: random.Random) -> int:
+    """Зеркальный состав n на n (WP1 «универсального солдата»): тот же разрез размеров,
+    что у team_sizes, но без асимметричной ветки: duel 5%, 2-3 30%, любой 1..6 45%, 6v6 20%."""
+    roll = rng.random()
+    if roll < 0.05:
+        return 1
+    if roll < 0.35:
+        return rng.randint(2, 3)
+    if roll < 0.80:
+        return rng.randint(1, MAX_TEAM)
+    return MAX_TEAM
+
+
+def make_unit(cls: str, rng: random.Random, num: int, disposition: int, prefix: str,
+              arsenal: str | None = None) -> Dict[str, Any]:
+    """Юнит роли cls из общего пула: hp/speed/damage/reach/hitChance + ЯВНАЯ инициатива
+    (1..30, как в ho2_*) и свой арсенал из общего пула HERO_ARSENALS (WP1 симметрии:
+    «универсальный солдат» ходит от лица любого токена, и у каждого своё оружие)."""
     spec = UNIT_CLASSES[cls]
-    return {
+    unit = {
         "id": f"{prefix}{num}", "name": f"{cls}-{num}", "disposition": disposition,
         "_class": cls, "hp": rng.randint(*spec["hp"]),
         "speed": rng.choice(range(spec["speed"][0], spec["speed"][1] + 1, 5)),
         "damage": rng.choice(spec["dmg"]), "reachFt": spec["reach"],
         "hitChance": round(rng.uniform(*spec["hc"]), 2),
+        "initiative": rng.randint(1, 30),
     }
+    if arsenal is not None:
+        unit["arsenal"] = arsenal
+        unit["weapons"] = copy.deepcopy(HERO_ARSENALS[arsenal])
+    return unit
 
 
 def stats(unit: Dict[str, Any]) -> Dict[str, Any]:

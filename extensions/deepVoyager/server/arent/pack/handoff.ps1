@@ -93,6 +93,13 @@ function Resolve-Checkpoint($dir) {
     }
     return $null
 }
+function Model-Schema($path) {
+    # v3 checkpoints stamp dims.schema=3 (and cell_feat 22); v2 have no schema key. dims.state
+    # is identical (498) across v2/v3, so it cannot tell the schemas apart - schema can.
+    $s = (Read-Json $path).dims.schema
+    if ($null -eq $s) { return 2 }
+    return [int]$s
+}
 function Eval-Of($dir) {
     $o = Read-Json (Join-Path $dir "eval.json")
     if (-not $o) { return $null }
@@ -244,18 +251,26 @@ try {
         }
     }
 
-    # ---- discover checkpoints (bc_v2 + every SAME-SCHEMA ppo* run) ------------------
+    # ---- discover checkpoints (bc parent + every SAME-SCHEMA ppo* run) -------------
+    # Compare BOTH dims.schema AND dims.state. schema separates v2 from v3 (state is the same
+    # 498 for both, so the old state-only guard let a stale v2 ppo leak into a v3 comparison on
+    # the 4060); state still drops genuinely older checkpoints (e.g. ppo1 state 472).
     $targets = @()
     $bc2 = Resolve-Checkpoint (Join-Path $runs $Bc2Name)
-    $wantState = $null
-    if ($bc2) { $targets += @{ role = "bc2"; ck = $bc2 }; $wantState = (Read-Json $bc2.path).dims.state } else { Say "WARNING: no $Bc2Name checkpoint in state\runs" }
+    $wantSchema = $null; $wantState = $null
+    if ($bc2) {
+        $targets += @{ role = "bc2"; ck = $bc2 }
+        $wantSchema = Model-Schema $bc2.path
+        $wantState = (Read-Json $bc2.path).dims.state
+    } else { Say "WARNING: no $Bc2Name checkpoint in state\runs" }
     foreach ($d in (Get-ChildItem $runs -Directory -ErrorAction SilentlyContinue)) {
         if ($d.Name -match "^ppo") {
             $c = Resolve-Checkpoint $d.FullName
             if ($c) {
+                $dSchema = Model-Schema $c.path
                 $dState = (Read-Json $c.path).dims.state
-                if ($wantState -and ($dState -ne $wantState)) {
-                    Say ("skip " + $d.Name + " (state " + $dState + " != " + $wantState + "): old-schema/unknown checkpoint, not comparable")
+                if (($dSchema -ne $wantSchema) -or ($wantState -and ($dState -ne $wantState))) {
+                    Say ("skip " + $d.Name + " (schema " + $dSchema + "/" + $wantSchema + ", state " + $dState + "/" + $wantState + "): not comparable to " + $Bc2Name)
                 } else { $targets += @{ role = "ppo"; ck = $c } }
             }
         }
@@ -267,7 +282,10 @@ try {
         $evalName = "ho_" + $t.role + "_" + $t.ck.name
         $evalDir = Join-Path $runs $evalName
         $cur = Eval-Of $evalDir
-        $valid = ($cur -and $cur.set_tag -eq "independent" -and $cur.n -ge 1 -and $cur.testset_sha -and ($cur.model_sha -eq (Sha256 $t.ck.path)))
+        # reuse ONLY a same-schema eval: every row must belong to THIS run's holdout prefix, so a
+        # stale v2 ho_/ho2_ eval is never recycled into a v3 ho3_ comparison (the earlier leak).
+        $rowsHo = (@($cur.rows | Where-Object { $_.name -notmatch $script:hoPattern }).Count -eq 0)
+        $valid = ($cur -and $cur.set_tag -eq "independent" -and $cur.n -ge 1 -and $cur.testset_sha -and ($cur.model_sha -eq (Sha256 $t.ck.path)) -and $rowsHo)
         if (-not $valid) {
             if (Test-Path $evalDir) { Remove-Item $evalDir -Recurse -Force }
             Invoke-Eval $t.ck.path $evalName
@@ -288,7 +306,7 @@ try {
     $script:setSha = ($setsha -join ",")
 
     $lines = @()
-    $lines += "=== Independent (ho_*) comparison. same_testset=$sameSet  fully_independent=$independent ==="
+    $lines += ("=== Independent comparison on " + $script:hoPattern + " set. same_testset=" + $sameSet + "  fully_independent=" + $independent + " ===")
     $lines += ""
     $lines += ("{0,-8} {1,-14} {2,-6} {3,-7} {4,-9} {5,-8} {6,-7} {7}" -f "role","run","fights","surviv","clear","mean_val","rounds","ckpt_sha256(12)")
     foreach ($r in $script:results) {
@@ -309,7 +327,7 @@ try {
     $script:shaText = $shaLines -join "`r`n"
 
     $mode = if ($script:trained) { "trained_new_ppo_then_compared_independently" } else { "evaluate_only_no_training" }
-    $mnote = if ($script:trained) { "state\ now holds a NEW '$PpoName' checkpoint (team-reward PPO warm from $Bc2Name, ho_*/ho2_* never in its training/selection); '$Bc2Name' was NOT overwritten. The returned state\ is the backup." } else { "returned state\ contains every model+dataset; it is the backup. Nothing here trained or overwrote weights." }
+    $mnote = if ($script:trained) { "state\ now holds a NEW '$PpoName' checkpoint (team-reward PPO warm from $Bc2Name; the reserved holdout matched by " + $script:hoPattern + " was never in its training/selection); '$Bc2Name' was NOT overwritten. The returned state\ is the backup." } else { "returned state\ contains every model+dataset; it is the backup. Nothing here trained or overwrote weights." }
     $manifest = [ordered]@{
         kind = "handoff_independent_comparison"; mode = $mode; trained_ppo = $script:trained
         schema = $Schema; eval_prefix_pattern = $script:hoPattern

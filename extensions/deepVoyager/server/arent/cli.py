@@ -51,6 +51,8 @@ def parser() -> argparse.ArgumentParser:
                     help="размечать только сгенерированные сцены (без рукописных арен и live)")
     gen.add_argument("--append", action="store_true",
                     help="дописать в существующую выборку, пропустив уже размеченные состояния")
+    gen.add_argument("--schema", type=int, default=spec.SCHEMA, choices=sorted(dataset.SAMPLERS),
+                    help="версия задачи: 2 = клетка-действие, 3 = move-plan (атака+финиш в бюджете хода)")
 
     tr = sub.add_parser("train", help="behavior cloning по выборке из data/samples")
     tr.add_argument("--dataset", help="имя выборки или путь к .jsonl (по умолчанию — свежая)")
@@ -65,6 +67,8 @@ def parser() -> argparse.ArgumentParser:
     tr.add_argument("--kind", default="auto", choices=["auto", "torch", "pure"])
     tr.add_argument("--device", choices=["auto", "cuda", "cpu"],
                     help="куда класть сеть (для pure всегда cpu)")
+    tr.add_argument("--schema", type=int, default=None, choices=sorted(dataset.SAMPLERS),
+                    help="схема выборки/сети (2 или 3); по умолчанию — из config.json (2)")
 
     bn = sub.add_parser("bench", help="замер времени: pure / torch+cpu / torch+cuda")
     bn.add_argument("--dataset", help="имя выборки или путь к .jsonl")
@@ -209,7 +213,8 @@ def _gen(args) -> int:
                                       top_k=args.top_k, teacher=args.teacher,
                                       scenario_pool=scenario_pool,
                                       scenario_manifest=scenario_manifest,
-                                      include_arenas=not args.scenarios_only)
+                                      include_arenas=not args.scenarios_only,
+                                      schema=args.schema)
     took = time.monotonic() - started
     if args.append:
         path, added, total = dataset.append(samples, args.name, stats)
@@ -227,6 +232,8 @@ def _gen(args) -> int:
 
 def _train(args) -> int:
     cfg = net.default_config()
+    if args.schema:
+        cfg.schema = args.schema
     val = dataset.load(args.val) if args.val else None
     train.run(name=args.name, dataset_name=args.dataset, cfg=cfg, kind=args.kind,
               epochs=args.epochs, batch=args.batch, lr=args.lr, hidden=args.hidden,

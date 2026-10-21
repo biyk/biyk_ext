@@ -13,7 +13,7 @@ import random
 import zlib
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from arent import encode, paths, provenance, slots as slots_mod, spec
+from arent import encode, encode_v3, paths, provenance, slots as slots_mod, slots_v3, spec, spec3
 from arent.observe import observe
 from arent.states import variants
 from arent.teacher import pinned
@@ -154,13 +154,49 @@ def sample_one(name: str, payload: Dict[str, Any], teacher: TeacherPolicy, meta:
     return sample, "ok"
 
 
+def sample_one_v3(name: str, payload: Dict[str, Any], teacher: TeacherPolicy,
+                  meta: Dict[str, Any], initiative: Optional[Tuple[str, ...]] = None
+                  ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 3: тот же микро-шаг, но слот клеток = move-plan (атака+финиш), метка plan/target/weapon.
+
+    зеркалит sample_one, меняя только пространство действий: slots_v3.build -> ensure_plan ->
+    label_of -> decode-roundtrip -> encode_v3.encode. Учитель остаётся прежним (v2-план «все
+    move перед use" отображается в v3: attack_cell==end_cell). Округлость: финальная клетка
+    должна совпасть с декодом, иначе пример отбрасываем (учим ровно тому, что исполнит sim).
+    """
+    labeled = teacher.label(payload)
+    ctx = labeled.ctx
+    if not ctx.weapons or not ctx.hostile_targets():
+        return None, "no_attack"
+    obs = observe(ctx, initiative, ctx.src_id)
+    slots = slots_v3.build(ctx, obs)
+    if not slots.plans or not slots.targets:
+        return None, "no_slots"
+    # план учителя может не влезть в K_MOVEPLAN (дальняя клетка) — вставляем его же маршрутом
+    slots_v3.ensure_plan(slots, ctx, labeled.actions)
+    label = slots_v3.label_of(ctx, slots, labeled.actions)
+    if label is None:
+        return None, "label_out_of_slots"        # (attack,end) учителя не собрался в слотах
+    if [a.to_dict() for a in slots_v3.decode(slots, label)] != \
+            [a.to_dict() for a in labeled.actions]:
+        return None, "roundtrip_mismatch"         # три индекса не собирают ход учителя обратно
+    sample = encode_v3.encode(ctx, obs, slots, label, value=labeled.value,
+                              meta=dict(meta, arena=name, score=labeled.score,
+                                        depth=labeled.depth))
+    sample["meta"]["actions"] = [a.to_dict() for a in labeled.actions]
+    return sample, "ok"
+
+
+SAMPLERS = {spec.SCHEMA: sample_one, spec3.SCHEMA: sample_one_v3}
+
+
 def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int = 3,
              teacher_rounds: int = 1, teacher_limit: Optional[float] = 1.0,
              want_arenas: Optional[List[str]] = None, use_live: bool = True,
              shallow_k: Optional[int] = None, top_k: Optional[int] = None,
              teacher: str = DEFAULT_TEACHER, scenario_pool: Optional[List] = None,
              scenario_manifest: Optional[List[Dict[str, Any]]] = None,
-             include_arenas: bool = True
+             include_arenas: bool = True, schema: int = spec.SCHEMA
              ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Сгенерировать не более count примеров; статистика — почему остальные не вышли.
 
@@ -171,8 +207,9 @@ def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int 
     """
     rng = random.Random(seed)
     teacher_impl = get_teacher(teacher, rounds=teacher_rounds, time_limit_sec=teacher_limit)
+    sampler = SAMPLERS[schema]                       # 2 -> sample_one, 3 -> sample_one_v3
     samples: List[Dict[str, Any]] = []
-    stats = {"skip": {}, "sources": {}, "schema": spec.SCHEMA, "seed": seed,
+    stats = {"skip": {}, "sources": {}, "schema": schema, "seed": seed,
              "teacher": teacher_impl.name, "teacher_rounds": teacher_rounds,
              "shallow_k": shallow_k, "top_k": top_k,
              "count": count, "per_src": per_src, "rounds_max": rounds_max,
@@ -188,7 +225,7 @@ def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int 
                                                 rounds_max=rounds_max):
                 order = Simulation.of(BattleContext.from_payload(state_payload),
                                       env_seed=scene_seed).initiative_order
-                sample, reason = sample_one(name, state_payload, teacher_impl, meta, order)
+                sample, reason = sampler(name, state_payload, teacher_impl, meta, order)
                 if sample is None:
                     stats["skip"][reason] = stats["skip"].get(reason, 0) + 1
                     continue

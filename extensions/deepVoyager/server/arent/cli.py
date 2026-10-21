@@ -10,7 +10,7 @@ import sys
 import time
 from typing import List, Optional
 
-from arent import abset, backend, bench, compare, dataset, evaluate, holdout, net, paths, play, spec, teachers, train
+from arent import abset, backend, bench, compare, dataset, evaluate, holdout, net, paths, play, spec, team_eval, teachers, train
 
 
 def _utf8_stdout() -> None:
@@ -89,6 +89,20 @@ def parser() -> argparse.ArgumentParser:
                     help="только зарезервированный независимый набор ho_* (вне bc2 и вне PPO)")
     ev.add_argument("--holdout-frac", type=float, default=0.3, help="доля групп в holdout")
     ev.add_argument("--split-seed", type=int, default=7, help="seed группового split (как у rl)")
+
+    tev = sub.add_parser("team-eval", help="win-rate команды: обе стороны ходят одной политикой")
+    tev.add_argument("--model", help="runs/<имя>/model.json (по умолчанию — самый свежий)")
+    tev.add_argument("--name", default="team_eval", help="подпапка в runs/ для team_eval.json")
+    tev.add_argument("--rounds", type=int, default=8, help="потолок раундов в одном бою")
+    tev.add_argument("--draw-window", type=int, default=4, help="тихих раундов подряд -> пат")
+    tev.add_argument("--replays", type=int, default=1,
+                     help="повторов на сцену; повтор k стартует с k-го актёра (ротация WP5)")
+    tev.add_argument("--arena", nargs="*", default=None, help="имена арен playground")
+    tev.add_argument("--no-live", action="store_true", help="не брать снимки из data/payloads")
+    tev.add_argument("--all-sources", dest="independent", action="store_false",
+                     help="гнать по train-сценам; по умолчанию — только независимый ho_/ho2_")
+    tev.add_argument("--out", help="куда дополнительно записать сводку")
+    tev.add_argument("--kind", default="auto", choices=["auto", "torch", "pure"])
 
     rlp = sub.add_parser("rl", help="PPO над итогом боя: долгосрочный горизонт политическим градиентом")
     rlp.add_argument("--warm", default="bc2", help="родитель весов: имя прогона (model_best.json) или путь; '' — со случайных")
@@ -219,6 +233,14 @@ def _evaluate(args) -> int:
     return 0 if report["fights"] else 1
 
 
+def _team_eval(args) -> int:
+    report = team_eval.run(name=args.name, model_path=args.model, kind=args.kind,
+                           arenas=args.arena, use_live=not args.no_live,
+                           rounds_cap=args.rounds, draw_window=args.draw_window,
+                           replays=args.replays, independent=args.independent, out=args.out)
+    return 0 if report["fights"] else 1
+
+
 def _rl(args) -> int:
     # torch-зависимые модули импортируем только здесь: `arent info|train|play` обязаны
     # работать на машине без torch (формат чекпойнта общий), а RL-ветка torch требует.
@@ -256,10 +278,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.home:
         paths.set_workspace(args.home)
     if not args.cmd:
-        print("нет команды: arent gen | train | bench | play | evaluate | rl | info (--help по параметрам)")
+        print("нет команды: arent gen | train | bench | play | evaluate | team-eval | rl | info "
+              "(--help по параметрам)")
         return 2
     handlers = {"gen": _gen, "train": _train, "bench": _bench, "play": _play,
-                "evaluate": _evaluate, "rl": _rl, "abtest": _abtest, "abset": _abset,
+                "evaluate": _evaluate, "team-eval": _team_eval, "rl": _rl,
+                "abtest": _abtest, "abset": _abset,
                 "holdout": _holdout, "info": lambda _a: _info()}
     try:
         return handlers[args.cmd](args)

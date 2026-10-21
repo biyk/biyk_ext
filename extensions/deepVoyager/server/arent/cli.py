@@ -160,6 +160,8 @@ def parser() -> argparse.ArgumentParser:
                      help="seed генератора сценариев для rl")
     rlp.add_argument("--device", choices=["auto", "cuda", "cpu"], help="куда класть сеть (RL требует torch)")
     rlp.add_argument("--kind", default="torch", choices=["auto", "torch", "pure"])
+    rlp.add_argument("--schema", type=int, default=None, choices=sorted(dataset.SAMPLERS),
+                    help="схема среды/сети (2 или 3); схема 3 требует --polyactor; по умолчанию из config.json")
 
     ab = sub.add_parser("abtest", help="сравнить учителей на одинаковых сценах (без обучения)")
     ab.add_argument("--teachers", nargs="*", default=["greedy", "battlecast"],
@@ -289,13 +291,16 @@ def _rl(args) -> int:
     if args.no_vref:
         rcfg.use_vref = False
     warm = None if args.no_warm else (args.warm or None)
+    net_cfg = net.default_config()
+    if args.schema:
+        net_cfg.schema = args.schema
     scenario_sources = None
     if args.scenarios and args.scenarios > 0:
         pool, _manifest = dataset.scenario_sources(args.scenarios, args.scenario_seed)
         scenario_sources = [(n, p) for n, p in pool]
         print(f"F-A: PPO на {len(scenario_sources)} сгенерированных командных боях "
               f"(seed={args.scenario_seed}), пул арен заменён")
-    result = rl.run(name=args.name, warm=warm, rcfg=rcfg, net_cfg=net.default_config(),
+    result = rl.run(name=args.name, warm=warm, rcfg=rcfg, net_cfg=net_cfg,
                     kind=args.kind, device=args.device, arenas=args.arena,
                     use_live=not args.no_live, resume=args.resume,
                     scenario_sources=scenario_sources)

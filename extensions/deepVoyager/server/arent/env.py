@@ -39,13 +39,14 @@ class FightEnv:
     def __init__(self, rounds_cap: int = 8, clear_bonus: float = 1.0,
                  death_penalty: float = -1.0, gamma: float = 0.98,
                  phi: Optional[Callable[[Dict[str, Any]], float]] = None,
-                 team: Optional[TeamReward] = None):
+                 team: Optional[TeamReward] = None, schema: int = spec.SCHEMA):
         self.cap = max(1, int(rounds_cap))
         self.clear_bonus = clear_bonus
         self.death_penalty = death_penalty
         self.gamma = gamma
         self.phi = phi
         self.team = team
+        self.schema = int(schema)       # 2 = клетка-действие, 3 = move-plan (реализовано в PolyFightEnv)
         self.state: Optional[Simulation] = None
         self.slots: Any = None
         self._ctx: Any = None

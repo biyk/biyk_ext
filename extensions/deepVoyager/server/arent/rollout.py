@@ -17,7 +17,7 @@ import random
 from dataclasses import asdict, dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
 
-from arent import env, polyenv
+from arent import env, polyenv, spec, spec3
 from arent.team_reward import TeamReward
 from arent.torch_rl import PPOAgent, joint_logp
 
@@ -53,6 +53,7 @@ class RlConfig:
     holdout_frac: float = 0.3          # групп сценариев, зарезервированных только под оценку
     val_frac: float = 0.2              # из остатка — под отбор чекпойнта (не под награду)
     variants_per_src: int = 0          # вариантов стартовых состояний на train-сцену (разнообразие rollout)
+    schema: int = spec.SCHEMA          # версия задачи среды/политики: 2 = клетка, 3 = move-plan
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -96,9 +97,18 @@ def _team_reward(cfg: RlConfig) -> Optional[TeamReward]:
 
 def _make_env(cfg: RlConfig, team: Optional[TeamReward],
               phi: Optional[Any] = None) -> env.FightEnv:
-    """Среда rollout: полиакторный обход (WP3, основной путь) или legacy-мон.actor для A/B."""
-    klass = polyenv.PolyFightEnv if cfg.polyactor else env.FightEnv
-    return klass(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty, cfg.gamma, phi, team=team)
+    """Среда rollout: полиакторный обход (WP3, основной путь) или legacy-мон.actor для A/B.
+
+    Схема 3 (move-plan) живёт только в полиакторной среде: legacy-мон.actor складывает ход
+    через advance (удар из финальной клетки) и move-plan не исполняет, поэтому v3+mono — ошибка.
+    """
+    if cfg.polyactor:
+        return polyenv.PolyFightEnv(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty,
+                                    cfg.gamma, phi, team=team, schema=cfg.schema)
+    if cfg.schema == spec3.SCHEMA:
+        raise RuntimeError("схема 3 (move-plan) поддерживается только полиакторной средой "
+                           "(--polyactor); legacy-мон.actor не исполняет отступление")
+    return env.FightEnv(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty, cfg.gamma, phi, team=team)
 
 
 def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: RlConfig,
@@ -127,7 +137,7 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
         proposal = agent.act(sample)
         nxt, reward, terminated, truncated, info = environment.step(proposal["action"])
         action = info["action"]                                  # то, что реально исполнила среда
-        logp = joint_logp(proposal["logp_table"], action)
+        logp = joint_logp(proposal["logp_table"], action, agent.ykey)
         if terminated:
             next_value, cont = 0.0, 0
         elif truncated:

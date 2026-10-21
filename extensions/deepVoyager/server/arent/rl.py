@@ -15,7 +15,7 @@ import time
 import torch
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, dataset, evaluate, manifest, net, paths, provenance, rl_setup, rl_state, spec
+from arent import backend, dataset, evaluate, manifest, net, paths, provenance, rl_setup, rl_state
 from arent.rollout import RlConfig, collect
 from arent.torch_rl import PPOAgent
 
@@ -67,6 +67,7 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
     rcfg.rollout_steps = rollout or rcfg.rollout_steps
     net_cfg = net_cfg or net.default_config()
     net_cfg.device = device or net_cfg.device
+    rcfg.schema = net_cfg.schema        # среда обязана идти в той же схеме, что сеть/warm-start
     kind = backend.resolve(kind)
     sources = list(scenario_sources) if scenario_sources is not None \
         else list(dataset.sources(arenas, use_live, exclude_independent=True))
@@ -172,7 +173,7 @@ def _finish(name: str, policy: Any, net_cfg: net.Config, rcfg: RlConfig, warm_fr
                "warm_from": warm_from, "used_vref": used_vref, "rl": rcfg.to_dict(),
                "network": net_cfg.to_dict(), "best": best_eval, "final": history[-1].get("eval"),
                "best_score": round(best_score, 4), "model": model_path, "model_best": best_path,
-               "dims": spec.dims()}
+               "dims": net.dims_for(net_cfg.schema)}
     provenance.write_json(paths.file_in(directory, "history.json"), history)
     provenance.write_json(paths.file_in(directory, "summary.json"), summary)
     manifest.build_and_write_rl(name, net_cfg, rcfg, warm_from, summary, scenarios, split)

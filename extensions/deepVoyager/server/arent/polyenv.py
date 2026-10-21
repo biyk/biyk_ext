@@ -9,9 +9,8 @@
 # полного цикла инициативы; смерть якорного «героя» сама по себе бой не заканчивает.
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from arent import encode
-from arent import slots as slots_mod
-from arent.env import FightEnv, shape_reward
+from arent import encode, encode_v3, slots as slots_mod, slots_v3, spec, spec3
+from arent.env import FightEnv, NONE_INDEX, shape_reward
 from arent.observe import observe
 from arent.team_reward import TeamReward
 from planner.context import BattleContext
@@ -27,8 +26,8 @@ class PolyFightEnv(FightEnv):
     def __init__(self, rounds_cap: int = 8, clear_bonus: float = 1.0,
                  death_penalty: float = -1.0, gamma: float = 0.98,
                  phi: Optional[Callable[[Row], float]] = None,
-                 team: Optional[TeamReward] = None):
-        super().__init__(rounds_cap, clear_bonus, death_penalty, gamma, phi, team)
+                 team: Optional[TeamReward] = None, schema: int = spec.SCHEMA):
+        super().__init__(rounds_cap, clear_bonus, death_penalty, gamma, phi, team, schema)
         self.actor: Optional[str] = None       # кто ходит сейчас (любая сторона)
 
     def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
@@ -47,8 +46,11 @@ class PolyFightEnv(FightEnv):
     def _observe(self) -> Dict[str, Any]:
         ctx = self.state.context_for(self.actor)
         obs = observe(ctx, self.state.initiative_order, self.actor)
-        self.slots = slots_mod.build(ctx, obs)
         self._ctx = ctx
+        if self.schema == spec3.SCHEMA:
+            self.slots = slots_v3.build(ctx, obs)
+            return encode_v3.observation(ctx, obs, self.slots)
+        self.slots = slots_mod.build(ctx, obs)
         return encode.observation(ctx, obs, self.slots)
 
     def _next_after(self, actor: str) -> Tuple[Optional[str], bool]:
@@ -64,14 +66,36 @@ class PolyFightEnv(FightEnv):
                 return uid, wrapped
         return None, True
 
+    def legalize(self, label: Dict[str, int]) -> Dict[str, int]:
+        """Схема 3: тройка (plan,target,weapon); атака вне reach из attack_cell -> «не атаковать».
+
+        Аналог FightEnv.legalize для move-plan-пространства: оружие убираем (NONE), если из
+        Позиции атаки выбранного плана цель не достать; план и прицел остаются законным ходом.
+        """
+        if self.schema != spec3.SCHEMA:
+            return super().legalize(label)
+        plan = int(label.get("plan", 0))
+        target = int(label.get("target", spec.NONE_SLOT))
+        weapon = int(label.get("weapon", spec.NONE_SLOT))
+        n_t, n_w = len(self.slots.targets), len(self.slots.weapons)
+        if 0 <= target < n_t and 0 <= weapon < n_w:
+            if not slots_v3.attackable_v3(self.slots, self._ctx, plan, target, weapon):
+                weapon = NONE_INDEX
+        return {"plan": plan, "target": target, "weapon": weapon}
+
     def step(self, label: Dict[str, int]) -> Tuple[Optional[Dict[str, Any]], float, bool, bool, Row]:
-        """Актёр сыграл тройку: legalize -> apply_actor -> курсор -> награда/терминал команды."""
+        """Актёр сыграл тройку: legalize -> apply_actor (или seq для v3) -> курсор -> награда/терминал команды."""
         actor = self.actor
         action = self.legalize(label)
         prev_units = dict(self.state.units)
-        actions = slots_mod.decode(self.slots, dict(action))
-        value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра
-        self.state = self.state.apply_actor(actor, actions)
+        if self.schema == spec3.SCHEMA:
+            actions = slots_v3.decode(self.slots, dict(action))
+            value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра
+            self.state = self.state.apply_actor_seq(actor, actions)
+        else:
+            actions = slots_mod.decode(self.slots, dict(action))
+            value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра
+            self.state = self.state.apply_actor(actor, actions)
         nxt_actor, wrapped = self._next_after(actor)
         if wrapped:
             self.t += 1

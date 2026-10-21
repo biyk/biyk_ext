@@ -35,13 +35,15 @@ def _entropy(probs: torch.Tensor, logp: torch.Tensor) -> torch.Tensor:
     return -(probs * logp).sum(-1)
 
 
-def joint_logp(table: Dict[str, list], action: Action) -> float:
+def joint_logp(table: Dict[str, list], action: Action, ykey: Dict[str, str] = None) -> float:
     """Joint logπ исполненной тройки из logp_table act(): сумма logπ по группам.
 
     Индексы action — уже легализованные средой (legalize); все они лежат в маске, поэтому
     gather из таблицы корректен. Это то же logπ, что _eval посчитает на обновлении.
+    Ключи действия берутся из ykey (схема 2: cell/target/weapon, схема 3: plan/...).
     """
-    return float(sum(table[group][int(action[Y_KEY[group]])] for group in GROUPS))
+    yk = ykey or Y_KEY
+    return float(sum(table[group][int(action[yk[group]])] for group in GROUPS))
 
 
 class PPOAgent:
@@ -55,6 +57,7 @@ class PPOAgent:
             raise RuntimeError("PPO требует torch-политику: kind=pure вне scope RL "
                                "(запустите обучение с torch-бэкендом)")
         self.policy = policy
+        self.ykey = getattr(policy, "ykey", Y_KEY)      # ключи действия по схеме (v3: plan)
         self.clip_eps = clip_eps
         self.ent_coef = ent_coef
         self.vf_coef = vf_coef
@@ -83,7 +86,7 @@ class PPOAgent:
             logp_sum = logp_sum + _gather(logp, index)
             ent_sum = ent_sum + _entropy(probs, logp)
             table[group] = [float(x) for x in logp[0].tolist()]
-            action[Y_KEY[group]] = int(index.item())
+            action[self.ykey[group]] = int(index.item())
         return {"action": action,
                 "logp": float(logp_sum.item()),
                 "entropy": float(ent_sum.item()),
@@ -106,7 +109,7 @@ class PPOAgent:
         ent = torch.zeros(state.shape[0], device=self.policy.device)
         for group in GROUPS:
             probs, lg = _dist(logits[group], masks[group])
-            idx = torch.tensor([int(a[Y_KEY[group]]) for a in actions], dtype=torch.long,
+            idx = torch.tensor([int(a[self.ykey[group]]) for a in actions], dtype=torch.long,
                                device=self.policy.device)
             logp = logp + _gather(lg, idx)
             ent = ent + _entropy(probs, lg)

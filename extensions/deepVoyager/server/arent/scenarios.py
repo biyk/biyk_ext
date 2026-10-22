@@ -49,9 +49,10 @@ def _mirror_of(a: Dict[str, Any], n: int) -> Dict[str, Any]:
     return b
 
 # Реэкспорт реестра: прежние потребители (тесты, abset) обращаются через scenarios.*.
-__all__ = ["ARCHETYPES", "HERO_ARSENALS", "STAGE2_DUEL_PROFILES", "TACTICAL", "UNIT_CLASSES",
-           "build", "build_valid", "generate", "generate_duels", "generate_mirror_duels",
-           "generate_asym_duels", "write_arenas", "_bc"]
+__all__ = ["ARCHETYPES", "HERO_ARSENALS", "STAGE2_DUEL_PROFILES", "STAGE3_PAIRS", "TACTICAL",
+           "UNIT_CLASSES", "build", "build_valid", "generate", "generate_duels",
+           "generate_mirror_duels", "generate_asym_duels", "generate_stage3_pool",
+           "write_arenas", "_bc"]
 
 
 def _bc(payload: Dict[str, Any]):
@@ -195,15 +196,29 @@ def generate_duels(count: int, seed: int) -> List[Tuple[str, Dict[str, Any], Dic
     return generate(count, seed, random_start=False, **DUEL_FILTERS)
 
 
-# Профили Этапа 2: зеркальные дуэли одного класса (тот же tier) + асимметрия по осям.
+# Профили дуэлей: зеркальные 1v1 одного класса + асимметрия по осям (Этапы 2–3).
 # reach держит дистанцию за счёт class.reachFt=10 (оружие всё ещё ближнее); ranged — лук.
+# Этап 3 добавляет роли tank (толстый медленный милишник) и mobile_archer (кайтующий лучник).
 STAGE2_DUEL_PROFILES: Dict[str, Dict[str, Any]] = {
-    "melee":  {"classes": ["melee"],  "arsenals": ("sword", "greatsword", "two_melee")},
-    "fast":   {"classes": ["fast"],   "arsenals": ("sword", "two_melee")},
-    "reach":  {"classes": ["reach"],  "arsenals": ("sword", "greatsword", "two_melee")},
-    "ranged": {"classes": ["ranged"], "arsenals": ("bow",)},
+    "melee":         {"classes": ["melee"],         "arsenals": ("sword", "greatsword", "two_melee")},
+    "fast":          {"classes": ["fast"],          "arsenals": ("sword", "two_melee")},
+    "reach":         {"classes": ["reach"],         "arsenals": ("sword", "greatsword", "two_melee")},
+    "ranged":        {"classes": ["ranged"],        "arsenals": ("bow",)},
+    "mobile_archer": {"classes": ["mobile_archer"], "arsenals": ("bow",)},
+    "tank":          {"classes": ["tank"],          "arsenals": ("greatsword", "two_melee")},
 }
 _STAGE2_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open", "field_profile": "small"}
+
+# Матрица неравных пар Этапа 3 (§Этап 3): unordered-классы. generate_stage3_pool раскрывает
+# каждую пару в ОБЕИХ перестановках состава, чтобы ни один класс не сидел в выгодной зоне.
+STAGE3_PAIRS: Tuple[Tuple[str, str], ...] = (
+    ("ranged", "melee"),
+    ("reach", "fast"),
+    ("tank", "melee"),
+    ("mobile_archer", "melee"),
+    ("ranged", "fast"),
+    ("tank", "reach"),
+)
 
 
 def _retag(pool: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],
@@ -228,14 +243,35 @@ def generate_mirror_duels(cls: str, count: int, seed: int
     return _retag(pool, "s2_%s" % cls)
 
 
-def generate_asym_duels(cls_a: str, cls_b: str, count: int, seed: int
-                        ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """count асимметричных 1v1 (сторона A=cls_a vs сторона B=cls_b), structured (Этап 2 гейт)."""
+def _asym_pool(cls_a: str, cls_b: str, count: int, seed: int,
+               prefix: str) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count 1v1 A=cls_a vs B=cls_b, structured; единый путь для асимметрии Этапов 2–3."""
     pa, pb = STAGE2_DUEL_PROFILES[cls_a], STAGE2_DUEL_PROFILES[cls_b]
     pool = generate(count, seed, random_start=False, archetype="duel",
                     classes=pa["classes"], foe_classes=pb["classes"],
                     arsenals=pa["arsenals"], foe_arsenals=pb["arsenals"], **_STAGE2_GEOM)
-    return _retag(pool, "s2_%sv%s" % (cls_a, cls_b))
+    return _retag(pool, prefix)
+
+
+def generate_asym_duels(cls_a: str, cls_b: str, count: int, seed: int
+                        ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count асимметричных 1v1 (сторона A=cls_a vs сторона B=cls_b), structured (Этап 2 гейт)."""
+    return _asym_pool(cls_a, cls_b, count, seed, "s2_%sv%s" % (cls_a, cls_b))
+
+
+def generate_stage3_pool(count_each: int, seed: int, pairs: Optional[Sequence[Tuple[str, str]]] = None
+                         ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """Неравные дуэли Этапа 3: каждая unordered-пара в ОБЕИХ перестановках состава (§1.9).
+
+    count_each сцен на каждый УПОРЯДОЧЕННЫЙ вариант; для (a,b) выдаём и a×b, и b×a — тогда у
+    каждого класса равное число боёв на A- и на B-зоне, и исход решают тактика/класс, а не
+    то, какой стороне досталась выгодная геометрия. Имена s3_*, не коллидируют с s2_*.
+    """
+    out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+    for a, b in (pairs if pairs is not None else STAGE3_PAIRS):
+        for x, y in ((a, b), (b, a)):
+            out += _asym_pool(x, y, count_each, seed, "s3_%sv%s" % (x, y))
+    return out
 
 
 def _reserved(name: str) -> bool:

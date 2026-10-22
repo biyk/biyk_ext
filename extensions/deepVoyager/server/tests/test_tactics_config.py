@@ -71,3 +71,18 @@ def test_stage2_enables_kiting_and_reach_but_not_multitarget():
     assert Tag.avoid_reach.value in s2
     assert Tag.cover_shoot.value not in s2 and Tag.focus_fire.value not in s2
     assert Tag.focus_wounded.value in s2 and Tag.kill_shot.value in s2
+
+
+def test_stage3_enables_priority_and_retreat():
+    # §Этап 3: к набору Этапа 2 добавляются priority_soft (выбор приоритетной цели) и
+    # retreat_low_hp (отход на низком HP) — нужды неравных дуэлей (танк/лучник). Всё, что
+    # разрешено на Этапе 2, остаётся; рельеф/мультицепь (cover_shoot, focus_fire) — позже.
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    s2 = cfg.allowed("stage2")
+    s3 = cfg.allowed("stage3")
+    assert Tag.priority_soft.value not in s2         # на Этапе 2 прицельный приоритет выключен
+    assert Tag.priority_soft.value in s3             # на Этапе 3 включился
+    assert Tag.retreat_low_hp.value not in s2        # на Этапе 2 отход выключен
+    assert Tag.retreat_low_hp.value in s3            # на Этапе 3 включился
+    assert Tag.kite_max_range.value in s3            # наследует Этап 2
+    assert Tag.cover_shoot.value not in s3 and Tag.focus_fire.value not in s3

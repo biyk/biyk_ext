@@ -63,7 +63,9 @@
                  "retreat_low_hp"],
       "stage2": ["cover_shoot", "hold_choke", "break_ring", "anti_pincer",
                  "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
-                 "retreat_low_hp"]
+                 "retreat_low_hp"],
+      "stage3": ["cover_shoot", "hold_choke", "break_ring", "anti_pincer",
+                 "focus_fire", "no_stack", "use_high_ground", "charge_from_cover"]
     }
   }
 }

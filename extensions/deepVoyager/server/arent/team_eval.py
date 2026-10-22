@@ -292,7 +292,7 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 candidate_is_foes: bool = False, rounds_cap: int = 8, draw_window: int = 4,
                 start_index: int = 0, schema: Optional[int] = None,
                 trace_limit: int = 0, counters: Optional[Counters] = None,
-                opens: Optional[bool] = None) -> Row:
+                opens: Optional[bool] = None, rich_trace: bool = False) -> Row:
     """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
 
     Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
@@ -305,6 +305,11 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
 
     counters: если передан — среда обвешивается record_only-шейпером (§1.1: детекторы/счётчики
     идут по ground-truth трасса, но в награду НЕ текут, reward остаётся честным исходом).
+
+    rich_trace: по умолчанию False — шаг трейса остаётся дешёвым (только индексы слотов).
+    True добавляет в каждый шаг читаемые поля (cell_before/cell_after/attack/board), чтобы
+    проигранный бой можно было разобрать «глазками»: кто куда сходил, кого/чем ударил,
+    сколько снял и где кто стоял. Дорого, поэтому только для точечной диагностики.
     """
     candidate = build_controller(candidate, schema)
     opponent = build_controller(opponent, candidate.schema)
@@ -345,6 +350,10 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
         obs_legal = obs.get("legal") if isinstance(obs, dict) else None
         if counters is not None:
             counters.gate(is_candidate)      # §8-I: в статистику — только шаги кандидата
+        if rich_trace:                       # снимок ДО шага: слоты/позиция — расшифровать индексы
+            rt_targets = [t.get("id") for t in environment.slots.targets]
+            rt_weapons = [(w.get("name") or w.get("id")) for w in environment.slots.weapons]
+            rt_cell_before = list(environment.state.units[actor].cell)
         obs, reward, terminated, truncated, info = environment.step(chosen)
         executed = info["action"]
         reason = info.get("legalize_reason")
@@ -381,13 +390,25 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                     baseline, obs_legal, candidate.schema) if obs_legal is not None else False
                 ci_base_outside += int(base_outside)
         if (not trace_limit) or steps < trace_limit:
-            trace.append({"step": steps, "actor": actor, "side": "cand" if is_candidate else "opp",
-                          "proposed": dict(chosen), "chosen": dict(chosen),
-                          "executed": dict(executed), "reason": reason,
-                          "proposed_attack": proposed_attack, "executed_attack": executed_attack,
-                          "illegal": is_illegal, "policy_outside": policy_outside,
-                          "dealt": dealt, "zero_damage": dealt <= 0.0,
-                          "value": info.get("value")})
+            rec = {"step": steps, "actor": actor, "side": "cand" if is_candidate else "opp",
+                   "proposed": dict(chosen), "chosen": dict(chosen),
+                   "executed": dict(executed), "reason": reason,
+                   "proposed_attack": proposed_attack, "executed_attack": executed_attack,
+                   "illegal": is_illegal, "policy_outside": policy_outside,
+                   "dealt": dealt, "zero_damage": dealt <= 0.0,
+                   "value": info.get("value")}
+            if rich_trace:
+                ti = int(executed.get("target", -1))
+                wi = int(executed.get("weapon", -1))
+                rec["cell_before"] = rt_cell_before
+                rec["cell_after"] = list(environment.state.units[actor].cell)
+                rec["attack"] = (None if not executed_attack else
+                                 {"target": (rt_targets[ti] if 0 <= ti < len(rt_targets) else None),
+                                  "weapon": (rt_weapons[wi] if 0 <= wi < len(rt_weapons) else None)})
+                rec["board"] = [[uid, ("F" if bool(u.hostile_to_hero) else "A"),
+                                 int(bool(u.is_alive)), round(float(u.hp), 1), list(u.cell)]
+                                for uid, u in environment.state.units.items()]
+            trace.append(rec)
         steps += 1
         total += reward
         if terminated:
@@ -427,7 +448,7 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                     rounds_cap: int = 8, draw_window: int = 4, replays: int = 1,
                     swap_sides: bool = True, trace_limit: int = 0,
                     counters: Optional[Counters] = None,
-                    openings: bool = False) -> List[Row]:
+                    openings: bool = False, rich_trace: bool = False) -> List[Row]:
     """Каждая сцена x replays x обе расстановки сторон x (опц.) очередность первого хода.
 
     openings=True (Этап 2) добавляет измерение «открывающий»: половина боёв стартует
@@ -444,9 +465,40 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                 for op in ((True, False) if openings else (None,)):
                     row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
                                       draw_window, start_index=rep, schema=candidate.schema,
-                                      trace_limit=trace_limit, counters=counters, opens=op)
+                                      trace_limit=trace_limit, counters=counters, opens=op,
+                                      rich_trace=rich_trace)
                     rows.append(dict(row, name=name, replay=rep))
     return rows
+
+
+def render_battle_trace(row: Row) -> str:
+    """Человекочитаемый лог одного боя по rich-трейсу (rich_trace=True).
+
+    Печатает заголовок со сценой/исходом и по шагу: сторона, актёр, куда сходил,
+    кого/чем ударил, сколько снял, правка ли действие, и снапшот доски (hp@клетка).
+    Пустой трейс -> короткий заголовок (боев без записанных шагов не бывает, но не падаем).
+    """
+    trace = row.get("trace") or []
+    rich = bool(trace) and ("board" in trace[0])
+    head = ("=== бой %s: %s vs %s | исход=%s (кандидат %s) | раундов=%s шагов=%s ==="
+            % (row.get("name", "?"), row.get("candidate", "?"), row.get("opponent", "?"),
+               row.get("outcome", "?"), "за врагов" if row.get("candidate_is_foes")
+               else "за героев", row.get("rounds", "?"), len(trace)))
+    lines = [head]
+    if not rich:
+        lines.append("  (rich_trace не включён — читаемые позиции недоступны)")
+        return "\n".join(lines)
+    for st in trace:
+        atk = st.get("attack")
+        atk_s = ("бьёт %s «%s»" % (atk["target"], atk["weapon"])) if atk else "без атаки"
+        fix = (" ПРАВКА(%s)" % st.get("reason")) if st.get("illegal") else ""
+        lines.append("  шаг %2d [%s] %s: %s->%s | %s | снимает %s%s"
+                     % (st["step"], st["side"], st["actor"], st.get("cell_before"),
+                        st.get("cell_after"), atk_s, st.get("dealt"), fix))
+        board = st.get("board") or []
+        lines.append("     доска: " + "  ".join("%s%s hp%g@%s" % (b[1], b[0], b[3], b[4])
+                                                for b in board))
+    return "\n".join(lines)
 
 
 def summarize_matchup(rows: List[Row], rounds_cap: int = 8, draw_window: int = 4) -> Row:

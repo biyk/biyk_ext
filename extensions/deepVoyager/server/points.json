@@ -60,6 +60,9 @@
     "per_stage_disable": {
       "stage1": ["kite_max_range", "cover_shoot", "hold_choke", "break_ring", "anti_pincer",
                  "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
+                 "retreat_low_hp"],
+      "stage2": ["cover_shoot", "hold_choke", "break_ring", "anti_pincer",
+                 "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
                  "retreat_low_hp"]
     }
   }

@@ -58,3 +58,16 @@ def test_shipped_points_json_parses_and_uses_registry_keys():
 def test_from_file_missing_returns_disabled():
     cfg = from_file(os.path.join(SERVER, "does_not_exist_points.json"))
     assert cfg.enabled_global is False
+
+
+def test_stage2_enables_kiting_and_reach_but_not_multitarget():
+    # §Этап 2: тактики = stage1 + kite_max_range (avoid_reach и так не гаснет на stage1);
+    # многоцели/рельеф (focus_fire, cover_shoot) остаются выключены до более поздних этапов.
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    s1 = cfg.allowed("stage1")
+    s2 = cfg.allowed("stage2")
+    assert Tag.kite_max_range.value not in s1        # на Этапе 1 кайт запрещён
+    assert Tag.kite_max_range.value in s2            # на Этапе 2 включился
+    assert Tag.avoid_reach.value in s2
+    assert Tag.cover_shoot.value not in s2 and Tag.focus_fire.value not in s2
+    assert Tag.focus_wounded.value in s2 and Tag.kill_shot.value in s2

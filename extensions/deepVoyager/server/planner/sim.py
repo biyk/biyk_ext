@@ -97,11 +97,43 @@ class Simulation:
             npcs.append(m)
         return {**self.base.raw, "npcs": npcs}
 
+    def _nearest_hostile(self, unit_id: str) -> Optional[str]:
+        """Ближайший живой враг актёра (tiebreak по id) — цель «с его лица».
+
+        Признак isTargeted в наблюдении (encode.entity_slot) симметричен по командам только
+        если актёр видит помеченной СВОЮ цель. Глобальный _target_id задан с лица героя, для
+        актёра другой команды это его союзник/он сам → isTargeted=0 → структурный перевес
+        src/hero. Дистанция по клетке, порядок детерминирован.
+        """
+        actor = self.units.get(unit_id)
+        if actor is None:
+            return None
+        foes = [u for u in self.units.values()
+                if u.id != unit_id and u.is_alive and are_hostile(actor, u, self.hero_id)]
+        if not foes:
+            return None
+        foes.sort(key=lambda u: (cell_distance(actor.cell, u.cell), u.id))
+        return foes[0].id
+
+    def _default_target_for(self, unit_id: str) -> Optional[str]:
+        """Цель по умолчанию для действия/наблюдения актёра unit_id.
+
+        Для героя сохраняем исходное поведение (клиентская payload-цель; мёртвая -> None).
+        Для актёра другой команды перепривязываем к его собственному ближайшему врагу.
+        """
+        if unit_id == self.hero_id:
+            t = self._target_id
+            return t if (t is not None and self.units.get(t) and self.units[t].is_alive) else None
+        return self._nearest_hostile(unit_id)
+
     def context_for(self, unit_id: str) -> BattleContext:
-        """Тот же бой глазами актёра: src, его per-token оружие и скорость (WP2)."""
-        raw, target = self._raw(), self._target_id
-        # мёртвая цель не должна возвращаться в hostile_targets
-        if target is not None and not self.units[target].is_alive: target = None
+        """Тот же бой глазами актёра: src, его per-token оружие и скорость (WP2).
+
+        Цель пересобирается С ЛИЦА АКТЁРА (_default_target_for), чтобы признак isTargeted был
+        симметричен для обеих команд; путь героя (BC/serving/parity) остаётся с клиентской целью.
+        """
+        raw = self._raw()
+        target = self._default_target_for(unit_id)
         weapons, speed = actor_gear(raw, unit_id, self.base.weapons, self.base.speed_steps)
         return BattleContext(scene=self.base.scene, tokens=tuple(parse_tokens({"npcs": raw["npcs"]})),
                              walls=self.base.walls, src_id=unit_id, target_id=target, raw=raw,
@@ -133,7 +165,7 @@ class Simulation:
         cell = apply_moves(actor.cell, [d for d in dirs if d in DIR_VECTORS])
         units = {**self.units, actor_id: replace(actor, cell=cell)}
         aimed = next((a.conf.get("id") for a in reversed(actions) if a.action == ACTION_TARGET),
-                     self._target_id)
+                     self._default_target_for(actor_id))
         for a in (x for x in actions if x.action == ACTION_USE):
             weapon = self.context_for(actor_id).weapon(a.conf.get("itemId", ""))
             foe = units.get(aimed or "")
@@ -161,7 +193,7 @@ class Simulation:
         actor = self.units[actor_id]
         cell = actor.cell
         units = {**self.units}
-        aimed = self._target_id
+        aimed = self._default_target_for(actor_id)
         for a in actions:
             if a.action == ACTION_MOVE:
                 d = a.conf.get("direction")

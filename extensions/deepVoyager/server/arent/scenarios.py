@@ -11,6 +11,7 @@
 #     шёл на идентичном старте.
 # Реестр ролей/архетипов/арсеналов — в scenario_units.py, геометрия — в scenario_layout.py.
 # ho_*/ho2_* (замороженные независимые наборы) не производятся и не перезаписываются.
+import copy
 import json
 import os
 import random
@@ -34,9 +35,23 @@ def _token(unit: Dict[str, Any], cell) -> Dict[str, Any]:
             "hitChance": unit["hitChance"], "initiative": unit["initiative"],
             "weapons": unit["weapons"]}
 
+
+def _mirror_of(a: Dict[str, Any], n: int) -> Dict[str, Any]:
+    """Точная копия юнита A как сторона F: те же hp/speed/damage/reach/hitChance/initiative/оружие.
+
+    Настоящее зеркало (Этап 2): различаются лишь id/имя/disposition — состав и силы равны,
+    поэтому исход дуэли решает тактика и очерёдность, а не удача в броске статов.
+    """
+    b = copy.deepcopy(a)
+    b["id"] = f"F{n}"
+    b["name"] = f"{a['_class']}-{n}"
+    b["disposition"] = 1
+    return b
+
 # Реэкспорт реестра: прежние потребители (тесты, abset) обращаются через scenarios.*.
-__all__ = ["ARCHETYPES", "HERO_ARSENALS", "TACTICAL", "UNIT_CLASSES",
-           "build", "build_valid", "generate", "generate_duels", "write_arenas", "_bc"]
+__all__ = ["ARCHETYPES", "HERO_ARSENALS", "STAGE2_DUEL_PROFILES", "TACTICAL", "UNIT_CLASSES",
+           "build", "build_valid", "generate", "generate_duels", "generate_mirror_duels",
+           "generate_asym_duels", "write_arenas", "_bc"]
 
 
 def _bc(payload: Dict[str, Any]):
@@ -46,9 +61,10 @@ def _bc(payload: Dict[str, Any]):
 
 def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
           archetype: Optional[str] = None, classes: Optional[Sequence[str]] = None,
-          arsenals: Optional[Sequence[str]] = None, n_side: Optional[int] = None,
-          wall_profile: Optional[str] = None, field_profile: Optional[str] = None
-          ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+          foe_classes: Optional[Sequence[str]] = None, arsenals: Optional[Sequence[str]] = None,
+          foe_arsenals: Optional[Sequence[str]] = None, n_side: Optional[int] = None,
+          wall_profile: Optional[str] = None, field_profile: Optional[str] = None,
+          mirror: bool = False) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
     """(имя, arena-raw, params) — один независимый сценарий из детерминированного семени.
 
     random_start: True — зоны+джиттер всем; False — каноническая геометрия; None — по
@@ -73,20 +89,30 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
     n_side = n_side or mirror_size(rng)                 # зеркальный состав: n на n
 
     our_classes = list(classes) if classes else list(CLASS_NAMES)
-    foe_classes = list(classes) if classes else list(spec["classes"])
+    if foe_classes:                       # асимметрия этапа 2: сторона B может быть другого класса
+        foe_classes = list(foe_classes)
+    elif classes:
+        foe_classes = list(classes)
+    else:
+        foe_classes = list(spec["classes"])
 
-    def pick_arsenal() -> str:
-        if arsenals:
-            return rng.choice(list(arsenals))
+    def pick_arsenal(pool: Optional[Sequence[str]]) -> str:
+        if pool:
+            return rng.choice(list(pool))
         name = rng.choice(ARSENAL_NAMES)
         if arch in ("line", "cover") and rng.random() < 0.5:   # зеркально обеим сторонам
             name = rng.choice(["bow", "mixed", "javelins"])
         return name
 
-    side_a = [make_unit(rng.choice(our_classes), rng, i + 1, -1, "A", pick_arsenal())
+    foe_arsenal_pool = foe_arsenals or arsenals
+
+    side_a = [make_unit(rng.choice(our_classes), rng, i + 1, -1, "A", pick_arsenal(arsenals))
               for i in range(n_side)]
-    side_b = [make_unit(rng.choice(foe_classes), rng, i + 1, 1, "F", pick_arsenal())
-              for i in range(n_side)]
+    if mirror:                         # настоящее зеркало: B = копия A (равные силы и оружие)
+        side_b = [_mirror_of(a, i + 1) for i, a in enumerate(side_a)]
+    else:
+        side_b = [make_unit(rng.choice(foe_classes), rng, i + 1, 1, "F", pick_arsenal(foe_arsenal_pool))
+                  for i in range(n_side)]
 
     mode = spec["deploy"] if not do_random else rng.choice(sl.DEPLOYMENTS)
     jitter = 2 if do_random else 0
@@ -167,6 +193,49 @@ DUEL_FILTERS: Dict[str, Any] = {
 def generate_duels(count: int, seed: int) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
     """count melee-дуэлей 1v1 без стен (teaching_plan §Этап 1): structured, честный A/B."""
     return generate(count, seed, random_start=False, **DUEL_FILTERS)
+
+
+# Профили Этапа 2: зеркальные дуэли одного класса (тот же tier) + асимметрия по осям.
+# reach держит дистанцию за счёт class.reachFt=10 (оружие всё ещё ближнее); ranged — лук.
+STAGE2_DUEL_PROFILES: Dict[str, Dict[str, Any]] = {
+    "melee":  {"classes": ["melee"],  "arsenals": ("sword", "greatsword", "two_melee")},
+    "fast":   {"classes": ["fast"],   "arsenals": ("sword", "two_melee")},
+    "reach":  {"classes": ["reach"],  "arsenals": ("sword", "greatsword", "two_melee")},
+    "ranged": {"classes": ["ranged"], "arsenals": ("bow",)},
+}
+_STAGE2_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open", "field_profile": "small"}
+
+
+def _retag(pool: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],
+           prefix: str) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """Уникальные group_id по профилю: разные классы/пары не коллидуют в split по группам."""
+    out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+    for i, (_name, raw, params) in enumerate(pool):
+        nm = "%s_%03d" % (prefix, i)
+        p = dict(params)
+        p["group_id"] = nm
+        out.append((nm, raw, p))
+    return out
+
+
+def generate_mirror_duels(cls: str, count: int, seed: int
+                          ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count ЗЕРКАЛЬНЫХ 1v1 дуэлей класса cls (Этап 2): обе стороны равны по силам и оружию
+    (mirror=True), structured — побеждает тактика/очерёдность, а не удача в броске статов."""
+    prof = STAGE2_DUEL_PROFILES[cls]
+    pool = generate(count, seed, random_start=False, archetype="duel", mirror=True,
+                    classes=prof["classes"], arsenals=prof["arsenals"], **_STAGE2_GEOM)
+    return _retag(pool, "s2_%s" % cls)
+
+
+def generate_asym_duels(cls_a: str, cls_b: str, count: int, seed: int
+                        ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count асимметричных 1v1 (сторона A=cls_a vs сторона B=cls_b), structured (Этап 2 гейт)."""
+    pa, pb = STAGE2_DUEL_PROFILES[cls_a], STAGE2_DUEL_PROFILES[cls_b]
+    pool = generate(count, seed, random_start=False, archetype="duel",
+                    classes=pa["classes"], foe_classes=pb["classes"],
+                    arsenals=pa["arsenals"], foe_arsenals=pb["arsenals"], **_STAGE2_GEOM)
+    return _retag(pool, "s2_%sv%s" % (cls_a, cls_b))
 
 
 def _reserved(name: str) -> bool:

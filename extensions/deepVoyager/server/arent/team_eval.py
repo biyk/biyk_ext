@@ -260,21 +260,56 @@ def _flip_outcome(outcome: str, candidate_is_foes: bool) -> str:
     return {"win": "loss", "loss": "win"}.get(outcome, outcome)
 
 
+#: явная инициатива для контролируемой альтернативы первого хода (больше любого d20 1..20,
+#: planner.initiative.roll_initiatives берёт d20 только при initiative==0 — значит 90/
+#: 10 жёстко фиксируют открывающего без броска).
+OPENER_INI, LATTER_INI = 90, 10
+
+
+def _apply_candidate_opener(payload: Dict[str, Any], candidate_is_foes: bool,
+                            opens: bool) -> Dict[str, Any]:
+    """Копия payload с явной инициативой: сторона кандидата открывает бой (opens=True) или нет.
+
+    1v1-дуэли Этапа 2: один юнит на сторону, поэтому достаточно разметить стороны (src/союзники
+    против disposition>0). Координаты/HP/оружие не трогаем — отличается ТОЛЬКО порядок хода.
+    """
+    p = dict(payload)
+    p["data"] = dict(p.get("data") or {})
+    src_id = p.get("src")
+    npcs = []
+    for n in (p["data"].get("npcs") or []):
+        m = dict(n)
+        hostile = int(m.get("disposition", 0)) > 0
+        cand_side = hostile if candidate_is_foes else not hostile
+        m["initiative"] = OPENER_INI if (opens == cand_side) else LATTER_INI
+        npcs.append(m)
+    p["data"]["npcs"] = npcs
+    p["src"] = src_id
+    return p
+
+
 def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 candidate_is_foes: bool = False, rounds_cap: int = 8, draw_window: int = 4,
                 start_index: int = 0, schema: Optional[int] = None,
-                trace_limit: int = 0, counters: Optional[Counters] = None) -> Row:
+                trace_limit: int = 0, counters: Optional[Counters] = None,
+                opens: Optional[bool] = None) -> Row:
     """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
 
     Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
     исполняет среда. candidate_is_foes задаёт, какую сторону ведёт кандидат (A/B-swap).
     trace (первые trace_limit шагов, 0 = все) — доказательство, что ходили обе команды.
 
+    opens: controlled first move (Этап 2) — None (по умолчанию) оставляет естественную
+    инициативу сцены (прежнее поведение), True/False явно отдаёт первый ход стороне
+    кандидата/соперника. candidate_opened в строке — факт: первый шаг сделал кандидат.
+
     counters: если передан — среда обвешивается record_only-шейпером (§1.1: детекторы/счётчики
     идут по ground-truth трасса, но в награду НЕ текут, reward остаётся честным исходом).
     """
     candidate = build_controller(candidate, schema)
     opponent = build_controller(opponent, candidate.schema)
+    if opens is not None:
+        payload = _apply_candidate_opener(payload, candidate_is_foes, opens)
     environment = polyenv.PolyFightEnv(rounds_cap=rounds_cap,
                                        team=TeamReward(draw_window=draw_window),
                                        schema=candidate.schema)
@@ -369,6 +404,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
     return {"outcome": _flip_outcome(outcome, candidate_is_foes), "raw_outcome": outcome,
             "candidate": candidate.name, "opponent": opponent.name,
             "candidate_id": candidate.describe(), "opponent_id": opponent.describe(),
+            "candidate_opened": (trace[0]["side"] == "cand") if (opens is not None and trace)
+            else None,
             "candidate_is_foes": bool(candidate_is_foes), "schema": candidate.schema,
             "env_version": env_version(candidate.schema),
             "terminated": bool(info.get("terminated", False)),
@@ -389,18 +426,26 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
 def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict[str, Any]]],
                     rounds_cap: int = 8, draw_window: int = 4, replays: int = 1,
                     swap_sides: bool = True, trace_limit: int = 0,
-                    counters: Optional[Counters] = None) -> List[Row]:
-    """Каждая сцена x replays x обе расстановки сторон (candidate то hero-команда, то foes)."""
+                    counters: Optional[Counters] = None,
+                    openings: bool = False) -> List[Row]:
+    """Каждая сцена x replays x обе расстановки сторон x (опц.) очередность первого хода.
+
+    openings=True (Этап 2) добавляет измерение «открывающий»: половина боёв стартует
+    ходом кандидата, половина — соперника (явная инициатива, без d20), поэтому агрегатный
+    win_rate не может быть обеспечен первым ходом. openings=False (по умолчанию) — прежний
+    прогон Этапа 1 (число боёв и воспроизводимость не меняются).
+    """
     candidate = build_controller(candidate)
     opponent = build_controller(opponent, candidate.schema)
     rows: List[Row] = []
     for name, payload in sources:
         for rep in range(max(1, replays)):
             for cand_foes in ((False, True) if swap_sides else (False,)):
-                row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
-                                  draw_window, start_index=rep, schema=candidate.schema,
-                                  trace_limit=trace_limit, counters=counters)
-                rows.append(dict(row, name=name, replay=rep))
+                for op in ((True, False) if openings else (None,)):
+                    row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
+                                      draw_window, start_index=rep, schema=candidate.schema,
+                                      trace_limit=trace_limit, counters=counters, opens=op)
+                    rows.append(dict(row, name=name, replay=rep))
     return rows
 
 

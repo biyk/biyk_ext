@@ -12,3 +12,12 @@ arent/dist/
 arent/runs/
 arent/data/samples/
 arent/data/payloads/captures/
+
+# Ray (подключение этой машины worker-нодой): portable python, venv, кэш,
+# temp, results и cred — всё строго локально и НЕ в git (auth_token — секрет).
+.ray/
+ray_home/
+ray_temp/
+.home/
+ray_results/
+ray_portable_setup.ps1

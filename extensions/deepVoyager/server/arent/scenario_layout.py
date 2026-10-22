@@ -55,6 +55,18 @@ def pick_field(rng: random.Random) -> Tuple[str, int, int]:
     return profile[0], rows, cols
 
 
+def pick_field_named(rng: random.Random, name: str) -> Tuple[str, int, int]:
+    """То же, что pick_field, но профиль задан явно (фильтр арен) — стороны в его диапазоне.
+
+    Неизвестное имя -> ValueError (явный фильтр не должен молча соскакивать на random).
+    """
+    for prof in FIELD_PROFILES:
+        if prof[0] == name:
+            _, lo, hi = prof
+            return name, rng.randint(lo, hi), rng.randint(lo, hi)
+    raise ValueError(f"неизвестный профиль поля: {name!r}")
+
+
 def pick_wall_profile(rng: random.Random) -> str:
     """Профиль стен — равномерный выбор, независимый от архетипа."""
     return rng.choice(list(WALL_PROFILES))

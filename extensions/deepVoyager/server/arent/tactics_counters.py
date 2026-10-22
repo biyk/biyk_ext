@@ -36,8 +36,19 @@ class Counters:
         self._fired: Dict[str, int] = {}
         self._viol: Dict[str, int] = {}
         self.steps = 0
+        self._gate = True             # False -> record() no-op (matchup: считаем лишь кандидата)
+
+    def gate(self, allow: bool) -> None:
+        """Включать/выключать агрегацию шагов (§8-I: follow_rate мерит КАНДИДАТА).
+
+        matchup-контур выставляет gate(is_candidate) перед каждым env.step: счётчики видят
+        ground-truth трасса целиком (детекторы/фокус-аккумулятор считаются на обоих фронтах),
+        но в статистику попадают только шаги кандидата — пустые ходы соперника его не заражают."""
+        self._gate = bool(allow)
 
     def record(self, applicable, fired, violated) -> None:
+        if not self._gate:
+            return
         self.steps += 1
         for key in applicable:
             self._app[key] = self._app.get(key, 0) + 1

@@ -308,6 +308,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
         baseline = getattr(ctrl, "last_baseline", None)
         nt, nw = len(environment.slots.targets), len(environment.slots.weapons)
         obs_legal = obs.get("legal") if isinstance(obs, dict) else None
+        if counters is not None:
+            counters.gate(is_candidate)      # §8-I: в статистику — только шаги кандидата
         obs, reward, terminated, truncated, info = environment.step(chosen)
         executed = info["action"]
         reason = info.get("legalize_reason")
@@ -449,21 +451,30 @@ def run_matchup(candidate: str, opponent: str, name: str = "team_matchup", kind:
                 draw_window: int = 4, replays: int = 1, swap_sides: bool = True,
                 independent: bool = True, trace_limit: int = 0, out: Optional[str] = None,
                 log: Optional[Callable] = None, use_tactics: bool = False,
-                random_seed: int = 0) -> Row:
+                random_seed: int = 0,
+                scenario_sources: Optional[List[Tuple[str, Dict[str, Any]]]] = None) -> Row:
     """Матчбокс двух политик на одном наборе стартовых состояний; сводка в team_matchup.json.
 
     Отдельный файл (не перезаписывает team_eval.json/eval.json): командная оценка двух
-    политик живёт раздельно и от одиночного evaluate, и от self-play team_eval."""
+    политик живёт раздельно и от одиночного evaluate, и от self-play team_eval.
+
+    scenario_sources: явный пул (name, payload) вместо выборки с диска — так гоняют
+    сгенерированные дуэли Этапа 1, НЕ записывая их в боевой каталог арен (зеркалит rl.run).
+    """
     say = log or _echo
     cand_ctrl, cand_id = _resolve_controller(candidate, kind, None, random_seed)
     opp_ctrl, opp_id = _resolve_controller(opponent, kind, cand_ctrl.schema, random_seed)
-    if independent:
+    if scenario_sources is not None:
+        sources = list(scenario_sources)
+        tag = "explicit-pool"
+    elif independent:
         sources = dataset.independent_sources(arenas, use_live)
+        tag = "independent"
     else:
         sources = list(dataset.sources(arenas, use_live, exclude_independent=True))
+        tag = "non-independent"
     if not sources:
         raise RuntimeError("Нет сцен: арены playground пусты и живых снимков нет")
-    tag = "independent" if independent else "non-independent"
     say("матчбокс %s vs %s [%s]: %d сцен x%d, cap %d, swap %s"
         % (cand_ctrl.describe(), opp_ctrl.describe(), tag, len(sources), replays,
            rounds_cap, swap_sides))

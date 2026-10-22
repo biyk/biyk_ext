@@ -14,7 +14,7 @@
 import json
 import os
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from arent import scenario_layout as sl
 from arent.scenario_units import (
@@ -36,7 +36,7 @@ def _token(unit: Dict[str, Any], cell) -> Dict[str, Any]:
 
 # Реэкспорт реестра: прежние потребители (тесты, abset) обращаются через scenarios.*.
 __all__ = ["ARCHETYPES", "HERO_ARSENALS", "TACTICAL", "UNIT_CLASSES",
-           "build", "build_valid", "generate", "write_arenas", "_bc"]
+           "build", "build_valid", "generate", "generate_duels", "write_arenas", "_bc"]
 
 
 def _bc(payload: Dict[str, Any]):
@@ -44,32 +44,48 @@ def _bc(payload: Dict[str, Any]):
     return BattleContext.from_payload(payload)
 
 
-def build(seq: int, seed: int, random_start: Optional[bool] = None
+def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
+          archetype: Optional[str] = None, classes: Optional[Sequence[str]] = None,
+          arsenals: Optional[Sequence[str]] = None, n_side: Optional[int] = None,
+          wall_profile: Optional[str] = None, field_profile: Optional[str] = None
           ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
     """(имя, arena-raw, params) — один независимый сценарий из детерминированного семени.
 
     random_start: True — зоны+джиттер всем; False — каноническая геометрия; None — по
     архетипу (тактические -> канон, остальные -> рандом). Один seed => идентичный сценарий:
     учитель и политика видят ровно одну и ту же расстановку.
+
+    keyword-only overrides (фильтр арен для curriculum-этапов, teaching_plan §Этап 1): заданная
+    ось фиксируется вместо броска rng — archetype/classes (на обе стороны)/arsenals/n_side/
+    wall_profile/field_profile. Остальные оси (hp/speed/инициативы) остаются детерминированы
+    seed'ом, поэтому разные seq дают разные бои при той же STRUCTURE.
     """
     rng = random.Random((seed * 100003) ^ (seq * 7919))
-    arch = rng.choice(sorted(ARCHETYPES))
+    arch = archetype or rng.choice(sorted(ARCHETYPES))
     spec = ARCHETYPES[arch]
     do_random = (arch not in TACTICAL) if random_start is None else bool(random_start)
 
-    field_profile, rows, cols = sl.pick_field(rng)
-    wall_profile = sl.pick_wall_profile(rng)
-    n_side = mirror_size(rng)                           # зеркальный состав: n на n
+    if field_profile:
+        field_profile, rows, cols = sl.pick_field_named(rng, field_profile)
+    else:
+        field_profile, rows, cols = sl.pick_field(rng)
+    wall_profile = wall_profile or sl.pick_wall_profile(rng)
+    n_side = n_side or mirror_size(rng)                 # зеркальный состав: n на n
+
+    our_classes = list(classes) if classes else list(CLASS_NAMES)
+    foe_classes = list(classes) if classes else list(spec["classes"])
 
     def pick_arsenal() -> str:
+        if arsenals:
+            return rng.choice(list(arsenals))
         name = rng.choice(ARSENAL_NAMES)
         if arch in ("line", "cover") and rng.random() < 0.5:   # зеркально обеим сторонам
             name = rng.choice(["bow", "mixed", "javelins"])
         return name
 
-    side_a = [make_unit(rng.choice(CLASS_NAMES), rng, i + 1, -1, "A", pick_arsenal())
+    side_a = [make_unit(rng.choice(our_classes), rng, i + 1, -1, "A", pick_arsenal())
               for i in range(n_side)]
-    side_b = [make_unit(rng.choice(spec["classes"]), rng, i + 1, 1, "F", pick_arsenal())
+    side_b = [make_unit(rng.choice(foe_classes), rng, i + 1, 1, "F", pick_arsenal())
               for i in range(n_side)]
 
     mode = spec["deploy"] if not do_random else rng.choice(sl.DEPLOYMENTS)
@@ -106,11 +122,14 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None
     return name, raw, params
 
 
-def build_valid(seq: int, seed: int, tries: int = 6, random_start: Optional[bool] = None
-                ) -> Optional[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """build + проверка валидности боя; при неудаче сдвигает под-семя (в пределах seed)."""
+def build_valid(seq: int, seed: int, tries: int = 6, random_start: Optional[bool] = None,
+                **filters) -> Optional[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """build + проверка валидности боя; при неудаче сдвигает под-семя (в пределах seed).
+
+    filters — keyword-only overrides build'а (фильтр арен), пробрасываются как есть.
+    """
     for k in range(tries):
-        name, raw, params = build(seq * 16 + k, seed, random_start)
+        name, raw, params = build(seq * 16 + k, seed, random_start, **filters)
         try:
             payload = arena.build_payload(raw, name)
             ctx = _bc(payload)
@@ -121,19 +140,33 @@ def build_valid(seq: int, seed: int, tries: int = 6, random_start: Optional[bool
     return None
 
 
-def generate(count: int, seed: int, random_start: Optional[bool] = None
-             ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+def generate(count: int, seed: int, random_start: Optional[bool] = None,
+             **filters) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
     """count валидных независимых сценариев; имена уникальны, ho_*/ho2_* не производятся."""
     out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
     seen = set()
     seq = 0
     while len(out) < count and seq < count * 4:
-        built = build_valid(seq, seed, random_start=random_start)
+        built = build_valid(seq, seed, random_start=random_start, **filters)
         seq += 1
         if built and built[0] not in seen:
             seen.add(built[0])
             out.append(built)
     return out
+
+
+# Профиль Этапа 1: равные милишники 1в1 на пустом поле, каноническая расстановка.
+# melee-арсеналы (только ближний бой), поле small (дистанция сближается за 1-2 хода).
+DUEL_ARSENALS: Sequence[str] = ("sword", "greatsword", "two_melee")
+DUEL_FILTERS: Dict[str, Any] = {
+    "archetype": "duel", "classes": ["melee"], "arsenals": DUEL_ARSENALS,
+    "n_side": 1, "wall_profile": "open", "field_profile": "small",
+}
+
+
+def generate_duels(count: int, seed: int) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count melee-дуэлей 1v1 без стен (teaching_plan §Этап 1): structured, честный A/B."""
+    return generate(count, seed, random_start=False, **DUEL_FILTERS)
 
 
 def _reserved(name: str) -> bool:

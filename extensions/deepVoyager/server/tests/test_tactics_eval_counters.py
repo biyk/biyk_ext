@@ -67,6 +67,21 @@ def test_counters_nonempty_from_eval_trace(shaped):
     assert agg[Tag.no_idle.value]["applicable"] > 0         # атака => применимость непустая
 
 
+def test_matchup_counters_record_only_candidate_steps(shaped):
+    """follow_rate мерит КАНДИДАТА, а не соперника (§8-I/§11.3).
+
+    В matchup кандидат vs фиксированный соперник счётчики должны агрегировать ТОЛЬКО
+    шаги кандидата: инвариант counters.steps == row.candidate_steps (а не row.steps,
+    где учтены оба фронта). Иначе пустые ходы random-соперника заражают no_idle."""
+    counters = Counters()
+    row = team_eval.fight_teams(_scene(), _Stub(), "random", rounds_cap=12,
+                                counters=counters)
+    assert row["candidate_steps"] > 0
+    assert row["steps"] >= row["candidate_steps"]
+    assert counters.steps == row["candidate_steps"]
+    assert counters.to_dict()["steps"] == row["candidate_steps"]
+
+
 def test_matchup_run_embeds_tactics_block(shaped, tmp_path, monkeypatch):
     from arent import dataset
     monkeypatch.setattr(dataset, "independent_sources",

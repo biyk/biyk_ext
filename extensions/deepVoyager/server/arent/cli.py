@@ -119,9 +119,11 @@ def parser() -> argparse.ArgumentParser:
     tm = sub.add_parser("team-matchup",
                         help="командный бой ДВУХ политик: кандидат против фиксированного соперника")
     tm.add_argument("--candidate", default="battlecast",
-                    help="сторона-кандидат: имя учителя (greedy/battlecast) или чекпойнт (имя runs/ или путь)")
+                    help="сторона-кандидат: учитель (greedy/battlecast), random или чекпойнт (имя runs/ или путь)")
     tm.add_argument("--opponent", default="greedy",
-                    help="фиксированный соперник: имя учителя или чекпойнт")
+                    help="фиксированный соперник: учитель, random (baseline §10.3) или чекпойнт")
+    tm.add_argument("--opponent-seed", dest="opponent_seed", type=int, default=0,
+                    help="seed случайного соперника (детерминированный matchup)")
     tm.add_argument("--name", default="team_matchup", help="подпапка в runs/ для team_matchup.json")
     tm.add_argument("--rounds", type=int, default=8, help="потолок раундов в одном бою")
     tm.add_argument("--draw-window", dest="draw_window", type=int, default=4,
@@ -137,6 +139,8 @@ def parser() -> argparse.ArgumentParser:
                     help="гнать по train-сценам; по умолчанию — только независимый ho_/ho2_")
     tm.add_argument("--out", help="куда дополнительно записать сводку")
     tm.add_argument("--kind", default="auto", choices=["auto", "torch", "pure"])
+    tm.add_argument("--tactics", dest="use_tactics", action="store_true",
+                    help="писать трасс-счётчики тактик (record_only, на награду не влияет) в сводку")
 
     rlp = sub.add_parser("rl", help="PPO над итогом боя: долгосрочный горизонт политическим градиентом")
     rlp.add_argument("--warm", default="bc2", help="родитель весов: имя прогона (model_best.json) или путь; '' — со случайных")
@@ -305,7 +309,8 @@ def _team_matchup(args) -> int:
                                    use_live=not args.no_live, rounds_cap=args.rounds,
                                    draw_window=args.draw_window, replays=args.replays,
                                    swap_sides=args.swap_sides, independent=args.independent,
-                                   trace_limit=args.trace_limit, out=args.out)
+                                   trace_limit=args.trace_limit, out=args.out,
+                                   use_tactics=args.use_tactics, random_seed=args.opponent_seed)
     return 0 if report["fights"] else 1
 
 

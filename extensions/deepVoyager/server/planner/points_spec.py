@@ -8,6 +8,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from planner import dice
 
 SKIP_KEYS = ("comment", "version")     # служебные поля файла, их нет в SPEC
+# Секции, которые читает не SPEC, а потребитель сами (arent/tactics_config): их ключи —
+# динамический реестр тегов, поэтому не считаем их «неизвестными» и не предупреждаем.
+EXTERNAL_SECTIONS = ("tactics",)
 
 # Числа по умолчанию. Названы константами, чтобы значение в SPEC и значение поля
 # dataclass не разъехались: Tuning(max_rounds=...) должен совпадать с SPEC.
@@ -161,6 +164,8 @@ def unknown_key_notes(raw: Any, notes: List[str], path: Tuple[str, ...] = ()) ->
         if key in SKIP_KEYS:
             continue
         here = path + (key,)
+        if not path and key in EXTERNAL_SECTIONS:      # внешняя секция: не трогает SPEC
+            continue
         if here in _CONTAINERS:
             unknown_key_notes(value, notes, here)
         elif here not in _KNOWN:

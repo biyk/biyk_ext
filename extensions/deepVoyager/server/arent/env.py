@@ -16,6 +16,7 @@ from arent import joint as joint_mod
 from arent import legalize as legalize_mod
 from arent import slots as slots_mod
 from arent.observe import observe
+from arent.tactics_ctx import action_outcome, build_step_ctx
 from arent.team_reward import TeamReward
 from planner.context import BattleContext
 from planner.sim import Simulation
@@ -55,6 +56,35 @@ class FightEnv:
         self.t = 0
         self.phi_s = 0.0
         self._last_reason: Optional[str] = None    # причина последней правки legalization (для диагностики)
+        self.shaper: Any = None                     # TacticsShaper|None: тактический shaping (train-only)
+
+    def set_shaper(self, shaper: Any) -> None:
+        """Пристегнуть тактический shaping; None — выключить (reward == чистый TeamReward)."""
+        self.shaper = shaper
+
+    def anneal(self, iter_index: int, total_iters: int) -> None:
+        """Пробросить позицию обучения λ(iter) из PPO-цикла в shaper (§1.3)."""
+        if self.shaper is not None:
+            self.shaper.anneal(iter_index, total_iters)
+
+    def _tactics_addend(self, prev_units, actions, actor_id: str, round_index: int) -> float:
+        """Тактический shaping-член шага (0, если shaper не пристёгнут). §1/§11: train-only,
+        cap/decay/arena-gate внутри shaper; в eval он record_only и возвращает 0."""
+        if self.shaper is None:
+            return 0.0
+        attacked, target_id = action_outcome(actions)
+        target_id = target_id if attacked else None
+        units = self.state.units
+        cell_after = units[actor_id].cell
+        prior = self.shaper.ff.count_on(target_id) if target_id else 0
+        prior_targets = self.shaper.ff.targets() if target_id else ()
+        ctx = build_step_ctx(self.state, prev_units, units, actor_id, cell_after, target_id,
+                             attacked, round_index, self.shaper.hp_max, prior, prior_targets)
+        add = self.shaper.addend(ctx)
+        if target_id:
+            self.shaper.ff.observe(round_index, actor_id, target_id)
+        self.shaper.observe_hp(units)
+        return add
 
     def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
         """Новый бой из снимка сцены; Phi(s0) посчитан. start_index — единая сигнатура
@@ -63,6 +93,8 @@ class FightEnv:
         self.t = 0
         if self.team is not None:
             self.team.reset()
+        if self.shaper is not None:
+            self.shaper.reset(self.state.units)
         obs = self._observe()
         self.phi_s = self._phi(obs)
         return obs
@@ -96,7 +128,8 @@ class FightEnv:
         """Применить тройку: legalize -> decode -> advance (ход героя + ответ врагов) -> награда."""
         action = self.legalize(label)
         prev_units = dict(self.state.units)
-        self.state, value = self.state.advance(slots_mod.decode(self.slots, dict(action)))
+        actions = slots_mod.decode(self.slots, dict(action))
+        self.state, value = self.state.advance(actions)
         self.t += 1
         died = bool(self.state.hero_dead)
         cleared = not self.state.foes
@@ -112,6 +145,7 @@ class FightEnv:
         phi_prev = self.phi_s
         phi_next = 0.0 if terminated or next_obs is None else self._phi(next_obs)
         reward = shape_reward(base, phi_prev, phi_next, terminated, self.gamma)
+        reward = round(reward + self._tactics_addend(prev_units, actions, self.state.hero_id, self.t), 6)
         self.phi_s = phi_next
         info = {"value": round(float(value), 4), "survived": not died, "cleared": cleared,
                 "outcome": outcome, "terminated": terminated, "truncated": truncated,

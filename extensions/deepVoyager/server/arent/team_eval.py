@@ -7,12 +7,15 @@
 # Прогон детерминирован (среда считает ожиданием, predict — argmax), поэтому до/после
 # сравнение на замороженном независимом наборе ho_/ho2_ честно для одних и тех же весов.
 import os
+import random
 from statistics import mean
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from arent import (backend, dataset, evaluate, joint as joint_mod, net, paths, play, polyenv,
-                   spec, spec3, teachers)
+                   spec, spec3, tactics_config, teachers)
 from arent import slots as slots_mod, slots_v3
+from arent.tactics_counters import Counters
+from arent.tactics_shaper import TacticsShaper
 from arent.team_reward import TeamReward
 
 Row = Dict[str, Any]
@@ -125,6 +128,9 @@ def run(name: str = "team_eval", model_path: Optional[str] = None, kind: str = "
 
 ENV_MODE = "team-2policy"
 
+#: имена, под которыми matchup понимает случайного соперника-baseline (§10.3).
+RANDOM_OPPONENTS = frozenset({"random", "random_policy", "RandomPolicy"})
+
 
 def env_version(schema: int) -> Row:
     """Версия боевого контура (среда/схема/терминал) — в каждый ряд журнала."""
@@ -196,15 +202,54 @@ class TeacherController:
         return lab or {"cell": 0, "target": spec.NONE_SLOT, "weapon": spec.NONE_SLOT}
 
 
+class RandomController:
+    """Случайный соперник-baseline (§10.3): равномерный выбор по совместному A(s)=obs['legal'].
+
+    Ни весов, ни учителя — только uniform по тем же совместно допустимым тройкам, что видит
+    PPO-политика, поэтому serve==train по множеству действий (выбранная тройка уже совместна,
+    защитный legalize среды — тождество). Нужен как нижняя граница честного matchup: «модель не
+    хуже случайного» (§0.1). Детерминирован по seed: один rng на прогон, порядок шагов фиксирует
+    среда; last_baseline всегда None (нет голов для независимого baseline).
+    """
+
+    _is_controller = True
+
+    def __init__(self, seed: int = 0, schema: Optional[int] = None):
+        self.schema = int(schema if schema is not None else spec.SCHEMA)
+        yk = net.y_key(self.schema)
+        self.keys = (yk["cells"], yk["targets"], yk["weapons"])
+        self.rng = random.Random(seed)
+        self.name = "random"
+        self.last_baseline: Optional[Dict[str, int]] = None
+
+    def describe(self) -> str:
+        return "random@schema%d" % self.schema
+
+    def label(self, obs: Dict[str, Any], ctx: Any, slots: Any) -> Dict[str, int]:
+        mask = obs.get("legal") if isinstance(obs, dict) else None
+        if mask is None:
+            mask = joint_mod.legal_mask(slots, ctx, self.schema)
+        triples = [(p, t, w) for p, rows in enumerate(mask)
+                   for t, cols in enumerate(rows) for w, ok in enumerate(cols) if ok]
+        pos_k, tgt_k, wpn_k = self.keys
+        if not triples:                       # контракт A(s) непусто (есть no-attack на позицию)
+            return {pos_k: 0, tgt_k: spec.NONE_SLOT, wpn_k: spec.NONE_SLOT}
+        p, t, w = self.rng.choice(triples)
+        return {pos_k: p, tgt_k: t, wpn_k: w}
+
+
 def build_controller(policy: Any, schema: Optional[int] = None):
     """Контроллер из уже собранного (.label+._is_controller), имени учителя или модели-весов."""
     if getattr(policy, "_is_controller", False):
         if schema is not None:
             policy.schema = int(schema)
         return policy
-    if isinstance(policy, str) and policy in teachers.list_teachers():
-        return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
-                                 schema)
+    if isinstance(policy, str):
+        if policy in RANDOM_OPPONENTS:
+            return RandomController(schema=schema)
+        if policy in teachers.list_teachers():
+            return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
+                                     schema)
     return ModelController(policy, schema)
 
 
@@ -218,18 +263,26 @@ def _flip_outcome(outcome: str, candidate_is_foes: bool) -> str:
 def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 candidate_is_foes: bool = False, rounds_cap: int = 8, draw_window: int = 4,
                 start_index: int = 0, schema: Optional[int] = None,
-                trace_limit: int = 0) -> Row:
+                trace_limit: int = 0, counters: Optional[Counters] = None) -> Row:
     """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
 
     Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
     исполняет среда. candidate_is_foes задаёт, какую сторону ведёт кандидат (A/B-swap).
     trace (первые trace_limit шагов, 0 = все) — доказательство, что ходили обе команды.
+
+    counters: если передан — среда обвешивается record_only-шейпером (§1.1: детекторы/счётчики
+    идут по ground-truth трасса, но в награду НЕ текут, reward остаётся честным исходом).
     """
     candidate = build_controller(candidate, schema)
     opponent = build_controller(opponent, candidate.schema)
     environment = polyenv.PolyFightEnv(rounds_cap=rounds_cap,
                                        team=TeamReward(draw_window=draw_window),
                                        schema=candidate.schema)
+    if counters is not None:
+        shape = tactics_config.config()
+        if shape.enabled_global:
+            environment.set_shaper(TacticsShaper(shape, shape.allowed(None), counters,
+                                                 record_only=True))
     obs = environment.reset(payload, start_index=start_index)
     start_actor = environment.actor
     steps, total, outcome, info = 0, 0.0, "open", {}
@@ -333,7 +386,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
 
 def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict[str, Any]]],
                     rounds_cap: int = 8, draw_window: int = 4, replays: int = 1,
-                    swap_sides: bool = True, trace_limit: int = 0) -> List[Row]:
+                    swap_sides: bool = True, trace_limit: int = 0,
+                    counters: Optional[Counters] = None) -> List[Row]:
     """Каждая сцена x replays x обе расстановки сторон (candidate то hero-команда, то foes)."""
     candidate = build_controller(candidate)
     opponent = build_controller(opponent, candidate.schema)
@@ -343,7 +397,7 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
             for cand_foes in ((False, True) if swap_sides else (False,)):
                 row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
                                   draw_window, start_index=rep, schema=candidate.schema,
-                                  trace_limit=trace_limit)
+                                  trace_limit=trace_limit, counters=counters)
                 rows.append(dict(row, name=name, replay=rep))
     return rows
 
@@ -372,9 +426,11 @@ def summarize_matchup(rows: List[Row], rounds_cap: int = 8, draw_window: int = 4
             "rows": rows}
 
 
-def _resolve_controller(policy: Any, kind: str, schema: Optional[int]):
-    """Спецификация стороны -> контроллер: имя учителя, путь/имя прогона весов или объект."""
+def _resolve_controller(policy: Any, kind: str, schema: Optional[int], random_seed: int = 0):
+    """Спецификация стороны -> контроллер: случайный baseline, имя учителя, путь/имя весов."""
     if isinstance(policy, str):
+        if policy in RANDOM_OPPONENTS:
+            return RandomController(seed=random_seed, schema=schema), policy
         if policy in teachers.list_teachers():
             return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
                                      schema), policy
@@ -392,14 +448,15 @@ def run_matchup(candidate: str, opponent: str, name: str = "team_matchup", kind:
                 arenas: Optional[List[str]] = None, use_live: bool = True, rounds_cap: int = 8,
                 draw_window: int = 4, replays: int = 1, swap_sides: bool = True,
                 independent: bool = True, trace_limit: int = 0, out: Optional[str] = None,
-                log: Optional[Callable] = None) -> Row:
+                log: Optional[Callable] = None, use_tactics: bool = False,
+                random_seed: int = 0) -> Row:
     """Матчбокс двух политик на одном наборе стартовых состояний; сводка в team_matchup.json.
 
     Отдельный файл (не перезаписывает team_eval.json/eval.json): командная оценка двух
     политик живёт раздельно и от одиночного evaluate, и от self-play team_eval."""
     say = log or _echo
-    cand_ctrl, cand_id = _resolve_controller(candidate, kind, None)
-    opp_ctrl, opp_id = _resolve_controller(opponent, kind, cand_ctrl.schema)
+    cand_ctrl, cand_id = _resolve_controller(candidate, kind, None, random_seed)
+    opp_ctrl, opp_id = _resolve_controller(opponent, kind, cand_ctrl.schema, random_seed)
     if independent:
         sources = dataset.independent_sources(arenas, use_live)
     else:
@@ -410,9 +467,12 @@ def run_matchup(candidate: str, opponent: str, name: str = "team_matchup", kind:
     say("матчбокс %s vs %s [%s]: %d сцен x%d, cap %d, swap %s"
         % (cand_ctrl.describe(), opp_ctrl.describe(), tag, len(sources), replays,
            rounds_cap, swap_sides))
+    counters = Counters() if use_tactics else None
     rows = matchup_sources(cand_ctrl, opp_ctrl, sources, rounds_cap, draw_window, replays,
-                           swap_sides, trace_limit)
+                           swap_sides, trace_limit, counters=counters)
     report = summarize_matchup(rows, rounds_cap, draw_window)
+    if counters is not None:
+        report["tactics"] = counters.to_dict()
     report["provenance"] = evaluate._provenance(cand_id if cand_id.endswith(".json") else None,
                                                 sources, rounds_cap, set_tag=tag)
     report["provenance"]["candidate"] = cand_id

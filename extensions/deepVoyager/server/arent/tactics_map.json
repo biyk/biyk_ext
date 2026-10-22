@@ -1,0 +1,12 @@
+{
+  "_comment": "Карта «архетип -> ожидаемые тактики» (teaching_plan §3). enabled — бонусы, применимые на арене этого архетипа; penalties — anti-паттерны, наказуемые здесь. Ключи = реестр arent/tactics.py (Tag/Penalty). Арена-гейт §1.4: bonus_for начисляет только то, что здесь ожидано. Класс-зависимые теги (kite/cover/reach) добавляет infer_strategies по составу.",
+  "duel":       {"enabled": ["focus_wounded", "kill_shot"], "penalties": ["idle_turn"]},
+  "pair":       {"enabled": ["focus_fire", "priority_soft"], "penalties": ["spread_fire"]},
+  "pincer":     {"enabled": ["anti_pincer", "focus_fire"], "penalties": ["stack_close"]},
+  "ring":       {"enabled": ["break_ring", "anti_pincer"], "penalties": ["widen_contacts"]},
+  "line":       {"enabled": ["focus_wounded", "kill_shot"], "penalties": ["idle_turn"]},
+  "cover":      {"enabled": ["cover_shoot", "kill_shot", "focus_wounded"], "penalties": ["shoot_from_open", "reach_penalty"]},
+  "chokepoint": {"enabled": ["hold_choke", "focus_wounded"], "penalties": ["stack_close"]},
+  "skirmish":   {"enabled": ["priority_soft", "focus_fire"], "penalties": ["melee_at_low_hp"]},
+  "boss_adds":  {"enabled": ["priority_soft", "focus_wounded", "kill_shot"], "penalties": ["hit_boss_with_adds"]}
+}

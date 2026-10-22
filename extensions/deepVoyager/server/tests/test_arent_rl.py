@@ -11,8 +11,10 @@ import os
 
 import pytest
 
-from arent import backend, env, net, rl, rl_setup, rl_state
+from arent import backend, env, net, rl, rl_setup, rl_state, tactics_config
 from arent.rollout import RlConfig, collect, gae, normalize
+from arent.tactics_counters import Counters
+from arent.tactics_config import parse as parse_tactics
 from arent.torch_rl import PPOAgent, joint_logp
 from conftest import make_npc, make_scene_payload, make_weapon
 
@@ -329,3 +331,43 @@ def test_manifest_records_ppo_lineage_and_full_config(tmp_path, monkeypatch):
     for key in ("gamma", "gae_lambda", "clip_eps", "ent_coef", "vf_coef", "rollout_steps",
                 "minibatch", "ppo_epochs", "lr", "clear_bonus", "death_penalty"):
         assert key in manifest["rl"]
+
+
+# ------------------------------------------------------------------ тактический shaping (Этап 0)
+_TACT_CFG = parse_tactics({"weights": {"no_idle": 0.03, "kill_shot": 0.15, "focus_wounded": 0.10},
+                           "penalties": {"idle_turn": -0.05}})
+
+
+def test_collect_with_shaper_populates_counters():
+    """rollout.collect со shape=включённый TacticsConfig: буфер собирается, счётчики непустые."""
+    import random
+    agent = _agent()
+    rcfg = RlConfig(rollout_steps=8, rounds_cap=4, seed=4, polyactor=True)
+    counters = Counters()
+    buf = collect(agent, [("a", _scene()), ("b", _scene())], rcfg, random.Random(4), phi=None,
+                  counters=counters, shape=_TACT_CFG, anneal=(1, 2))
+    assert len(buf) == 8
+    assert counters.steps > 0                       # шейпер считает каждый шаг rollout
+    assert counters.to_dict()["tactics"]            # хотя бы один ключ применим
+
+
+def test_run_use_tactics_writes_counters_json(tmp_path, monkeypatch):
+    """Сквозной прогон: rl.run(use_tactics=True) пишет tactics_counters.json с непустым steps."""
+    from arent import paths
+    paths.set_workspace(str(tmp_path))
+    tactics_config.set_config(_TACT_CFG)
+    try:
+        monkeypatch.setattr(rl.dataset, "sources",
+                            lambda arenas, use_live, **_kw: [("arenaA", _scene()),
+                                                              ("arenaB", _scene())])
+        rl.run(name="ppotact", warm=None, rcfg=_tiny_rcfg(iters=1, rollout_steps=12),
+               net_cfg=_tiny_net(), kind="torch", device="cpu",
+               log=lambda *_a: None, use_tactics=True)
+        import json
+        path = paths.file_in(paths.run_dir("ppotact"), "tactics_counters.json")
+        assert os.path.exists(path)
+        with open(path, encoding="utf-8") as f:
+            agg = json.load(f)
+        assert agg["steps"] > 0 and agg["tactics"]
+    finally:
+        tactics_config.set_config(None)

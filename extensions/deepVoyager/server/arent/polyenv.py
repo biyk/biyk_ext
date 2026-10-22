@@ -39,6 +39,8 @@ class PolyFightEnv(FightEnv):
             self.team.reset()
         living = list(self.state.living_in_order)
         self.actor = living[int(start_index) % len(living)] if living else None
+        if self.shaper is not None:
+            self.shaper.reset(self.state.units)
         obs = self._observe()
         self.phi_s = self._phi(obs)
         return obs
@@ -106,6 +108,7 @@ class PolyFightEnv(FightEnv):
         phi_prev = self.phi_s
         phi_next = 0.0 if terminated or next_obs is None else self._phi(next_obs)
         reward = shape_reward(base, phi_prev, phi_next, terminated, self.gamma)
+        reward = round(reward + self._tactics_addend(prev_units, actions, actor, self.t), 6)
         self.phi_s = phi_next
         info = {"value": round(float(value), 4), "survived": not died, "cleared": cleared,
                 "outcome": outcome, "terminated": terminated, "truncated": truncated,

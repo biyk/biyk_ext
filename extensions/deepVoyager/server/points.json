@@ -38,5 +38,29 @@
     "topK": 8,
     "shallowK": 4,
     "comment": "rounds - на сколько раундов смотреть вперёд (1 = сегодняшний жадный перебор); topK - сколько вариантов первого слоя разворачивать; shallowK - сколько ходов героя рассматривать в глубине, иначе дерево не считается вообще"
+  },
+  "tactics": {
+    "comment": "Тактический shaping (teaching_plan §5): веса бонусов/штрафов за правомерные ходы. Ключи weights/penalties = реестр arent/tactics.py (Tag/Penalty); неизвестный ключ — ошибка загрузки, а не нулевой вес. Действует ТОЛЬКО на train (в evaluate/team_eval shaping выключен, принцип §1.1). enabled_global — общий рубильник; shaping_cap_of_win — |Σ shaping| за бой не больше этой доли от |WIN|; decay — затухание λ(iter).",
+    "enabled_global": true,
+    "shaping_cap_of_win": 0.3,
+    "decay": {"mode": "linear", "floor": 0.0},
+    "weights": {
+      "focus_wounded": 0.10, "kill_shot": 0.15, "priority_soft": 0.10,
+      "kite_max_range": 0.12, "cover_shoot": 0.15, "break_ring": 0.10,
+      "hold_choke": 0.10, "avoid_reach": 0.05, "charge_from_cover": 0.10,
+      "anti_pincer": 0.10, "no_stack": 0.03, "use_high_ground": 0.08,
+      "no_idle": 0.03, "retreat_low_hp": 0.10, "focus_fire": 0.10
+    },
+    "penalties": {
+      "spread_fire": -0.04, "approach_milishnik_as_archer": -0.15,
+      "shoot_from_open": -0.10, "enter_reach": -0.12, "widen_contacts": -0.12,
+      "leave_choke": -0.08, "idle_turn": -0.05, "melee_at_low_hp": -0.10,
+      "hit_boss_with_adds": -0.10, "stack_close": -0.06, "reach_penalty": -0.12
+    },
+    "per_stage_disable": {
+      "stage1": ["kite_max_range", "cover_shoot", "hold_choke", "break_ring", "anti_pincer",
+                 "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
+                 "retreat_low_hp"]
+    }
   }
 }

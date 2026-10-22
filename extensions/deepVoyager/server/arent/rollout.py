@@ -19,6 +19,10 @@ from dataclasses import asdict, dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
 
 from arent import env, polyenv, spec, spec3
+from arent.tactics_config import TacticsConfig
+from arent.tactics_counters import Counters
+from arent.tactics_map import allowed_set
+from arent.tactics_shaper import TacticsShaper
 from arent.team_reward import TeamReward
 from arent.torch_rl import PPOAgent, joint_logp
 
@@ -112,15 +116,38 @@ def _make_env(cfg: RlConfig, team: Optional[TeamReward],
     return env.FightEnv(cfg.rounds_cap, cfg.clear_bonus, cfg.death_penalty, cfg.gamma, phi, team=team)
 
 
+def _arena_allowed(name: str, expected: Optional[Dict[str, Any]], shape: TacticsConfig,
+                   stage: Optional[str]) -> set:
+    """arena-gate §1.4: stage-разрешённые ключи ∩ ожидаемые на этой арене (если известно)."""
+    stage_allowed = shape.allowed(stage)
+    if expected and name in expected:
+        arena = allowed_set(expected[name])
+        if arena:
+            return stage_allowed & arena
+    return stage_allowed
+
+
 def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: RlConfig,
             rng: random.Random, phi: Optional[Any] = None,
-            diag: Optional[List[Row]] = None) -> List[Row]:
+            diag: Optional[List[Row]] = None, *, counters: Optional[Counters] = None,
+            shape: Optional[TacticsConfig] = None, stage: Optional[str] = None,
+            expected: Optional[Dict[str, Any]] = None,
+            anneal: Tuple[int, int] = (0, 1)) -> List[Row]:
     """rollout_steps шагов round-robin по сценам; исполненное действие и его logπ в буфере.
 
     Шаг — ход текущего актёра по инициативе (обе стороны одной политикой: self-play),
     поэтому observation/logπ берутся с лица того, кто реально сейчас ходит.
+
+    Тактический shaping — только здесь (train): передан `shape` (включённый TacticsConfig) ->
+    к среде пристёгнут TacticsShaper, λ задаётся anneal=(it,total), arena-gate — по `expected`.
+    По умолчанию shape=None: shaping выключен, reward == чистый исход (среж для eval-путей).
     """
     environment = _make_env(cfg, _team_reward(cfg), phi)
+    if shape is not None and shape.enabled_global:
+        environment.set_shaper(TacticsShaper(shape, shape.allowed(stage),
+                                             counters if counters is not None else Counters(),
+                                             record_only=False))
+        environment.anneal(*anneal)
     order = list(range(len(scenarios)))
     rng.shuffle(order)
     episodes: Dict[int, int] = {}        # WP5: сколько боёв сцена сыграна -> следующий старт-актёр
@@ -129,6 +156,8 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
         """Reset с ротацией: каждый новый эпизод сцены стартует с следующего актёра."""
         k = episodes.get(slot, 0)
         episodes[slot] = k + 1
+        if environment.shaper is not None:
+            environment.shaper.allowed = _arena_allowed(scenarios[slot][0], expected, shape, stage)
         return environment.reset(scenarios[slot][1], start_index=k)
 
     pointer, sample = 0, _begin(order[0])

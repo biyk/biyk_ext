@@ -16,7 +16,9 @@ import torch
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from arent import backend, dataset, evaluate, manifest, net, paths, provenance, rl_setup, rl_state
+from arent import tactics_config
 from arent.rollout import RlConfig, collect
+from arent.tactics_counters import Counters
 from arent.torch_rl import PPOAgent
 
 Row = Dict[str, Any]
@@ -54,7 +56,8 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
         arenas: Optional[List[str]] = None, use_live: bool = True, iters: Optional[int] = None,
         rollout: Optional[int] = None, resume: bool = False,
         scenario_sources: Optional[List[Tuple[str, Dict[str, Any]]]] = None,
-        log: Optional[Callable] = None) -> Dict[str, Any]:
+        log: Optional[Callable] = None, use_tactics: bool = False,
+        stage: Optional[str] = None) -> Dict[str, Any]:
     """Обучить PPO и сохранить; warm=None — со случайных весов (обычно ставят bc2).
 
     scenario_sources: явный пул (name, payload) вместо выборки из dataset.sources — так
@@ -97,6 +100,11 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
         group["lr"] = rcfg.lr
     rng = random.Random(rcfg.seed)
     torch.manual_seed(net_cfg.seed)
+    shape = tactics_config.config() if use_tactics else None
+    counters = Counters() if use_tactics else None
+    if use_tactics:
+        say(f"тактический shaping ВКЛ (train-only): enabled={shape.enabled_global} "
+            f"cap_of_win={shape.cap_of_win} stage={stage or '-'}")
     start_iter = _maybe_resume(name, policy, net_cfg, rng, resume, say)
     say(f"PPO {kind} на {getattr(policy, 'device', 'cpu')}: train={len(train_pool)} "
         f"val={len(val_pool)} holdout={len(holdout)} (не обучается на holdout)")
@@ -106,7 +114,9 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
     warm_sha = provenance.sha256_file(warm_from) if warm_from else None
     for it in range(start_iter + 1, rcfg.iters + 1):
         diag: List[Row] = []
-        report = agent.update(collect(agent, train_pool, rcfg, rng, phi, diag))
+        report = agent.update(collect(agent, train_pool, rcfg, rng, phi, diag,
+                                      counters=counters, shape=shape, stage=stage,
+                                      anneal=(it, rcfg.iters)))
         row: Row = {"iter": it, **report}
         if it % max(1, rcfg.eval_every) == 0 or it == rcfg.iters:
             row["eval"] = _closed_loop(policy, select_pool, rcfg.rounds_cap, rcfg.replays)
@@ -125,6 +135,9 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
             provenance.write_json(paths.file_in(paths.run_dir(name), "shaping_diagnostics.json"),
                                   diag[:64])
     seconds = round(time.monotonic() - started, 2)
+    if counters is not None:
+        provenance.write_json(paths.file_in(paths.run_dir(name), "tactics_counters.json"),
+                              counters.to_dict())
     return _finish(name, policy, net_cfg, rcfg, warm_from, history, best_params, best_eval,
                    best_score, seconds, train_pool, _split_block(train_pool, val_pool, holdout, rcfg),
                    vref is not None, say)

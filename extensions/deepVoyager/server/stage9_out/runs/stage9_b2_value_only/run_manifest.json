@@ -1,0 +1,138 @@
+{
+ "command": [
+  "diagnostics\\stage9_value_ablations.py"
+ ],
+ "compatibility": {
+  "breaks": [
+   "single_actor_sc1_benchmarks"
+  ],
+  "from_schema": null,
+  "reason": "v2 team combat, no warm-start"
+ },
+ "created_utc": "2026-10-22T05:39:51+00:00",
+ "dataset": {
+  "available": false,
+  "bytes": null,
+  "name": null,
+  "path": null,
+  "samples": 484,
+  "sha256": null
+ },
+ "environment": {
+  "available": [
+   "torch",
+   "pure"
+  ],
+  "config": {
+   "batch": 64,
+   "device": "auto",
+   "epochs": 40,
+   "head": 24,
+   "hidden": 96,
+   "kind": "auto",
+   "lr": 0.003,
+   "momentum": 0.9,
+   "schema": 2,
+   "seed": 7,
+   "val_frac": 0.85,
+   "value_w": 0.5,
+   "weight_decay": 0.0001
+  },
+  "cuda": false,
+  "device": "cpu",
+  "kind": "torch",
+  "params": 53356,
+  "python": "3.11.9",
+  "torch": "2.14.0+cpu",
+  "workspace": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out"
+ },
+ "generation": {
+  "count": "unknown",
+  "per_src": "unknown",
+  "rounds_max": "unknown",
+  "schema": "unknown",
+  "seed": "unknown",
+  "shallow_k": "unknown",
+  "source": "unknown (сайдкар не сохранён)",
+  "teacher_rounds": "unknown",
+  "top_k": "unknown"
+ },
+ "git": {
+  "branch": "main",
+  "code_sha256": "c4e90ae2e48785dc064a41fdea7ea899ab2b8b635ea62ee80b90c2074af8441c",
+  "commit": "5a384669b7eb1515fa526c12ea86f6a087ec64ff",
+  "dirty": true,
+  "error": null,
+  "root": "C:/Users/b5/AppData/Local/FoundryVTT/Data/modules/biyk_ext"
+ },
+ "manifest_schema": 1,
+ "network": {
+  "backend": "pure",
+  "config": {
+   "batch": 32,
+   "device": "cpu",
+   "epochs": 12,
+   "head": 24,
+   "hidden": 96,
+   "kind": "pure",
+   "lr": 0.03,
+   "momentum": 0.9,
+   "schema": 3,
+   "seed": 20261022,
+   "val_frac": 0.85,
+   "value_w": 0.5,
+   "weight_decay": 0.0001
+  },
+  "dims": {
+   "cell_feat": 21,
+   "cells": 49,
+   "feat_version": 2,
+   "grid": 121,
+   "schema": 3,
+   "state": 498,
+   "target_feat": 22,
+   "targets": 9,
+   "weapon_feat": 11,
+   "weapons": 9
+  },
+  "feature_version": 2,
+  "params": 53428
+ },
+ "outputs": {
+  "paths": {
+   "history.json": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\history.json",
+   "model.json": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\model.json",
+   "model_best.json": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\model_best.json",
+   "summary.json": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\summary.json"
+  },
+  "sha256": {
+   "history.json": "fe9afa48bb49b704118a2378aa28ba63fad35c05ca3961a190f7a022f44cff4b",
+   "model.json": "4b4b44aec5d2a810830db33789569bc5c4b51821405ae9bf99fa230d470682e2",
+   "model_best.json": "e674f101763c2068dbef67386c7233365d33fd6200d9ba1df9fad3b34346a1c7",
+   "summary.json": "da78f028a2ca5899782258b4b7cde7ed9a8c445f1aa8483c221021fafa0088a9"
+  }
+ },
+ "run": "stage9_b2_value_only",
+ "schema": 2,
+ "split": {
+  "method": "override"
+ },
+ "training": {
+  "batch": 32,
+  "best_metric": "val.joint_nll",
+  "device": "cpu",
+  "epochs": 12,
+  "head": 24,
+  "hidden": 96,
+  "kind": "pure",
+  "lr": 0.03,
+  "momentum": 0.9,
+  "seed": 20261022,
+  "val_frac": 0.85,
+  "val_source": "override",
+  "value_w": 0.5,
+  "weight_decay": 0.0001
+ },
+ "warm": null,
+ "workspace": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out"
+}

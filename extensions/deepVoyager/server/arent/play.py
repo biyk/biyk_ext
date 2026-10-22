@@ -1,14 +1,19 @@
 # arent/play.py — модель -> список действий формата /plan.
 #
 # Тот же конвейер, что при генерации выборки: payload -> наблюдение -> слоты ->
-# векторы -> три индекса -> slots.decode. Поэтому ответ модели устроен точно как
+# векторы -> три индекса -> slots.decode. Схемы 3: конечная тройка выбирается ОБЩИМ
+# joint-декодером (arent/joint.py: максимум совместной вероятности по A(s)), поэтому
+# действие политики всегда легально и защитный legalize — тождество; независимый argmax
+# голов остаётся только диагностическим baseline (y_proposed). Схема 2 — прежний путь.
+# Поэтому ответ модели устроен точно как
 # ответ планировщика, и Foundry его принимает без особых доработок: цель, шаги, атака.
 # Ни lookahead, ни таймеров здесь нет — один прямой проход сети.
 import json
+import math
 import os
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
-from arent import backend, encode, encode_v3, net, paths, slots as slots_mod, slots_v3, spec, spec3
+from arent import backend, encode, encode_v3, joint as joint_mod, legalize as legalize_mod, net, paths, slots as slots_mod, slots_v3, spec, spec3
 from arent.net import GROUPS, Y_KEY
 from arent.observe import observe
 from planner.context import BattleContext
@@ -17,6 +22,30 @@ from planner.context import BattleContext
 def _schema_of(model) -> int:
     """Версия задачи модели (2 = клетка, 3 = move-plan); старые веса без cfg -> 2."""
     return int(getattr(getattr(model, "cfg", None), "schema", spec.SCHEMA))
+
+
+def _attack_view(raw: Dict[str, int], label: Dict[str, int], reason, slots: Any) -> Dict[str, Any]:
+    """Диагностика легальности хода: что предложил БАЗОВЫЙ независимый argmax, что исполнила
+    политика (joint-декодер), и изменил ли защитный legalize joint-выбор (не должен).
+    """
+    nt, nw = len(slots.targets), len(slots.weapons)
+    proposed = 0 <= raw.get("target", -1) < nt and 0 <= raw.get("weapon", -1) < nw
+    executed = 0 <= label.get("target", -1) < nt and 0 <= label.get("weapon", -1) < nw
+    return {"proposed": proposed, "executed": executed,
+            "corrected": bool(reason), "illegal_proposal": proposed and not executed,
+            "reason": reason}
+
+
+def _head_probs(logps: Dict[str, List[float]], label: Dict[str, int], yk: Dict[str, str],
+                groups: tuple) -> Dict[str, float]:
+    """Вероятности голов для ВЫБРАННОЙ тройки (не для baseline-предложения)."""
+    out = {}
+    for group in groups:
+        key = yk[group]
+        idx = int(label.get(key, -1))
+        vec = logps[group]
+        out[key] = round(math.exp(vec[idx]), 4) if 0 <= idx < len(vec) else 0.0
+    return out
 
 
 def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -32,13 +61,21 @@ def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
     yk = net.y_key(schema)
     if schema == spec3.SCHEMA:
         slots = slots_v3.build(ctx, obs)
-        out = model.predict(encode_v3.observation(ctx, obs, slots))
-        label = {yk[group]: out[yk[group]] for group in GROUPS}
+        sample = encode_v3.observation(ctx, obs, slots)
+        out = model.predict(sample)                # диагностический baseline: независимый argmax
+        raw = {yk[group]: out[yk[group]] for group in GROUPS}
+        dec = joint_mod.decode(model, sample, slots, ctx, schema)
+        # защитный legalize: для joint-выбора обязан быть тождеством; расхождение — нарушение
+        # контракта (диагностическая ошибка), а не штатная починка действия
+        label, reason = legalize_mod.legalize(dec["label"], schema, slots, ctx)
+        violation = bool(reason) or dict(label) != dict(dec["label"])
         actions = slots_v3.decode(slots, label)
         return {
             "schema": schema, "actions": [a.to_dict() for a in actions], "y": label,
-            "value": out["value"],
-            "prob": {yk[group]: out[yk[group] + "Prob"] for group in GROUPS},
+            "y_proposed": raw, "decoder": "joint_argmax", "legalize": _attack_view(raw, label, reason, slots),
+            "joint": {"prob": dec["joint_prob"], "violation": violation},
+            "value": dec["value"],
+            "prob": _head_probs(dec["logp"], label, yk, GROUPS),
             "names": {"cell": _plan(slots, label["plan"]),
                       "target": _name(slots.targets, label["target"]),
                       "weapon": _name(slots.weapons, label["weapon"])},
@@ -48,10 +85,12 @@ def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
         }
     slots = slots_mod.build(ctx, obs)
     out = model.predict(encode.observation(ctx, obs, slots))
-    label = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
+    raw = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
+    label, reason = legalize_mod.legalize(raw, schema, slots, ctx)
     actions = slots_mod.decode(slots, label)
     return {
         "schema": schema, "actions": [a.to_dict() for a in actions], "y": label, "value": out["value"],
+        "y_proposed": raw, "legalize": _attack_view(raw, label, reason, slots),
         "prob": {Y_KEY[group]: out[Y_KEY[group] + "Prob"] for group in GROUPS},
         "names": {"cell": _cell(slots, label["cell"]), "target": _name(slots.targets, label["target"]),
                   "weapon": _name(slots.weapons, label["weapon"])},

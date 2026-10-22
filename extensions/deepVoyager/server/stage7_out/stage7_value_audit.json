@@ -1,0 +1,144 @@
+{
+ "dataset_value_targets": {
+  "all": {
+   "n": 557,
+   "min": -3.0,
+   "max": 0.507,
+   "mean": -0.6685,
+   "std": 1.0693,
+   "mean_abs": 0.7938,
+   "mae_const_zero": 0.7938,
+   "mae_const_median": 0.7748
+  },
+  "train": {
+   "n": 484,
+   "min": -3.0,
+   "max": 0.507,
+   "mean": -0.5581,
+   "std": 1.0134,
+   "mean_abs": 0.6915,
+   "mae_const_zero": 0.6915,
+   "mae_const_median": 0.6809
+  },
+  "val": {
+   "n": 73,
+   "min": -3.0,
+   "max": 0.29,
+   "mean": -1.4004,
+   "std": 1.1396,
+   "mean_abs": 1.4724,
+   "mae_const_zero": 1.4724,
+   "mae_const_median": 0.9663
+  },
+  "scale": {
+   "VALUE_SCALE": 60.0,
+   "clamp": [
+    -3.0,
+    3.0
+   ],
+   "formula": "sample.value = round(clamp(raw/60, -3, 3), 3) (encode_v3.encode)"
+  },
+  "same_semantics": true
+ },
+ "loss_function_check": {
+  "logged_matches_recomputed": true,
+  "best_val": {
+   "joint_nll": 2.1242,
+   "value_mse": 1.9879,
+   "value_mae": 1.21,
+   "total_loss": 2.6212,
+   "value_w": 0.5
+  },
+  "best_train": {
+   "joint_nll": 2.0789,
+   "value_mse": 1.0271,
+   "value_mae": 0.8056,
+   "total_loss": 2.3357,
+   "value_w": 0.5
+  },
+  "init_val": {
+   "joint_nll": 4.9789,
+   "value_mse": 2.8741,
+   "value_mae": 1.3861,
+   "total_loss": 5.6974,
+   "value_w": 0.5
+  },
+  "note": "epoch 'loss' в history = ОТЧЁТ ПОСЛЕДНЕГО БАТЧА (train.py перезаписывает report на чанке), а не среднее по эпохе; поле 'value' в step_batch = MSE, а в scores — MAE"
+ },
+ "mae_trajectories": {
+  "train_value_mae_by_epoch": [
+   1.0202,
+   0.8156,
+   1.032,
+   0.5498,
+   0.8715,
+   0.657,
+   0.5985,
+   2.4673,
+   2.6797,
+   0.8357,
+   0.8056,
+   0.8064
+  ],
+  "val_value_mae_by_epoch": [
+   0.8673,
+   0.8281,
+   0.9784,
+   1.1308,
+   1.1001,
+   1.0412,
+   1.2469,
+   2.5971,
+   2.4707,
+   1.1994,
+   1.21,
+   1.2097
+  ],
+  "recomputed": {
+   "init_val": 1.3861,
+   "best_val": 1.21,
+   "last_val": 1.2097,
+   "init_train": 0.6741,
+   "best_train": 0.8056,
+   "const_zero_val": 1.4724,
+   "const_median_val": 0.9663
+  }
+ },
+ "selection": {
+  "metric": "val.joint",
+  "val_joint_by_epoch": [
+   0.041,
+   0.164,
+   0.219,
+   0.178,
+   0.219,
+   0.247,
+   0.274,
+   0.315,
+   0.247,
+   0.205,
+   0.342,
+   0.233
+  ],
+  "val_joint_semantics": "scores.metrics: доля примеров, где НЕЗАВИСИМЫЙ argmax всех трёх голов одновременно равен метке (accuracy 0..1, выше=лучше) — НЕ loss",
+  "is_higher_better": true,
+  "best_epoch": 11,
+  "argmax_epoch": 11,
+  "selected_by_documented_criterion": true,
+  "weights": {
+   "sha_best": "ee160194252c5d44",
+   "sha_last": "e705108dffe02a2d",
+   "best_eq_last": false
+  }
+ },
+ "why_val_mae_rose": {
+  "init_val_mae": 1.3861,
+  "best_val_mae": 1.21,
+  "best_train_mae": 0.8056,
+  "train_mae_first_epoch": 1.0202,
+  "train_mae_last_epoch": 0.8064,
+  "explanation": "train MAE тоже НЕ улучшился (init_train =0.6741 -> best_train =0.8056): стоимость почти не обучалась — градиент joint NLL по общему стволу тянет value выход от стартового смещения, value_w=0.5 мал, эпох 12; '0.83' в логах — val MAE на ранней эпохе 1-2 (ещё близкой к инициалу), а не на случайном инициале (тот даёт 1.3861)",
+  "target_scale_note": "цель нормализована (/60, clamp[-3,3]): mean_abs =1.4724; MAE 'константного' предсказателя медианой = 0.9663"
+ },
+ "value_head_fix": "не применяется: причина установлена как 'критерий отбора не штрафует value + малый сигнал', а не поломка головы; минимальный способ при необходимости — включить val value-метрику в отбор или поднять value_w/эпохи"
+}

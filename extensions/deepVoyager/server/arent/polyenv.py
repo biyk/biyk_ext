@@ -9,8 +9,8 @@
 # полного цикла инициативы; смерть якорного «героя» сама по себе бой не заканчивает.
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from arent import encode, encode_v3, slots as slots_mod, slots_v3, spec, spec3
-from arent.env import FightEnv, NONE_INDEX, shape_reward
+from arent import encode, encode_v3, joint as joint_mod, slots as slots_mod, slots_v3, spec, spec3
+from arent.env import FightEnv, shape_reward
 from arent.observe import observe
 from arent.team_reward import TeamReward
 from planner.context import BattleContext
@@ -49,9 +49,13 @@ class PolyFightEnv(FightEnv):
         self._ctx = ctx
         if self.schema == spec3.SCHEMA:
             self.slots = slots_v3.build(ctx, obs)
-            return encode_v3.observation(ctx, obs, self.slots)
-        self.slots = slots_mod.build(ctx, obs)
-        return encode.observation(ctx, obs, self.slots)
+            sample = encode_v3.observation(ctx, obs, self.slots)
+        else:
+            self.slots = slots_mod.build(ctx, obs)
+            sample = encode.observation(ctx, obs, self.slots)
+        # множество совместно допустимых троек для PPO-политики (тот же примитив, что у legalize)
+        sample["legal"] = joint_mod.legal_mask(self.slots, ctx, self.schema)
+        return sample
 
     def _next_after(self, actor: str) -> Tuple[Optional[str], bool]:
         """Следующий живой по циклу инициативы; wrapped — хвост пройден, раунд закрыт."""
@@ -67,21 +71,8 @@ class PolyFightEnv(FightEnv):
         return None, True
 
     def legalize(self, label: Dict[str, int]) -> Dict[str, int]:
-        """Схема 3: тройка (plan,target,weapon); атака вне reach из attack_cell -> «не атаковать».
-
-        Аналог FightEnv.legalize для move-plan-пространства: оружие убираем (NONE), если из
-        Позиции атаки выбранного плана цель не достать; план и прицел остаются законным ходом.
-        """
-        if self.schema != spec3.SCHEMA:
-            return super().legalize(label)
-        plan = int(label.get("plan", 0))
-        target = int(label.get("target", spec.NONE_SLOT))
-        weapon = int(label.get("weapon", spec.NONE_SLOT))
-        n_t, n_w = len(self.slots.targets), len(self.slots.weapons)
-        if 0 <= target < n_t and 0 <= weapon < n_w:
-            if not slots_v3.attackable_v3(self.slots, self._ctx, plan, target, weapon):
-                weapon = NONE_INDEX
-        return {"plan": plan, "target": target, "weapon": weapon}
+        """Схема 3: тройка (plan,target,weapon); делегирует в arent/legalize.py (см. FightEnv)."""
+        return FightEnv.legalize(self, label)
 
     def step(self, label: Dict[str, int]) -> Tuple[Optional[Dict[str, Any]], float, bool, bool, Row]:
         """Актёр сыграл тройку: legalize -> apply_actor (или seq для v3) -> курсор -> награда/терминал команды."""
@@ -121,5 +112,6 @@ class PolyFightEnv(FightEnv):
                 "rounds": self.t, "foes_left": sum(1 for u in self.state.units.values()
                                                    if u.hostile_to_hero and u.is_alive),
                 "action": action, "actor": actor, "next_actor": nxt_actor,
+                "legalize_reason": self._last_reason,
                 "phi": round(phi_prev, 6), "phi_next": round(phi_next, 6)}
         return next_obs, reward, terminated, truncated, info

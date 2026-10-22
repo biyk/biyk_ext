@@ -67,12 +67,17 @@ def test_sample_shape_and_value_scale_are_unchanged(tmp_path):
         samples, _ = generate(count=2, seed=5, per_src=1, rounds_max=0,
                               want_arenas=["corridor_archer"], use_live=False)
     for s in samples:
-        assert set(s) == {"schema", "state", "cells", "targets", "weapons", "mask", "y", "value", "meta"}
+        assert set(s) == {"schema", "state", "cells", "targets", "weapons", "mask", "legal",
+                          "y", "value", "meta"}
         assert s["schema"] == spec.SCHEMA
         assert len(s["state"]) == spec.dims()["state"]
         assert len(s["mask"]["cells"]) == spec.K_CELLS + 1
         assert len(s["mask"]["targets"]) == spec.K_TARGETS + 1
         assert len(s["mask"]["weapons"]) == spec.K_WEAPONS + 1
+        # legal — 3D-маска A(s) размером ровно по длине векторов голов
+        assert len(s["legal"]) == spec.K_CELLS + 1
+        assert len(s["legal"][0]) == spec.K_TARGETS + 1
+        assert len(s["legal"][0][0]) == spec.K_WEAPONS + 1
         assert -3.0 <= s["value"] <= 3.0
 
 

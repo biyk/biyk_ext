@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 from planner.context import BattleContext
 from planner.geometry import cell_distance
-from arent import spec
+from arent import joint, spec
 from arent.observe import has_los, sight_segments
 
 D = spec.D_SCALE
@@ -179,8 +179,14 @@ def _mask(real: int, total: int, none_slot: bool) -> List[int]:
 
 def encode(ctx: BattleContext, obs: Dict[str, Any], slots: Any, label: Dict[str, int],
            value: float = 0.0, meta: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Наблюдение + слоты + разметка учителя -> один пример выборки (JSON-пригодный)."""
+    """Наблюдение + слоты + разметка учителя -> один пример выборки (JSON-пригодный).
+
+    Ключ legal — точная совместная маска A(s) из joint.legal_mask: снята здесь, где живы ctx
+    и slots (дальность/LOS достать из готовых векторов наблюдения уже нельзя). Serving-путь
+    (observation/play) её не получает — маска нужна только совместной BC-потери.
+    """
     sample = observation(ctx, obs, slots)
+    sample["legal"] = joint.legal_mask(slots, ctx, spec.SCHEMA)
     sample["y"] = {"cell": label["cell"], "target": label["target"], "weapon": label["weapon"]}
     sample["value"] = _r(max(-3.0, min(3.0, value / spec.VALUE_SCALE)))
     sample["meta"] = dict(meta or {}, src=ctx.src_id, cell=list(ctx.src_cell))

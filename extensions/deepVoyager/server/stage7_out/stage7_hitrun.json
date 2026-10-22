@@ -1,0 +1,150 @@
+{
+ "labels": {
+  "all": {
+   "samples": 557,
+   "attacks": 420,
+   "attack_frac": 0.754,
+   "hit_and_run_labels": 31,
+   "hit_and_run_frac_of_attacks": 0.0738,
+   "hit_and_run_frac_of_all": 0.0557
+  },
+  "train": {
+   "samples": 484,
+   "attacks": 357,
+   "attack_frac": 0.7376,
+   "hit_and_run_labels": 27,
+   "hit_and_run_frac_of_attacks": 0.0756,
+   "hit_and_run_frac_of_all": 0.0558
+  },
+  "val": {
+   "samples": 73,
+   "attacks": 63,
+   "attack_frac": 0.863,
+   "hit_and_run_labels": 4,
+   "hit_and_run_frac_of_attacks": 0.0635,
+   "hit_and_run_frac_of_all": 0.0548
+  }
+ },
+ "predictions": {
+  "val": {
+   "n": 73,
+   "independent": {
+    "stay_or_pureMove": 1.0
+   },
+   "joint": {
+    "stay_or_pureMove": 1.0
+   },
+   "joint_hit_and_run_chosen": 0,
+   "baseline_vs_joint_agree": 1.0
+  },
+  "train": {
+   "n": 484,
+   "independent": {
+    "stay_or_pureMove": 1.0
+   },
+   "joint": {
+    "stay_or_pureMove": 0.9959,
+    "hit_and_run": 0.0041
+   },
+   "joint_hit_and_run_chosen": 2,
+   "baseline_vs_joint_agree": 0.9959
+  }
+ },
+ "joint_mass": {
+  "val_samples_with_legal_retreat_attack": 63,
+  "val_total": 73,
+  "mean_retreat_mass": 0.113249,
+  "max_retreat_mass": 0.571575
+ },
+ "retreat_vs_stay_features": {
+  "adx": {
+   "hit_and_run": 0.0806,
+   "attack_same_cell": 0.06
+  },
+  "ady": {
+   "hit_and_run": 0.0645,
+   "attack_same_cell": 0.0964
+  },
+  "adist": {
+   "hit_and_run": 0.1795,
+   "attack_same_cell": 0.2093
+  },
+  "edx": {
+   "hit_and_run": 0.0808,
+   "attack_same_cell": 0.06
+  },
+  "edy": {
+   "hit_and_run": 0.0027,
+   "attack_same_cell": 0.0964
+  },
+  "edist": {
+   "hit_and_run": 0.2444,
+   "attack_same_cell": 0.2093
+  },
+  "costIn": {
+   "hit_and_run": 0.3358,
+   "attack_same_cell": 0.4133
+  },
+  "costOut": {
+   "hit_and_run": 0.3109,
+   "attack_same_cell": 0.0
+  },
+  "costTotal": {
+   "hit_and_run": 0.6467,
+   "attack_same_cell": 0.4133
+  },
+  "sureAttack": {
+   "hit_and_run": 0.8065,
+   "attack_same_cell": 0.5321
+  },
+  "doubtAttack": {
+   "hit_and_run": 1.0,
+   "attack_same_cell": 1.0
+  },
+  "canAttack": {
+   "hit_and_run": 1.0,
+   "attack_same_cell": 1.0
+  },
+  "retreatToOrigin": {
+   "hit_and_run": 0.0,
+   "attack_same_cell": 0.0
+  },
+  "gapIncrease": {
+   "hit_and_run": 0.5484,
+   "attack_same_cell": 0.1337
+  },
+  "coverFinal": {
+   "hit_and_run": 0.0,
+   "attack_same_cell": 0.1311
+  },
+  "threatFinal": {
+   "hit_and_run": 0.8904,
+   "attack_same_cell": 0.7831
+  },
+  "losAttack": {
+   "hit_and_run": 1.0,
+   "attack_same_cell": 1.0
+  },
+  "counts": {
+   "hit_and_run": 31,
+   "attack_same_cell": 389
+  }
+ },
+ "eval_states": {
+  "states": 47,
+  "states_with_legal_retreat_attack": 36,
+  "greedy_retreat": 15,
+  "model_joint_retreat": 0,
+  "cover_prefers_retreat": 21,
+  "legal_retreat_attack_state_frac": 0.766,
+  "greedy_retreat_frac": 0.3191,
+  "model_joint_retreat_frac": 0.0,
+  "mean_joint_retreat_mass_when_legal": 0.16425
+ },
+ "diagnosis": {
+  "training_signal_frac_of_attacks (train)": 0.0756,
+  "decoding_allows_retreat": true,
+  "model_gives_retreat_any_mass": true,
+  "conclusion": "нулевой hit-and-run у модели объясняется в ПЕРВУЮ очередь слабым обучающим сигналом (мало меток) и низкой joint-массой; декодер отход НЕ запрещает — допустимые отступные тройки есть в A(s) и выбирались бы при росте их вероятности"
+ }
+}

@@ -1,0 +1,117 @@
+{
+ "config": {
+  "schema": 3,
+  "features_version": 2,
+  "cell_feat": 21,
+  "kind": "pure",
+  "epochs": 12,
+  "batch": 32,
+  "val_frac": 0.85,
+  "seed": 20261022,
+  "warm": null,
+  "device": "cpu"
+ },
+ "data": {
+  "examples": 557,
+  "train": 484,
+  "val": 73,
+  "dataset_sha256": "a59ac3acbcae2845a2ed7405c51e3769354e33d337ae6715fd02df453e730828",
+  "params_count": 53428
+ },
+ "loss_split": {
+  "random_model": {
+   "train": {
+    "action_joint_nll": 4.82881,
+    "action_indep_nll": 6.15086,
+    "value_mse": 1.17563,
+    "value_mae": 0.67405,
+    "n": 484
+   },
+   "val": {
+    "action_joint_nll": 4.97888,
+    "action_indep_nll": 6.0709,
+    "value_mse": 2.874058,
+    "value_mae": 1.38614,
+    "n": 73
+   }
+  },
+  "best_model": {
+   "train": {
+    "action_joint_nll": 2.07894,
+    "action_indep_nll": 5.47508,
+    "value_mse": 1.027098,
+    "value_mae": 0.80563,
+    "n": 484
+   },
+   "val": {
+    "action_joint_nll": 2.12421,
+    "action_indep_nll": 3.75978,
+    "value_mse": 1.987884,
+    "value_mae": 1.21004,
+    "n": 73
+   }
+  }
+ },
+ "joint_vs_independent": {
+  "note": "joint NLL нормирован по A(s); indep NLL — сумма masked-голов без совместной нормировки; расхождение = joint-нормировка активна",
+  "best_train_joint": 2.07894,
+  "best_train_indep": 5.47508,
+  "best_val_joint": 2.12421,
+  "best_val_indep": 3.75978
+ },
+ "mask_errors_val": {
+  "illegal_proposals": 22,
+  "total": 73,
+  "illegal_frac": 0.3014
+ },
+ "nan_inf": {
+  "losses": [],
+  "params": []
+ },
+ "weight_checksums": {
+  "sha256_init": "164b6a0b20f7a87f2a0a79520101debecf26fd5d12bb32723ec6573a5cf82eb4",
+  "sha256_best": "7c196d38d8708056fe0f17404ea9ade2777b9a2a0b2419292388133806893989",
+  "sha256_last": "8d69f8490ef46388596dc2a85462dff95b872bd9d1b387a3a18b551fa8dd47ba",
+  "best_equals_last": false
+ },
+ "selection": {
+  "best_metric": "val.joint",
+  "best_epoch": 11,
+  "val_argmax_epoch": 11,
+  "best_is_last": false,
+  "val_joint_by_epoch": [
+   0.041,
+   0.164,
+   0.219,
+   0.178,
+   0.219,
+   0.247,
+   0.274,
+   0.315,
+   0.247,
+   0.205,
+   0.342,
+   0.233
+  ],
+  "best_val_joint": 0.342,
+  "final_val": {
+   "cell": 0.521,
+   "target": 0.658,
+   "weapon": 0.726,
+   "joint": 0.233,
+   "value_mae": 1.2097,
+   "n": 73
+  }
+ },
+ "checks": {
+  "weights_changed": true,
+  "loss_over_joint": true,
+  "joint_nll_dropped": true,
+  "no_nan_inf_losses": true,
+  "no_nan_inf_params": true,
+  "selected_by_validation": true,
+  "selection_is_val_argmax": true,
+  "labels_all_in_As": true,
+  "best_epoch_le_epochs": true
+ }
+}

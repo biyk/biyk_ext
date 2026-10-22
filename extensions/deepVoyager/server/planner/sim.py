@@ -217,6 +217,18 @@ class Simulation:
         state, penalty = self.apply_hero(actions).foes_act()
         return state, Scorer().score(self.context_for(self.hero_id), actions) + penalty
 
+    def advance_seq(self, actions: List[Action]) -> Tuple["Simulation", float]:
+        """Значение раунда при ПОРЯДКОВОМ исполнении (SCHEMA=3, ЭТАП 6, часть 1.3).
+
+        Отличие от advance: переход состояния считает apply_actor_seq (удар резолвится из
+        клетки атаки, а не из финальной), поэтому для плана «атака -> отход» значение точное.
+        Для v2-плана (все MOVE перед USE) это то же число: клетка в момент удара совпадает с
+        финальной. Очки Scorer (прицел/сближение) и ответ врагов (foes_act по финальной клетке)
+        считаются как в advance — меняем лишь способ применения запланированной последовательности.
+        """
+        state, penalty = self.apply_actor_seq(self.hero_id, actions).foes_act()
+        return state, Scorer().score(self.context_for(self.hero_id), actions) + penalty
+
     def round_value(self, actions: List[Action]) -> float:
         """Значение раунда; на depths=1 совпадает с очками сегодняшнего greedy плана."""
         return self.advance(actions)[1]

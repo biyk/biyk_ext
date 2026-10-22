@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 import torch
 
-from arent import net, spec
+from arent import joint, net, spec
 
 RESUME_FORMAT = 1
 
@@ -61,6 +61,7 @@ def save(path: str, policy: Any, rcfg: Any, net_cfg: net.Config, iteration: int,
     rng = rng_snapshot()
     rng["scenario_rng"] = scenario_rng
     payload = {"resume_format": RESUME_FORMAT, "schema": spec.SCHEMA, "dims": spec.dims(),
+               "policy_semantics": joint.POLICY_SEMANTICS,
                "net": {"hidden": net_cfg.hidden, "head": net_cfg.head, "seed": net_cfg.seed},
                "rl": rcfg.to_dict() if hasattr(rcfg, "to_dict") else dict(rcfg),
                "iteration": int(iteration), "warm_sha": warm_sha,
@@ -81,6 +82,15 @@ def _guard(state: Dict[str, Any], net_cfg: net.Config, path: str) -> None:
     if (saved.get("hidden"), saved.get("head")) != (net_cfg.hidden, net_cfg.head):
         raise ValueError(f"resume-файл {path}: hidden/head {saved.get('hidden')}/{saved.get('head')} "
                          f"не {net_cfg.hidden}/{net_cfg.head}")
+    # Семантика распределения политики: старый ppo_state калиброван под прежний закон logπ.
+    # Моменты Adam и счётчики — не побитово продолжимы поверх нового градиента; веса остаются
+    # совместимой тёплой инициализацией (net.load / --warm), но авто-resume оптимизатора запрещён.
+    got_sem = int(state.get("policy_semantics", 1))
+    if got_sem != joint.POLICY_SEMANTICS:
+        raise ValueError(f"resume-файл {path}: семантика политики {got_sem}, ждём "
+                         f"{joint.POLICY_SEMANTICS}. Побитовое продолжение PPO поверх оптимизатора "
+                         "другой семантики невозможно; используйте эти веса как тёплую "
+                         "инициализацию (--warm), оптимизатор начните заново.")
 
 
 def load(path: str, policy: Any, net_cfg: net.Config) -> Dict[str, Any]:

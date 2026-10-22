@@ -15,6 +15,7 @@ from planner.action import ACTION_MOVE, ACTION_TARGET, ACTION_USE, Action
 from planner.armament import DOUBT, SURE
 from planner.context import BattleContext
 from planner.geometry import DIR_VECTORS, apply_moves, cell_distance
+from planner.los import los_clear
 from planner.points import tuning
 
 
@@ -76,8 +77,15 @@ class Scorer:
 
     @staticmethod
     def _mode(context: BattleContext, end, action: Action, target) -> Optional[str]:
-        """Зона попадания атаки из клетки end в target; неизвестное оружие — уверенно."""
+        """Зона попадания атаки из клетки end в target; неизвестное оружие — уверенно.
+
+        F-C: атака засчитывается только при линии видимости из клетки удара — тот же
+        критерий, что у sim.striking_distance. Без LOS атака очков не даёт (иначе
+        планировщик ценил бы удар сквозь стену, который симуляция обнуляет).
+        """
         weapon = context.weapon(action.conf.get("itemId", ""))
+        if not los_clear(context, end, context.cell_of(target)):
+            return None
         if weapon is None:
             return SURE          # обратная совместимость: атака без описания оружия
         return weapon.mode_at(cell_distance(end, context.cell_of(target)))

@@ -142,24 +142,27 @@ def sample_one(name: str, payload: Dict[str, Any], teacher: TeacherPolicy, meta:
     ctx = labeled.ctx
     if not ctx.weapons or not ctx.hostile_targets():
         return None, "no_attack"
+    # схема v2 (клетка+атака) не выражает уход ПОСЛЕ удара: размечаем базовый ход
+    # учителя (подход-затем-удар), иначе хвостовые MOVE после USE не соберёт roundtrip.
+    plan = labeled.base_actions
     obs = observe(ctx, initiative, ctx.src_id)
     slots = slots_mod.build(ctx, obs)
     if not slots.cells or not slots.targets:
         return None, "no_slots"
     # клетка учителя может не влезть в K_CELLS — вставляем её с его же маршрутом,
     # иначе декодированный план ушёл бы в другую клетку (учим ровно тому, что делает /plan)
-    slots_mod.ensure_cell(slots, ctx.src_cell, slots_mod.final_cell(ctx, labeled.actions),
-                          slots_mod.dirs_of(labeled.actions))
-    label = slots_mod.label_of(ctx, slots, labeled.actions)
+    slots_mod.ensure_cell(slots, ctx.src_cell, slots_mod.final_cell(ctx, plan),
+                          slots_mod.dirs_of(plan))
+    label = slots_mod.label_of(ctx, slots, plan)
     if label is None:
         return None, "label_out_of_slots"      # клетка учителя не влезла в K_CELLS
     if [a.to_dict() for a in slots_mod.decode(slots, label)] != \
-            [a.to_dict() for a in labeled.actions]:
+            [a.to_dict() for a in plan]:
         return None, "roundtrip_mismatch"       # три индекса не собирают план учителя обратно
     sample = encode.encode(ctx, obs, slots, label, value=labeled.value,
                            meta=dict(meta, arena=name, score=labeled.score,
                                      depth=labeled.depth))
-    sample["meta"]["actions"] = [a.to_dict() for a in labeled.actions]
+    sample["meta"]["actions"] = [a.to_dict() for a in plan]
     return sample, "ok"
 
 
@@ -275,14 +278,39 @@ def save(samples: List[Dict[str, Any]], name: str, stats: Dict[str, Any] = None)
     return path
 
 
+class SchemaMismatch(ValueError):
+    """Пример схемы 3 несовместим с текущими признаками (старый cell_feat=22 / нет feat_version)."""
+
+
+def assert_compatible(sample: Dict[str, Any]) -> None:
+    """Впускаем в конвейер только совместные примеры (ЭТАП 6, часть 1.2).
+
+    Для схемы 3 сверяем явную версию признаков и ширину головы клеток: пример со старыми
+    22 признаками (до ЭТАПА 5) или с чужим feat_version обязан быть отвергнут, а не примешан
+    к новой выборке. Схема 2 проходит без изменений (её признаки не тронуты)."""
+    if int(sample.get("schema", spec.SCHEMA)) != spec3.SCHEMA:
+        return
+    want = spec3.FEATURES_VERSION
+    got = sample.get("feat_version")
+    cells = sample.get("cells") or [[]]
+    width = len(cells[0])
+    if got != want or width != spec3.dims3()["cell_feat"]:
+        raise SchemaMismatch(
+            f"пример схемы 3 несовместим: feat_version={got}/cell_feat={width}, ждём "
+            f"{want}/{spec3.dims3()['cell_feat']} (ЭТАП 5: slotIndex убран, 22->21). "
+            f"Старая v3-выборка не примешивается к новой — перегенерируйте её.")
+
+
 def load(name: str) -> List[Dict[str, Any]]:
-    """Чтение .jsonl по имени выборки или абсолютному пути."""
+    """Чтение .jsonl по имени выборки или абсолютному пути; несовместимые v3-примеры — стоп."""
     path = samples_file(name)
     out = []
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip():
-                out.append(json.loads(line))
+                row = json.loads(line)
+                assert_compatible(row)
+                out.append(row)
     return out
 
 

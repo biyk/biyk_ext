@@ -14,7 +14,7 @@ from planner.action import move_action, target_action, use_action
 from planner.context import BattleContext
 from planner.explore import reachable_paths
 from planner.geometry import Cell, apply_moves, cell_distance
-from planner.los import los_clear
+from planner.los import los_clear, sight_segments
 from planner.pathfinding import PathfindingService
 from arent import spec, spec3
 
@@ -44,11 +44,43 @@ def _nearest(cell: Cell, enemies: List[Dict[str, Any]], ctx: BattleContext) -> f
     return min(cell_distance(cell, _cell_of(ctx, e["id"])) for e in enemies)
 
 
+def _can_strike(ctx: BattleContext, cell: Cell, enemies: List[Dict[str, Any]],
+                weapons: List[Dict[str, Any]], segments) -> bool:
+    """Можно ли из клетки cell достать хоть одну живую цель (дистанция И LOS) хоть чем-то.
+
+    Чистая функция состояния (стены/позиции/дальности из ctx+obs), поэтому serve и train
+    ранжируют меню одинаково: приоритет слота определяет «можно ли отсюда реально ударить»,
+    а не «сколько шагов». Дальность = та же doubt-зона + допуск 0.5, что attackable_v3.
+    """
+    if not weapons:
+        return False
+    for e in enemies:
+        at = _cell_of(ctx, e["id"])
+        dist = cell_distance(cell, at)
+        if any(dist <= float(w["doubtCells"]) + 0.5 for w in weapons) \
+                and los_clear(ctx, cell, at):
+            return True
+    return False
+
+
 def build(ctx: BattleContext, obs: Dict[str, Any]) -> SlotsV3:
-    """Перечислить move-plan'ы (attack_cell, end_cell) в бюджете; усечь до K_MOVEPLAN."""
+    """Перечислить move-plan'ы (attack_cell, end_cell) в бюджете; усечь до K_MOVEPLAN.
+
+    ЭТАП 5 (часть 2): приоритет меню — релевантность позиции атаки, а не стоимость хода.
+    Порядок (все ключи — функция состояния, детерминирован → serve и train одинаково):
+      1) attack_cell, с которого кого-то достать (LOS+дальность), идёт первым;
+      2) ближе к врагу;
+      3) короче суммарный маршрут; 4) детерминированный порядок координат.
+    Раньше сортировка по costTotal вытесняла дальние атакующие клетки учителя за K_MOVEPLAN,
+    и ensure_plan вставлял их всегда в последний слот (47) — сеть училась выбирать позицию,
+    а не содержимое плана. Релевантная сортировка оставляет план учителя на естественном
+    (варьируемом) индексе, убирая позиционную утечку без изменения размерностей.
+    """
     pf = PathfindingService(ctx)._finder
     origin = ctx.src_cell
     enemies = [e for e in obs["enemies"] if e["hostile"] and e["alive"]]
+    weapons = obs["weapons"][:spec.K_WEAPONS]
+    segments = sight_segments(ctx)
     reach_from_origin = reachable_paths(pf, origin, ctx.src_id, ctx.speed_steps)
     plans: List[Dict[str, Any]] = []
     for attack_cell, dirs_in in reach_from_origin.items():
@@ -58,9 +90,10 @@ def build(ctx: BattleContext, obs: Dict[str, Any]) -> SlotsV3:
             continue
         for end_cell, dirs_out in reachable_paths(pf, attack_cell, ctx.src_id, remaining).items():
             plans.append(_plan(ctx, origin, attack_cell, end_cell, dirs_in, dirs_out, cost_in))
-    # приоритет: короткие суммарные маршруты, ближе к врагу, детерминированный порядок координат
-    plans.sort(key=lambda p: (p["costTotal"], _nearest(p["attack_cell"], enemies, ctx),
-                              p["attack_cell"], p["end_cell"]))
+    # ЭТАП 5: «можно ударить» → близость к врагу → длина маршрута → координаты (все — state-fn)
+    plans.sort(key=lambda p: (0 if _can_strike(ctx, p["attack_cell"], enemies, weapons, segments)
+                              else 1, _nearest(p["attack_cell"], enemies, ctx),
+                              p["costTotal"], p["attack_cell"], p["end_cell"]))
     plans = plans[:spec3.K_MOVEPLAN]
     return SlotsV3(plans=plans, targets=enemies[:spec.K_TARGETS],
                    weapons=[w for w in obs["weapons"][:spec.K_WEAPONS]])

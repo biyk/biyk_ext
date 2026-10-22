@@ -77,11 +77,14 @@ def test_act_returns_legal_action_and_finite_quantities():
 
 def test_act_exposes_logp_table_reproducing_joint_logp():
     agent = _agent()
-    out = agent.act(_samples(1)[0])
+    s = _samples(1)[0]
+    out = agent.act(s)
     assert set(out["logp_table"]) == {"cells", "targets", "weapons"}
-    # joint logπ выбранной тройки = сумма logπ по группам из таблицы = logp из act
-    assert joint_logp(out["logp_table"], out["action"]) == pytest.approx(out["logp"], abs=1e-5)
-    # logπ исполненного (легализованного) действия берётся из той же таблицы без второго прогона
+    # joint logπ выбранной тройки = сумма logπ по группам из таблицы минус нормировка logZ
+    # (знаменитель совместного распределения по допустимому множеству) = logp из act.
+    assert joint_logp(out["logp_table"], out["action"], logZ=out["logZ"]) == pytest.approx(
+        out["logp"], abs=1e-5)
+    # сумма по группам БЕЗ нормировки — низкоуровневый примитив joint_logp (logZ=0 по умолчанию)
     alt = dict(out["action"])
     alt["weapon"] = env.NONE_INDEX
     expected = (out["logp_table"]["cells"][alt["cell"]] + out["logp_table"]["targets"][alt["target"]]

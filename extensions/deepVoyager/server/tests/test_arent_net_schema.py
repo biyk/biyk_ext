@@ -19,6 +19,9 @@ def _v3_sample():
         "weapons": [[0.1] * d["weapon_feat"] for _ in range(d["weapons"])],
         "mask": {"cells": [1] * d["cells"], "targets": [1] * d["targets"],
                  "weapons": [1] * d["weapons"]},
+        # A(s) = всё (маска всех единиц => декартова): joint NLL == сумма независимых CE.
+        "legal": [[[1 for _ in range(d["weapons"])] for _ in range(d["targets"])]
+                  for _ in range(d["cells"])],
         "y": {"plan": 0, "target": 0, "weapon": 0},
         "value": 0.3, "meta": {"arena": "gen_x"},
     }

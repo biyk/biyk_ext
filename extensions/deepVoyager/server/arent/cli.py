@@ -116,6 +116,28 @@ def parser() -> argparse.ArgumentParser:
     tev.add_argument("--out", help="куда дополнительно записать сводку")
     tev.add_argument("--kind", default="auto", choices=["auto", "torch", "pure"])
 
+    tm = sub.add_parser("team-matchup",
+                        help="командный бой ДВУХ политик: кандидат против фиксированного соперника")
+    tm.add_argument("--candidate", default="battlecast",
+                    help="сторона-кандидат: имя учителя (greedy/battlecast) или чекпойнт (имя runs/ или путь)")
+    tm.add_argument("--opponent", default="greedy",
+                    help="фиксированный соперник: имя учителя или чекпойнт")
+    tm.add_argument("--name", default="team_matchup", help="подпапка в runs/ для team_matchup.json")
+    tm.add_argument("--rounds", type=int, default=8, help="потолок раундов в одном бою")
+    tm.add_argument("--draw-window", dest="draw_window", type=int, default=4,
+                    help="тихих раундов подряд -> пат")
+    tm.add_argument("--replays", type=int, default=1, help="повторов на сцену (ротация старта WP5)")
+    tm.add_argument("--no-swap", dest="swap_sides", action="store_false",
+                    help="не менять стороны A/B местами (по умолчанию меняем)")
+    tm.add_argument("--trace-limit", dest="trace_limit", type=int, default=0,
+                    help="сколько первых шагов боя сохранить в журнале (0 = все)")
+    tm.add_argument("--arena", nargs="*", default=None, help="имена арен playground")
+    tm.add_argument("--no-live", action="store_true", help="не брать снимки из data/payloads")
+    tm.add_argument("--all-sources", dest="independent", action="store_false",
+                    help="гнать по train-сценам; по умолчанию — только независимый ho_/ho2_")
+    tm.add_argument("--out", help="куда дополнительно записать сводку")
+    tm.add_argument("--kind", default="auto", choices=["auto", "torch", "pure"])
+
     rlp = sub.add_parser("rl", help="PPO над итогом боя: долгосрочный горизонт политическим градиентом")
     rlp.add_argument("--warm", default="bc2", help="родитель весов: имя прогона (model_best.json) или путь; '' — со случайных")
     rlp.add_argument("--no-warm", action="store_true", help="не делать warm-start: обучение со случайных весов")
@@ -277,6 +299,16 @@ def _team_eval(args) -> int:
     return 0 if report["fights"] else 1
 
 
+def _team_matchup(args) -> int:
+    report = team_eval.run_matchup(candidate=args.candidate, opponent=args.opponent,
+                                   name=args.name, kind=args.kind, arenas=args.arena,
+                                   use_live=not args.no_live, rounds_cap=args.rounds,
+                                   draw_window=args.draw_window, replays=args.replays,
+                                   swap_sides=args.swap_sides, independent=args.independent,
+                                   trace_limit=args.trace_limit, out=args.out)
+    return 0 if report["fights"] else 1
+
+
 def _rl(args) -> int:
     # torch-зависимые модули импортируем только здесь: `arent info|train|play` обязаны
     # работать на машине без torch (формат чекпойнта общий), а RL-ветка torch требует.
@@ -324,12 +356,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.home:
         paths.set_workspace(args.home)
     if not args.cmd:
-        print("нет команды: arent gen | train | bench | play | evaluate | team-eval | rl | info "
-              "(--help по параметрам)")
+        print("нет команды: arent gen | train | bench | play | evaluate | team-eval | "
+              "team-matchup | rl | info (--help по параметрам)")
         return 2
     handlers = {"gen": _gen, "train": _train, "bench": _bench, "play": _play,
-                "evaluate": _evaluate, "team-eval": _team_eval, "rl": _rl,
-                "abtest": _abtest, "abset": _abset,
+                "evaluate": _evaluate, "team-eval": _team_eval, "team-matchup": _team_matchup,
+                "rl": _rl, "abtest": _abtest, "abset": _abset,
                 "holdout": _holdout, "info": lambda _a: _info()}
     try:
         return handlers[args.cmd](args)

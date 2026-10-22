@@ -1,0 +1,36 @@
+﻿{
+ "grad_cosine_at_init": {
+  "cos": -0.3674879019140197,
+  "norm_action": 24.4106,
+  "norm_value": 92.6114,
+  "note": "aditiv╨╜╨╛╤Б╤В╤М: g_full = g_action + g_value c ╨╛╨┤╨╜╨╕╤Е ╨▓╨╡╤Б╨╛╨▓; ╨╝╨╕╨╜╤Г╤Б тАФ ╨┐╤А╨╕╨╖╨╜╨░╨║ ╨║╨╛╨╜╤Д╨╗╨╕╨║╤В╨░ ╨╖╨░╨┤╨░╤З"
+ },
+ "grad_cosine_at_B0_best": {
+  "cos": -0.2694332205516012,
+  "norm_action": 4.3494,
+  "norm_value": 926.3473
+ },
+ "const_value_baselines_val": {
+  "median_train": {
+   "const": -0.1,
+   "mae": 1.418,
+   "mse": 2.989627
+  },
+  "mean_train": {
+   "const": -0.5581,
+   "mae": 1.2124,
+   "mse": 2.008102
+  }
+ },
+ "checks": {
+  "split_clean": true,
+  "all_variants_ran": true,
+  "cosine_computed": true,
+  "b0_reproduces_stage8_selection": true
+ }
+}
+B0: best_epoch=8 sec=147.7 val nll=2.08482 decode=0.397 value_mae=2.5971 mse=9.79253
+B1: best_epoch=9 sec=172.3 val nll=2.29255 decode=0.329 value_mae=0.9368 mse=1.202256
+B2: best_epoch=2 sec=148.2 val nll=4.94701 decode=0.11 value_mae=1.1119 mse=1.915983
+B3: best_epoch=9 sec=163.1 val nll=2.29255 decode=0.329 value_mae=2.3939833268542063e+72 mse=5.834191413270336e+144
+╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╛: C:\Users\b5\AppData\Local\FoundryVTT\Data\modules\biyk_ext\extensions\deepVoyager\server\stage9_out\stage9_value_ablations.json

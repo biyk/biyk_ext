@@ -27,12 +27,27 @@ def spec_dims():
     return spec.dims()
 
 
+def _cartesian_legal(mc, mt, mw):
+    """Degenerate A(s) = прямое произведение замаскированных слотов (для синтетики).
+
+    На такой маске logZ=logsumexp по всем (p,t,w)=0, т.к. каждая голова уже нормирована,
+    и joint NLL тождественно равен сумме независимых CE. Поэтому старые тесты градиентного
+    паритета/конечных разностей проходят без изменения чисел, а отличие joint-политики
+    проявляется лишь на НЕдекартовой legal (реальные данные, см. test_arent_joint_bc).
+    """
+    return [[[1 if (mc[p] and mt[t] and mw[w]) else 0 for w in range(len(mw))]
+             for t in range(len(mt))] for p in range(len(mc))]
+
+
 def fake_samples(n=6, seed=1, cells=3, targets=2, weapons=1):
     """Примеры правильной формы, но без учителя: быстро и детерминированно."""
     rng = random.Random(seed)
     d = spec_dims()
     out = []
     for _ in range(n):
+        mc = [1] * cells + [0] * (d["cells"] - cells)
+        mt = [1] * targets + [0] * (d["targets"] - targets - 1) + [1]
+        mw = [1] * weapons + [0] * (d["weapons"] - weapons - 1) + [1]
         out.append({
             "schema": net.SCHEMA, "state": [rng.uniform(-1, 1) for _ in range(d["state"])],
             "cells": _group(rng, cells, d["cell_feat"], d["cells"]),
@@ -41,9 +56,8 @@ def fake_samples(n=6, seed=1, cells=3, targets=2, weapons=1):
             "y": {"cell": rng.randrange(cells), "target": rng.randrange(targets + 1) - 1,
                   "weapon": rng.randrange(weapons + 1) - 1},
             "value": round(rng.uniform(-1, 1), 3),
-            "mask": {"cells": [1] * cells + [0] * (d["cells"] - cells),
-                     "targets": [1] * targets + [0] * (d["targets"] - targets - 1) + [1],
-                     "weapons": [1] * weapons + [0] * (d["weapons"] - weapons - 1) + [1]},
+            "mask": {"cells": mc, "targets": mt, "weapons": mw},
+            "legal": _cartesian_legal(mc, mt, mw),
             "meta": {"src": "A"},
         })
     return out
@@ -136,20 +150,31 @@ def test_metrics_report_per_head_accuracy(cfg, samples):
     model = build(cfg, kind="pure")
     m = train.metrics(model, samples)
     assert m["n"] == len(samples)
-    assert 0.0 <= m["joint"] <= min(m["cell"], m["weapon"]) + 1e-9
-    assert m["value_mae"] >= 0.0
+    # ЭТАП 8: независимая accuracy называется своим именем, joint-метрики считаются по A(s)
+    assert 0.0 <= m["independent_baseline_accuracy"] <= min(m["cell"], m["weapon"]) + 1e-9
+    assert m["joint_nll"] is not None and m["joint_nll"] >= 0.0
+    assert 0.0 <= m["joint_decode_accuracy"] <= 1.0
+    assert m["value_mae"] >= 0.0 and m["value_mse"] >= 0.0
+    assert m["n_joint"] == len(samples)
 
 
 def test_metrics_joint_is_one_when_every_head_is_right(samples):
-    """Оракул, попадающий во все три индекса, обязан дать joint = 1 (иначе метрика врёт)."""
+    """Оракул, попадающий во все три индекса, обязан дать baseline accuracy = 1.
+
+    Модель без head_logp не может дать joint-метрик — они остаются None, а НЕ
+    подменяются независимой accuracy (ЭТАП 8: старые имена больше не врут).
+    """
     class Oracle:
         def predict(self, sample):
             out = {net.Y_KEY[g]: net.y_index(sample, g) for g in net.GROUPS}
             return dict(out, value=sample["value"])
 
     m = train.metrics(Oracle(), samples)
-    assert m["joint"] == 1.0 and m["cell"] == m["target"] == m["weapon"] == 1.0
-    assert m["value_mae"] == 0.0
+    assert (m["independent_baseline_accuracy"] == 1.0
+            and m["cell"] == m["target"] == m["weapon"] == 1.0)
+    assert m["value_mae"] == 0.0 and m["value_mse"] == 0.0
+    assert m["joint_nll"] is None and m["joint_decode_accuracy"] is None
+    assert m["n_joint"] == 0
 
 
 def test_train_run_writes_checkpoint_and_history(cfg, samples, tmp_path):
@@ -293,9 +318,12 @@ class StampedPolicy(PurePolicy):
 
 
 def _joint_by_epoch(model, chunk):
-    """Фиксированные метрики: пик всегда на первой эпохе (шаги монотонно растут)."""
-    return {"cell": 0.0, "target": 0.0, "weapon": 0.0, "joint": 1.0 / model.steps,
-            "value_mae": 0.0, "n": len(chunk)}
+    """Фиксированные метрики: МИНИМУМ joint_nll всегда на первой эпохе (шаги растут)."""
+    return {"cell": 0.0, "target": 0.0, "weapon": 0.0,
+            "independent_baseline_accuracy": 1.0 / model.steps,
+            "joint_decode_accuracy": 1.0 - 1.0 / model.steps,
+            "joint_nll": float(model.steps), "value_mae": 0.0, "value_mse": 0.0,
+            "n": len(chunk), "n_joint": len(chunk)}
 
 
 def test_train_saves_best_and_last_checkpoints_separately(cfg, samples, tmp_path, monkeypatch):
@@ -312,7 +340,7 @@ def test_train_saves_best_and_last_checkpoints_separately(cfg, samples, tmp_path
     assert best["params"]["valueB"] == 1.0 and last["params"]["valueB"] == 3.0
     assert best["metrics"]["which"] == "best" and best["metrics"]["epoch"] == 1
     assert report["summary"]["best_epoch"] == 1
-    assert report["summary"]["best_metric"] == "val.joint"
+    assert report["summary"]["best_metric"] == "val.joint_nll"
     assert report["best_checkpoint"].endswith("model_best.json")
 
 
@@ -484,19 +512,19 @@ def test_train_writes_nonempty_best_and_last(cfg, samples, tmp_path):
 
 
 def test_best_checkpoint_matches_peak_val_epoch(cfg, samples, tmp_path):
-    """model_best.json = веса ЭПОХИ с лучшим val.joint, а не последней эпохи."""
+    """model_best.json = веса ЭПОХИ с МИНИМАЛЬНЫМ val.joint_nll, а не последней эпохи."""
     paths.set_workspace(str(tmp_path))
     train.run(name="pk", samples=samples[:4], val=samples[4:], cfg=cfg, kind="pure",
               epochs=6, batch=4, log=lambda *_a: None)
     directory = paths.run_dir("pk")
     history = json.loads(open(paths.file_in(directory, "history.json"), encoding="utf-8").read())
-    joints = [row["val"]["joint"] for row in history]
-    top = max(joints)
-    peak = next(index for index, value in enumerate(joints) if value == top)  # первый пик (строгий >)
+    nlls = [row["val"]["joint_nll"] for row in history]
+    top = min(nlls)
+    peak = next(index for index, value in enumerate(nlls) if value == top)  # первый минимум (строгий <)
     best = json.loads(open(paths.file_in(directory, "model_best.json"), encoding="utf-8").read())
     assert best["metrics"]["which"] == "best"
     assert best["metrics"]["epoch"] == history[peak]["epoch"]
-    assert best["metrics"]["val"]["joint"] == top
+    assert best["metrics"]["val"]["joint_nll"] == top
 
 
 @pytest.mark.skipif("torch" not in available(), reason="torch не установлен")

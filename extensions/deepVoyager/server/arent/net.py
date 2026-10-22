@@ -196,6 +196,46 @@ def save_params(params: Dict[str, Any], cfg: "Config", backend_name: str, path: 
     return path
 
 
+def feature_version(schema: Optional[int] = None) -> int:
+    """Текущая версия ПРИЗНАКОВ активной схемы (ЭТАП 6, часть 1.2).
+
+    Номер схемы (SCHEMA) задаёт семантику действия, версия признаков — состав/ширину
+    головы клеток. Для v3 убран slotIndex (22->21) при неизменной SCHEMA=3, поэтому
+    признаки версируются отдельно: v2-признаки = 1, v3 permutation-invariant = 2.
+    """
+    s = SCHEMA if schema is None else int(schema)
+    if s == 3:
+        from arent import spec3
+        return spec3.FEATURES_VERSION
+    return 1
+
+
+def _check_feature_compat(checkpoint: Dict[str, Any], where: str) -> None:
+    """Возражаем против чекпойнта v3 со СТАРЫМИ признаками (cell_feat=22 / feat_version!=2).
+
+    Только для схемы 3 (v2 не тронут, прежнее поведение бит-в-бит). Новая permutation-invariant
+    голова имеет dims.feat_version==2 и cell_feat==21; старая (до ЭТАПА 5) — cell_feat==22 и
+    вовсе без feat_version. Такие веса молча давали бы мусор, поэтому отвергаем явно."""
+    if int(checkpoint.get("schema", 0)) != 3:
+        return
+    from arent import spec3
+    dims = checkpoint.get("dims") or {}
+    want = spec3.dims3()
+    got_feat = dims.get("cell_feat")
+    got_ver = dims.get("feat_version")
+    if got_feat is None and got_ver is None:
+        raise ValueError(
+            f"{where}: чекпойнт схемы 3 без отметки версии признаков (dims.cell_feat/"
+            f"feat_version) — это формат до ЭТАПА 5; конвейер ждёт feat_version="
+            f"{spec3.FEATURES_VERSION} (cell_feat={want['cell_feat']}). Пересоберите выборку/веса.")
+    if got_ver != spec3.FEATURES_VERSION or got_feat != want["cell_feat"]:
+        raise ValueError(
+            f"{where}: признаки v3 несовместимы — в чекпойнте cell_feat={got_feat}/"
+            f"feat_version={got_ver}, сейчас cell_feat={want['cell_feat']}/"
+            f"feat_version={spec3.FEATURES_VERSION} (ЭТАП 5 убрал slotIndex: 22->21). "
+            f"Старые v3-модели ({spec3.CELL_FEAT_V1} признаков) не загружаются новым конвейером.")
+
+
 def load(path: str, expect_schema: Optional[int] = None) -> Dict[str, Any]:
     """Чекпойнт -> dict; несовместимую схему молча не читаем (иначе сеть предсказывает мусор).
 
@@ -214,4 +254,5 @@ def load(path: str, expect_schema: Optional[int] = None) -> Dict[str, Any]:
     elif got not in KNOWN_SCHEMAS:
         raise ValueError(f"Неизвестная схема чекпойнта {got}: известны {KNOWN_SCHEMAS} "
                          "(spec.SCHEMA меняется)")
+    _check_feature_compat(checkpoint, f"Чекпойнт {path}")
     return checkpoint

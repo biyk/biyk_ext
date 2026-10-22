@@ -13,37 +13,24 @@ import torch
 import torch.nn.functional as F
 
 from arent.net import GROUPS, Y_KEY
-from arent.torch_net import PAD
+from arent.torch_net import _dist, _joint_batch
 
 Action = Dict[str, int]
 
 
-def _dist(logits: torch.Tensor, mask: torch.Tensor):
-    """Замаскированное распределение: запрещённые слоты → вероятности 0 (после softmax)."""
-    masked = logits.masked_fill(mask == 0, PAD)
-    logp = F.log_softmax(masked, dim=-1)
-    return logp.exp(), logp
+def joint_logp(table: Dict[str, list], action: Action, ykey: Dict[str, str] = None,
+               logZ: float = 0.0) -> float:
+    """Joint logπ тройки из logp_table act(): сумма logπ по группам минус нормировка logZ.
 
-
-def _gather(logp: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
-    """logπ выбранного слота по строке [B, total] -> [B]."""
-    return logp.gather(1, index.view(-1, 1)).squeeze(1)
-
-
-def _entropy(probs: torch.Tensor, logp: torch.Tensor) -> torch.Tensor:
-    """H = -Σ p·logp по строке; запрещённые слоты дают p=0 и не портят сумму."""
-    return -(probs * logp).sum(-1)
-
-
-def joint_logp(table: Dict[str, list], action: Action, ykey: Dict[str, str] = None) -> float:
-    """Joint logπ исполненной тройки из logp_table act(): сумма logπ по группам.
-
-    Индексы action — уже легализованные средой (legalize); все они лежат в маске, поэтому
-    gather из таблицы корректен. Это то же logπ, что _eval посчитает на обновлении.
-    Ключи действия берутся из ykey (схема 2: cell/target/weapon, схема 3: plan/...).
+    Без logZ (по умолчанию) — прежнее ненормированное произведение голов (низкоуровневый
+    примитив; используется внешними вызовами и тестом суммы по группам). С logZ из act()
+    — честный logπ совместного распределения по допустимому множеству: то же значение,
+    что пересчитает _eval на PPO-обновлении для того же (состояние, действие, политики).
+    Индексы action — легализованные средой; для корректного выбора они уже в допустимом
+    множестве, поэтому gather из таблицы корректен и legalization — тождество.
     """
     yk = ykey or Y_KEY
-    return float(sum(table[group][int(action[yk[group]])] for group in GROUPS))
+    return float(sum(table[group][int(action[yk[group]])] for group in GROUPS) - logZ)
 
 
 class PPOAgent:
@@ -68,30 +55,38 @@ class PPOAgent:
     # ------------------------------------------------------------------ сэмпл хода
     @torch.no_grad()
     def act(self, sample: Dict[str, Any]) -> Dict[str, Any]:
-        """Один шаг: тройка индексов из masked-распределений + joint logπ, энтропия, V(s).
+        """Один шаг: тройка из СОВМЕСТНО допустимого распределения + его joint logπ/энтропия.
 
-        Возвращает ещё logp_table — ряд logπ по всем слотам каждой группы: среда после
-        выборки может убрать нелегальную атаку (legalize), и тогда logπ берётся от
-        ИСПОЛНЕННОГО действия из той же таблицы (joint_logp), без второго прогона сети.
+        Головы дают замаскированные log-softmax; над ними — нормированное произведение по
+        множеству допустимых троек sample["legal"] (arent/joint.py: то же правило легальности,
+        что у legalize). Сэмплируем ровно из этого закона, поэтому выбранная тройка уже
+        совместна и legalization в среде — тождество (предложение не правится постфактум).
+        logπ и энтропия считаются от того же распределения, что и update (_eval): отношение
+        важности PPO честное. logp_table/logZ — те же ряды logπ по слотам, что позволяют
+        rollout пересчитать logπ исполненного действия без второго прогона сети.
         """
         state, slots, masks = self.policy._batch([sample])
         logits, value = self.policy._pass(state, slots, masks)
-        action: Action = {}
+        head: Dict[str, torch.Tensor] = {}
         table: Dict[str, list] = {}
-        logp_sum, ent_sum = torch.zeros((), device=self.policy.device), torch.zeros(
-            (), device=self.policy.device)
         for group in GROUPS:
-            probs, logp = _dist(logits[group], masks[group])
-            index = torch.multinomial(probs, num_samples=1)         # [1,1] только по легальным
-            logp_sum = logp_sum + _gather(logp, index)
-            ent_sum = ent_sum + _entropy(probs, logp)
+            _probs, logp = _dist(logits[group], masks[group])
+            head[group] = logp                                            # [1, size]
             table[group] = [float(x) for x in logp[0].tolist()]
-            action[self.ykey[group]] = int(index.item())
+        legal = torch.tensor([sample["legal"]], dtype=torch.float32, device=self.policy.device)
+        logpi, logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+        logpi, m = logpi[0], legal[0]                                     # [P,T,W]
+        probs = logpi.exp() * m                                           # точно 0 на недопустимых
+        entropy = float(-(probs * (logpi * m)).sum().item())
+        idx = int(torch.multinomial(probs.reshape(-1), num_samples=1).item())
+        p_n, t_n, w_n = logpi.shape
+        p = idx // (t_n * w_n); rem = idx % (t_n * w_n); t = rem // w_n; w = rem % w_n
+        action: Action = {self.ykey["cells"]: p, self.ykey["targets"]: t, self.ykey["weapons"]: w}
         return {"action": action,
-                "logp": float(logp_sum.item()),
-                "entropy": float(ent_sum.item()),
+                "logp": float(logpi[p, t, w].item()),
+                "entropy": entropy,
                 "value": float(value.item()),
-                "logp_table": table}
+                "logp_table": table, "logZ": float(logZ[0].item())}
 
     @torch.no_grad()
     def value_of(self, sample: Dict[str, Any]) -> float:
@@ -102,17 +97,32 @@ class PPOAgent:
 
     # ------------------------------------------------------------------ логп/ценность батча
     def _eval(self, batch: List[Dict[str, Any]], actions: List[Action]):
-        """Пересчитать для батча: joint logπ выбранных троек, сумму энтропии, V(s)."""
+        """Пересчитать joint logπ выбранных троек (тот же закон, что act), энтропию, V(s).
+
+        Совместное распределение строится заново из текущих весов поверх того же множества
+        допустимых троек batch[i]["legal"]. Поэтому new_logp — logπ того же закона, из
+        которого act сэмплировал действие: rollout и update считаются согласованно.
+        """
         state, slots, masks = self.policy._batch(batch)
         logits, value = self.policy._pass(state, slots, masks)
-        logp = torch.zeros(state.shape[0], device=self.policy.device)
-        ent = torch.zeros(state.shape[0], device=self.policy.device)
+        head: Dict[str, torch.Tensor] = {}
         for group in GROUPS:
-            probs, lg = _dist(logits[group], masks[group])
-            idx = torch.tensor([int(a[self.ykey[group]]) for a in actions], dtype=torch.long,
-                               device=self.policy.device)
-            logp = logp + _gather(lg, idx)
-            ent = ent + _entropy(probs, lg)
+            _probs, logp = _dist(logits[group], masks[group])
+            head[group] = logp                                            # [B, size]
+        legal = torch.tensor([s["legal"] for s in batch], dtype=torch.float32,
+                             device=self.policy.device)                   # [B,P,T,W]
+        logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+        b = logpi.shape[0]
+        ar = torch.arange(b, device=self.policy.device)
+        ip = torch.tensor([int(a[self.ykey["cells"]]) for a in actions], dtype=torch.long,
+                          device=self.policy.device)
+        it = torch.tensor([int(a[self.ykey["targets"]]) for a in actions], dtype=torch.long,
+                          device=self.policy.device)
+        iw = torch.tensor([int(a[self.ykey["weapons"]]) for a in actions], dtype=torch.long,
+                          device=self.policy.device)
+        logp = logpi[ar, ip, it, iw]                                      # [B] нормированный logπ
+        probs = logpi.exp() * legal
+        ent = -(probs * (logpi * legal)).reshape(b, -1).sum(1)            # [B] энтропия joint
         return logp, ent, value
 
     # ------------------------------------------------------------------ PPO-обновление

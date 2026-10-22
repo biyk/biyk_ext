@@ -1,0 +1,13 @@
+{
+ "cell_feat": 21,
+ "feat_version": 2,
+ "note": "stage6 small v3 pipeline test",
+ "per_src": 6,
+ "rounds_max": 3,
+ "schema": 3,
+ "seed": 20261022,
+ "teachers": [
+  "greedy",
+  "battlecast"
+ ]
+}

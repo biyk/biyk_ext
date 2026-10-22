@@ -12,10 +12,16 @@ from planner.sim import Simulation
 
 def rollout(context: BattleContext, actions: List[Action], rounds: int) -> float:
     """Метрика линии: план + жадная политика героя ещё N раундов — одной шкалой для
-    greedy (rounds=1) и lookahead: считает симуляция, а не оценка планировщика."""
+    greedy (rounds=1) и lookahead: считает симуляция, а не оценка планировщика.
+
+    Первый раунд применяется Planned-последовательность ПОРЯДКОВО (advance_seq): для схемы 3
+    («атака -> отход») удар резолвится из клетки атаки, а не из финальной, поэтому значение
+    точное. Для v2-плана (все MOVE перед USE) advance_seq == advance — прежнее число бит-в-бит,
+    а жадные продолжения (hero_options) всегда move-then-use, поэтому и на depth>1 идентично.
+    """
     state, total, line = Simulation.of(context), 0.0, list(actions)
     for _ in range(max(1, int(rounds))):
-        state, value = state.advance(line)
+        state, value = state.advance_seq(line)
         total += value
         if state.hero_dead:
             break

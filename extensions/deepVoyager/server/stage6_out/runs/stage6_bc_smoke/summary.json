@@ -1,0 +1,68 @@
+{
+ "backend": "pure",
+ "best": {
+  "cell": 0.644,
+  "joint": 0.342,
+  "n": 73,
+  "target": 0.699,
+  "value_mae": 1.21,
+  "weapon": 0.726
+ },
+ "best_epoch": 11,
+ "best_is_last": false,
+ "best_metric": "val.joint",
+ "config": {
+  "batch": 32,
+  "device": "cpu",
+  "epochs": 12,
+  "head": 24,
+  "hidden": 96,
+  "kind": "pure",
+  "lr": 0.03,
+  "momentum": 0.9,
+  "schema": 3,
+  "seed": 20261022,
+  "val_frac": 0.85,
+  "value_w": 0.5,
+  "weight_decay": 0.0001
+ },
+ "device": "cpu",
+ "dims": {
+  "cell_feat": 21,
+  "cells": 49,
+  "feat_version": 2,
+  "grid": 121,
+  "schema": 3,
+  "state": 498,
+  "target_feat": 22,
+  "targets": 9,
+  "weapon_feat": 11,
+  "weapons": 9
+ },
+ "epochs": 12,
+ "model": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage6_out\\runs\\stage6_bc_smoke\\model.json",
+ "model_best": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage6_out\\runs\\stage6_bc_smoke\\model_best.json",
+ "name": "stage6_bc_smoke",
+ "params": 53428,
+ "samples": 484,
+ "seconds": 103.39,
+ "split": null,
+ "train": {
+  "cell": 0.614,
+  "joint": 0.174,
+  "n": 484,
+  "target": 0.479,
+  "value_mae": 0.8064,
+  "weapon": 0.603
+ },
+ "val": {
+  "cell": 0.521,
+  "joint": 0.233,
+  "n": 73,
+  "target": 0.658,
+  "value_mae": 1.2097,
+  "weapon": 0.726
+ },
+ "val_source": "override",
+ "warm_from": null
+}

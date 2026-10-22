@@ -1,0 +1,397 @@
+{
+ "config": {
+  "schema": 3,
+  "kind": "pure",
+  "device": "cpu",
+  "epochs": 12,
+  "batch": 32,
+  "val_frac": 0.85,
+  "seed": 20261022,
+  "warm": null,
+  "selection": "min val.joint_nll (ЭТАП 8)"
+ },
+ "data": {
+  "examples": 557,
+  "train": 484,
+  "val": 73,
+  "dataset_src_sha256": "a59ac3acbcae2845a2ed7405c51e3769354e33d337ae6715fd02df453e730828",
+  "dataset_copy_sha256": "a59ac3acbcae2845a2ed7405c51e3769354e33d337ae6715fd02df453e730828"
+ },
+ "per_epoch": [
+  {
+   "epoch": 1,
+   "loss": 4.6767,
+   "n_samples": 484,
+   "sec": 4.45,
+   "train": {
+    "joint_nll": 3.56611,
+    "joint_decode_accuracy": 0.085,
+    "independent_baseline_accuracy": 0.023,
+    "value_mae": 1.0202,
+    "value_mse": 1.389279,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 3.6887,
+    "joint_decode_accuracy": 0.096,
+    "independent_baseline_accuracy": 0.041,
+    "value_mae": 0.8673,
+    "value_mse": 1.160631,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 2,
+   "loss": 3.1604,
+   "n_samples": 484,
+   "sec": 12.34,
+   "train": {
+    "joint_nll": 2.94469,
+    "joint_decode_accuracy": 0.355,
+    "independent_baseline_accuracy": 0.147,
+    "value_mae": 0.8156,
+    "value_mse": 0.840377,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.96397,
+    "joint_decode_accuracy": 0.288,
+    "independent_baseline_accuracy": 0.164,
+    "value_mae": 0.8281,
+    "value_mse": 1.055259,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 3,
+   "loss": 2.7757,
+   "n_samples": 484,
+   "sec": 13.11,
+   "train": {
+    "joint_nll": 2.41295,
+    "joint_decode_accuracy": 0.409,
+    "independent_baseline_accuracy": 0.165,
+    "value_mae": 1.032,
+    "value_mse": 1.279318,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.56126,
+    "joint_decode_accuracy": 0.356,
+    "independent_baseline_accuracy": 0.219,
+    "value_mae": 0.9784,
+    "value_mse": 1.276294,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 4,
+   "loss": 2.601,
+   "n_samples": 484,
+   "sec": 11.69,
+   "train": {
+    "joint_nll": 2.43979,
+    "joint_decode_accuracy": 0.415,
+    "independent_baseline_accuracy": 0.122,
+    "value_mae": 0.5498,
+    "value_mse": 0.698692,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.57294,
+    "joint_decode_accuracy": 0.315,
+    "independent_baseline_accuracy": 0.178,
+    "value_mae": 1.1308,
+    "value_mse": 1.955587,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 5,
+   "loss": 2.5337,
+   "n_samples": 484,
+   "sec": 11.59,
+   "train": {
+    "joint_nll": 2.26641,
+    "joint_decode_accuracy": 0.432,
+    "independent_baseline_accuracy": 0.167,
+    "value_mae": 0.8715,
+    "value_mse": 1.549142,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.23864,
+    "joint_decode_accuracy": 0.356,
+    "independent_baseline_accuracy": 0.219,
+    "value_mae": 1.1001,
+    "value_mse": 1.814455,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 6,
+   "loss": 2.4915,
+   "n_samples": 484,
+   "sec": 12.22,
+   "train": {
+    "joint_nll": 2.26607,
+    "joint_decode_accuracy": 0.436,
+    "independent_baseline_accuracy": 0.126,
+    "value_mae": 0.657,
+    "value_mse": 0.751095,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.22838,
+    "joint_decode_accuracy": 0.356,
+    "independent_baseline_accuracy": 0.247,
+    "value_mae": 1.0412,
+    "value_mse": 1.60558,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 7,
+   "loss": 2.3893,
+   "n_samples": 484,
+   "sec": 11.03,
+   "train": {
+    "joint_nll": 2.12056,
+    "joint_decode_accuracy": 0.417,
+    "independent_baseline_accuracy": 0.153,
+    "value_mae": 0.5985,
+    "value_mse": 0.883157,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.0883,
+    "joint_decode_accuracy": 0.37,
+    "independent_baseline_accuracy": 0.274,
+    "value_mae": 1.2469,
+    "value_mse": 2.304751,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 8,
+   "loss": 2.3236,
+   "n_samples": 484,
+   "sec": 10.47,
+   "train": {
+    "joint_nll": 2.2599,
+    "joint_decode_accuracy": 0.417,
+    "independent_baseline_accuracy": 0.171,
+    "value_mae": 2.4673,
+    "value_mse": 9.277415,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.08482,
+    "joint_decode_accuracy": 0.397,
+    "independent_baseline_accuracy": 0.315,
+    "value_mae": 2.5971,
+    "value_mse": 9.79253,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 9,
+   "loss": 2.5506,
+   "n_samples": 484,
+   "sec": 10.66,
+   "train": {
+    "joint_nll": 2.45964,
+    "joint_decode_accuracy": 0.393,
+    "independent_baseline_accuracy": 0.124,
+    "value_mae": 2.6797,
+    "value_mse": 8.104007,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.46117,
+    "joint_decode_accuracy": 0.356,
+    "independent_baseline_accuracy": 0.247,
+    "value_mae": 2.4707,
+    "value_mse": 7.104336,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 10,
+   "loss": 2.591,
+   "n_samples": 484,
+   "sec": 10.92,
+   "train": {
+    "joint_nll": 2.25127,
+    "joint_decode_accuracy": 0.424,
+    "independent_baseline_accuracy": 0.178,
+    "value_mae": 0.8357,
+    "value_mse": 1.0322,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.28476,
+    "joint_decode_accuracy": 0.329,
+    "independent_baseline_accuracy": 0.205,
+    "value_mae": 1.1994,
+    "value_mse": 1.891586,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 11,
+   "loss": 2.4259,
+   "n_samples": 484,
+   "sec": 10.34,
+   "train": {
+    "joint_nll": 2.07894,
+    "joint_decode_accuracy": 0.426,
+    "independent_baseline_accuracy": 0.163,
+    "value_mae": 0.8056,
+    "value_mse": 1.027099,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.12421,
+    "joint_decode_accuracy": 0.411,
+    "independent_baseline_accuracy": 0.342,
+    "value_mae": 1.21,
+    "value_mse": 1.987822,
+    "n": 73
+   }
+  },
+  {
+   "epoch": 12,
+   "loss": 2.3418,
+   "n_samples": 484,
+   "sec": 11.2,
+   "train": {
+    "joint_nll": 2.15872,
+    "joint_decode_accuracy": 0.444,
+    "independent_baseline_accuracy": 0.174,
+    "value_mae": 0.8064,
+    "value_mse": 1.02714,
+    "n": 484
+   },
+   "val": {
+    "joint_nll": 2.4159,
+    "joint_decode_accuracy": 0.315,
+    "independent_baseline_accuracy": 0.233,
+    "value_mae": 1.2097,
+    "value_mse": 1.985168,
+    "n": 73
+   }
+  }
+ ],
+ "init_val_metrics": {
+  "cell": 0.137,
+  "target": 0.26,
+  "weapon": 0.137,
+  "independent_baseline_accuracy": 0.0,
+  "joint_decode_accuracy": 0.055,
+  "joint_nll": 4.97888,
+  "value_mae": 1.3861,
+  "value_mse": 2.874057,
+  "n": 73,
+  "n_joint": 73
+ },
+ "selection": {
+  "best_metric": "val.joint_nll",
+  "best_epoch": 8,
+  "argmin_epoch": 8,
+  "best_is_last": false,
+  "val_joint_nll_by_epoch": [
+   3.6887,
+   2.96397,
+   2.56126,
+   2.57294,
+   2.23864,
+   2.22838,
+   2.0883,
+   2.08482,
+   2.46117,
+   2.28476,
+   2.12421,
+   2.4159
+  ],
+  "val_decode_acc_by_epoch": [
+   0.096,
+   0.288,
+   0.356,
+   0.315,
+   0.356,
+   0.356,
+   0.37,
+   0.397,
+   0.356,
+   0.329,
+   0.411,
+   0.315
+  ],
+  "val_baseline_acc_by_epoch": [
+   0.041,
+   0.164,
+   0.219,
+   0.178,
+   0.219,
+   0.247,
+   0.274,
+   0.315,
+   0.247,
+   0.205,
+   0.342,
+   0.233
+  ]
+ },
+ "counterfactual_old_criterion": {
+  "old_criterion": "max val.independent_baseline_accuracy (прежнее имя «val.joint»)",
+  "old_picked_epoch": 11,
+  "old_picked_val_joint_nll": 2.12421,
+  "new_picked_epoch": 8,
+  "new_picked_val_joint_nll": 2.08482,
+  "nll_gap_old_vs_new": 0.03939
+ },
+ "value_quality": {
+  "model_val": {
+   "value_mae": 2.5971,
+   "value_mse": 9.79253,
+   "n": 73,
+   "epoch": 8
+  },
+  "random_init_val": {
+   "value_mae": 1.3861,
+   "value_mse": 2.874057
+  },
+  "const_baselines_on_val": {
+   "median_train": {
+    "const": -0.1,
+    "val_mae": 1.418,
+    "val_mse": 2.989627
+   },
+   "mean_train": {
+    "const": -0.5581,
+    "val_mae": 1.2124,
+    "val_mse": 2.008102
+   }
+  },
+  "model_beats_median": false,
+  "model_beats_random": false,
+  "note": "value_w/архитектура не менялись; сравнение — только диагноз"
+ },
+ "weight_checksums": {
+  "sha256_best": "919539c2a5827a3ff79bdc8506c2f16c17ad3abe40d2d8004caf71ce26415d3e",
+  "sha256_last": "8d69f8490ef46388596dc2a85462dff95b872bd9d1b387a3a18b551fa8dd47ba",
+  "best_equals_last": false
+ },
+ "checks": {
+  "dataset_bytes_identical": true,
+  "selection_metric_is_joint_nll": true,
+  "best_is_argmin_joint_nll": true,
+  "all_epochs_have_joint_nll": true,
+  "epoch_loss_is_full_mean": true,
+  "decode_never_exceeds_1": true,
+  "no_nan": true,
+  "artifact_differs_or_equal_documented": true,
+  "protected_untouched": true
+ }
+}

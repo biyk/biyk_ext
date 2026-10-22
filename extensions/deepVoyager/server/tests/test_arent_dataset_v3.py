@@ -42,15 +42,37 @@ def test_generate_schema2_is_unchanged_cell_head():
         assert all(s["schema"] == 2 and "cell" in s["y"] for s in samples)
 
 
+def _admissible(samples):
+    """Разделить метки на лежащие в A(s) и вне его (совместный контракт) — как диагностика.
+
+    После ЭТАПА 5 (фильтр LOS в планировщике + согласование слотов) учительские метки v3
+    обязаны целиком принадлежать A(s): вне его оставаться нечего. Функция оставлена как
+    усилитель проверки — вызывающий тест утверждает, что `outside` пуст, а не отфильтровывает
+    недопустимые примеры втихую (контракт части 5.2: недопустимые не выбрасываются из выборки).
+    """
+    from arent import joint
+    ok, bad = [], []
+    for s in samples:
+        try:
+            joint.ensure_jointly_legal(s, s["schema"])
+            ok.append(s)
+        except ValueError:
+            bad.append(s)
+    return ok, bad
+
+
 def test_bc_smoke_trains_and_saves_schema3(tmp_path):
     samples, _stats = _v3_samples()
-    if len(samples) < 2:
-        pytest.skip("мало примеров для smoke-обучения")
+    admissible, outside = _admissible(samples)
+    # ЭТАП 5, контроль 1 и 2: все метки учителя в A(s); недопустимых не осталось и их не выбрасывали.
+    assert not outside, f"метки вне A(s) после ЭТАПА 5: {len(outside)} из {len(samples)}"
+    if len(admissible) < 2:
+        pytest.skip("мало допустимых примеров для smoke-обучения")
     prev = paths.workspace()
     paths.set_workspace(str(tmp_path))
     try:
         cfg = net.Config(schema=3, hidden=8, head=6, epochs=1, batch=4)
-        result = train.run(name="v3smoke", samples=samples[:-1], val=samples[-1:], cfg=cfg,
+        result = train.run(name="v3smoke", samples=admissible[:-1], val=admissible[-1:], cfg=cfg,
                            kind="pure", log=lambda *a: None)
         assert result["summary"]["dims"] == spec3.dims3()
         assert result["summary"]["config"]["schema"] == 3

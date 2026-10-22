@@ -1,13 +1,15 @@
 # arent/train.py — behavior cloning: учим три головы слотов и стоимость по разметке плана.
 #
 # Разметку даёт планировщик (teacher.py), поэтому модель учится повторять ровно тот
-# код, что уже отвечает на /plan. Метрики — доля угаданных слотов по каждой голове,
-# совместная доля (все три сразу: это и есть «повторить план») и MAE стоимости линии.
-# Чекпойнт и история ложатся в runs/<имя>/ рядом с exe (arent/paths.py).
+# код, что уже отвечает на /plan.
 #
-# Два чекпойнта на прогон: model.json — веса ПОСЛЕДНЕЙ эпохи, model_best.json — веса
-# ЭПОХИ С ЛУЧШИМ val.joint (метрика выбора пишется в summary["best_metric"]). При малых
-# выборках последний прогон обычно уже переобучен, поэтому играем best, а не last.
+# ЭТАП 8: критерий отбора согласован с objective и serving. BC минимизирует joint NLL по
+# A(s); serving (Этап 7) выбирает joint argmax по A(s) — значит чекпойпт меряется той же
+# функцией: model_best.json = веса ЭПОХИ С МИНИМАЛЬНЫМ val.joint_nll по ВСЕЙ val-выборке
+# (метрика выбора — summary["best_metric"]); val.joint_decode_accuracy — сопутствующая,
+# независимая accuracy переименована в independent_baseline_accuracy и НЕ участвует в
+# выборе. row["loss"] — среднее по всем батчам эпохи с весом по размеру, не «последний
+# батч». При малых выборках последний прогон обычно уже переобучен, поэтому играем best.
 #
 # Состояние оптимизатора между запусками НЕ сохраняется: --warm возвращает прежние веса,
 # но моментум (pure) и моменты Adam (torch) начинаются заново — первые эпохи после
@@ -19,7 +21,7 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from arent import backend, dataset, manifest, net, paths, provenance, spec, splitting
-from arent.scores import batches, by_source, metrics
+from arent.scores import batches, by_source, epoch_loss, metrics
 
 Row = Dict[str, Any]
 
@@ -90,31 +92,45 @@ def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,
     rng = random.Random(cfg.seed)
     history: List[Row] = []
     started = time.monotonic()
-    best, best_score, best_params = None, -1.0, None
-    metric = "val.joint" if val else "train.joint"
+    # ЭТАП 8: отбор по МИНИМУМУ joint NLL — того же члена, что оптимизирует BC-шаг
+    # (pure_net._accumulate / torch_net.step_batch), и по всей val-выборке (scores.metrics).
+    best, best_score, best_params = None, float("inf"), None
+    metric = "val.joint_nll" if val else "train.joint_nll"
     epoch_started = started
     for epoch in range(1, epochs + 1):
         order = list(train_set)
         rng.shuffle(order)
-        report: Dict[str, Any] = {}
+        reports: List[Row] = []
         for chunk in batches(order, batch):
-            report = model.step_batch(chunk, lr)
-        row: Row = {"epoch": epoch, "loss": report.get("loss"), "lr": lr or cfg.lr,
+            reports.append(model.step_batch(chunk, lr))
+        agg = epoch_loss(reports)                       # среднее по ВСЕМ батчам, вес по размеру
+        row: Row = {"epoch": epoch, "loss": agg["loss"], "n_samples": agg["n_samples"],
+                    "lr": lr or cfg.lr,
                     "sec": round(time.monotonic() - epoch_started, 2),
                     "train": metrics(model, train_set),
                     "val": metrics(model, val) if val else {}}
         epoch_started = time.monotonic()
         val_metrics = row["val"] or row["train"]
+        if val_metrics.get("joint_nll") is None:
+            raise RuntimeError(
+                f"epoch {epoch}: joint_nll не посчитан — модели/примерам не хватает "
+                "head_logp или совместной маски 'legal'; по старой независимой accuracy "
+                "чекпойпт больше не выбирают (ЭТАП 8), молча подменять критерий не будем")
         if val:
-            row["val_by"] = {name: {"joint": m["joint"], "n": m["n"]}
-                             for name, m in by_source(model, val).items()}
+            row["val_by"] = {name: {"joint_nll": m["joint_nll"],
+                                    "joint_decode_accuracy": m["joint_decode_accuracy"],
+                                    "n": m["n"]} for name, m in by_source(model, val).items()}
         history.append(row)
         say(f"epoch {epoch}/{epochs} loss={row['loss']} ({row['sec']} с) | val: "
+            f"joint_nll={val_metrics['joint_nll']} "
+            f"decode_acc={val_metrics['joint_decode_accuracy']} "
+            f"baseline_acc={val_metrics['independent_baseline_accuracy']} "
+            f"value_mae={val_metrics['value_mae']} "
             f"cell={val_metrics['cell']} target={val_metrics['target']} "
-            f"weapon={val_metrics['weapon']} joint={val_metrics['joint']} "
-            f"value_mae={val_metrics['value_mae']}")
-        if val_metrics["joint"] > best_score:
-            best, best_score, best_params = row, val_metrics["joint"], copy.deepcopy(model.params)
+            f"weapon={val_metrics['weapon']}")
+        if val_metrics["joint_nll"] < best_score:
+            best, best_score, best_params = row, val_metrics["joint_nll"], \
+                copy.deepcopy(model.params)
     seconds = round(time.monotonic() - started, 2)
     result = _finish(name, model, cfg, history, best, best_params, seconds, len(samples), say,
                      warm_from, metric, val_source, split_report)
@@ -125,7 +141,7 @@ def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,
 
 def _finish(name: str, model: Any, cfg: net.Config, history: List[Row], best: Optional[Row],
             best_params: Optional[Dict[str, Any]], seconds: float, n_samples: int,
-            say: Callable, warm_from: Optional[str] = None, metric: str = "val.joint",
+            say: Callable, warm_from: Optional[str] = None, metric: str = "val.joint_nll",
             val_source: str = "grouped", split_report: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Записать model.json (последняя эпоха), model_best.json (лучшая) и отчёты в runs/."""
     directory = paths.run_dir(name)

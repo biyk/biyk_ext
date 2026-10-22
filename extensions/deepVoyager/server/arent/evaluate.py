@@ -10,7 +10,8 @@ import os
 from statistics import mean
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, encode, encode_v3, net, paths, play, provenance, spec, spec3
+from arent import backend, encode, encode_v3, joint as joint_mod, net, paths, play, provenance, spec, spec3
+from arent import legalize as legalize_mod
 from arent import slots as slots_mod, slots_v3
 from arent.net import GROUPS, Y_KEY
 from arent.observe import observe
@@ -26,22 +27,66 @@ def _schema_of(model) -> int:
     return int(getattr(getattr(model, "cfg", None), "schema", spec.SCHEMA))
 
 
-def _round(model: Any, state: Simulation, schema: int) -> Tuple[Simulation, float]:
+def _dealt(prev_hp: Dict[str, float], state: Simulation) -> float:
+    """Суммарный урон, полученный врагами за шаг актёра (только чтение hp, без правки боя)."""
+    return round(sum(max(0.0, hp - state.units[u].hp)
+                     for u, hp in prev_hp.items() if u in state.units), 4)
+
+
+def _foe_hp(state: Simulation) -> Dict[str, float]:
+    """id -> hp живых врагов героя (снапшот для измерения урона шаг-за-шагом)."""
+    return {uid: u.hp for uid, u in state.units.items() if u.hostile_to_hero and u.is_alive}
+
+
+def _attack_stat(raw: Dict[str, int], label: Dict[str, int], reason, slots: Any,
+                 dealt: float) -> Dict[str, Any]:
+    """Один раунд героя: счётчики РАЗНОГО смысла, не смешивать (Этап 7, часть 2).
+
+    ``illegal`` — недопустимость НЕЗАВИСИМОГО baseline-предсказания голов (сырой argmax):
+    он меряет старый декодер, а не ошибку политики; ``corrected`` — число вызовов legalize
+    с фактической правкой (для joint-выбора обязано быть 0 = нарушение контракта, если нет);
+    ``executed``/``zero_dmg`` — по реально исполненному действию.
+    """
+    nt, nw = len(slots.targets), len(slots.weapons)
+    proposed = 0 <= raw.get("target", -1) < nt and 0 <= raw.get("weapon", -1) < nw
+    executed = 0 <= label.get("target", -1) < nt and 0 <= label.get("weapon", -1) < nw
+    return {"proposed": int(proposed), "executed": int(executed),
+            "illegal": int(proposed and not executed),     # baseline-предсказание вне A(s)
+            "corrected": int(bool(reason)),                 # действие изменено legalization
+            "joint_violation": 0,                           # joint-выбор, починенный legalize
+            "zero_dmg": int(executed and dealt <= 0.0)}     # исполненная атака без урона
+
+
+def _round(model: Any, state: Simulation, schema: int) -> Tuple[Simulation, float, Dict[str, Any]]:
     """Один раунд героя: v3 идёт через move-plan и apply_actor_seq (удар из attack_cell,
-    затем отступление), v2 — по-прежнему через клетку и advance. Ответ врагов — foes_act."""
+    затем отступление), v2 — по-прежнему через клетку и advance. Ответ врагов — foes_act.
+    Перед decode прогоняем ТУ ЖЕ совместную легальность, что и среда обучения."""
     ctx = state.context_for(state.hero_id)
     obs = observe(ctx)
     if schema == spec3.SCHEMA:
         slots = slots_v3.build(ctx, obs)
-        out = model.predict(encode_v3.observation(ctx, obs, slots))
+        sample = encode_v3.observation(ctx, obs, slots)
+        out = model.predict(sample)                    # диагностический baseline (независимый argmax)
         yk = net.y_key(schema)
-        actions = slots_v3.decode(slots, {yk[group]: out[yk[group]] for group in GROUPS})
-        moved, penalty = state.apply_actor_seq(state.hero_id, actions).foes_act()
-        return moved, Scorer().score(ctx, actions) + penalty
+        raw = {yk[group]: out[yk[group]] for group in GROUPS}
+        dec = joint_mod.decode(model, sample, slots, ctx, schema)   # выбор политики: joint-argmax
+        label, reason = legalize_mod.legalize(dec["label"], schema, slots, ctx)
+        hero_state = state.apply_actor_seq(state.hero_id, actions := slots_v3.decode(slots, label))
+        dealt = _dealt(_foe_hp(state), hero_state)
+        moved, penalty = hero_state.foes_act()
+        stat = _attack_stat(raw, label, reason, slots, dealt)
+        # нарушение контракта: joint-предложение было изменено защитным legalize
+        stat["joint_violation"] = int(bool(reason) or dict(label) != dict(dec["label"]))
+        return moved, Scorer().score(ctx, actions) + penalty, stat
     slots = slots_mod.build(ctx, obs)
     out = model.predict(encode.observation(ctx, obs, slots))
-    actions = slots_mod.decode(slots, {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS})
-    return state.advance(actions)
+    raw = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
+    label, reason = legalize_mod.legalize(raw, schema, slots, ctx)
+    actions = slots_mod.decode(slots, label)
+    prev_hp = _foe_hp(state)
+    moved, value = state.advance(actions)
+    stat = _attack_stat(raw, label, reason, slots, _dealt(prev_hp, moved))
+    return moved, value, stat
 
 
 def fight(model: Any, payload: Dict[str, Any], rounds: int = 8) -> Dict[str, Any]:
@@ -56,12 +101,20 @@ def fight(model: Any, payload: Dict[str, Any], rounds: int = 8) -> Dict[str, Any
     schema = _schema_of(model)
     total, played = 0.0, 0
     foes_total = len(state.foes)
+    stat = {"proposed": 0, "executed": 0, "illegal": 0, "corrected": 0, "zero_dmg": 0,
+            "joint_violation": 0}
     while played < max(1, int(rounds)) and not state.hero_dead and state.foes:
-        state, value = _round(model, state, schema)
+        state, value, step = _round(model, state, schema)
         total += value
         played += 1
+        for k in stat:
+            stat[k] += step[k]
     return {"rounds": played, "value": round(total, 3), "survived": not state.hero_dead,
-            "cleared": not state.foes, "foes": foes_total, "foes_left": len(state.foes)}
+            "cleared": not state.foes, "foes": foes_total, "foes_left": len(state.foes),
+            "attacks_proposed": stat["proposed"], "attacks_executed": stat["executed"],
+            "illegal_proposals": stat["illegal"], "corrected_actions": stat["corrected"],
+            "policy_violations": stat["joint_violation"],
+            "zero_damage_attacks": stat["zero_dmg"]}
 
 
 def summarize(rows: List[Dict[str, Any]], model: str = "pure",

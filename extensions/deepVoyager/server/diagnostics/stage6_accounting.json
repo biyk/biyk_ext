@@ -1,0 +1,105 @@
+{
+ "results": [
+  {
+   "teacher": "greedy",
+   "seed": 20261022,
+   "per_src": 6,
+   "rounds_max": 3,
+   "sources": {
+    "scenarios": 12,
+    "arenas": 15,
+    "arenas_seen": [
+     "archer_pair",
+     "bruiser_death",
+     "corridor_archer",
+     "cover_alley",
+     "door_chokepoint",
+     "five_surround",
+     "fork_two_melee",
+     "glass_cannon",
+     "javelin_open",
+     "pike_standoff",
+     "pillars_three",
+     "ranged_kite",
+     "tank_and_adds",
+     "two_weapons",
+     "wide_fast"
+    ]
+   },
+   "states_received": 334,
+   "labels_no_attack_state": 0,
+   "teacher_formed_action": 334,
+   "matched_to_plan": 333,
+   "unmatched": {
+    "no_slots": 0,
+    "label_out_of_slots": 0,
+    "roundtrip_mismatch": 1
+   },
+   "attack_labels": 259,
+   "attack_in_As": 259,
+   "attack_out_As": 0,
+   "noattack_labels": 74,
+   "noattack_in_As": 74,
+   "noattack_out_As": 0,
+   "skip_reasons": {
+    "roundtrip_mismatch": 1
+   },
+   "groups": 27,
+   "check_states": true,
+   "check_formed": true,
+   "check_matched_split": true,
+   "check_attack_As": true,
+   "check_noattack_As": true
+  },
+  {
+   "teacher": "battlecast",
+   "seed": 20261022,
+   "per_src": 6,
+   "rounds_max": 3,
+   "sources": {
+    "scenarios": 12,
+    "arenas": 15,
+    "arenas_seen": [
+     "archer_pair",
+     "bruiser_death",
+     "corridor_archer",
+     "cover_alley",
+     "door_chokepoint",
+     "five_surround",
+     "fork_two_melee",
+     "glass_cannon",
+     "javelin_open",
+     "pike_standoff",
+     "pillars_three",
+     "ranged_kite",
+     "tank_and_adds",
+     "two_weapons",
+     "wide_fast"
+    ]
+   },
+   "states_received": 334,
+   "labels_no_attack_state": 0,
+   "teacher_formed_action": 334,
+   "matched_to_plan": 334,
+   "unmatched": {
+    "no_slots": 0,
+    "label_out_of_slots": 0,
+    "roundtrip_mismatch": 0
+   },
+   "attack_labels": 232,
+   "attack_in_As": 232,
+   "attack_out_As": 0,
+   "noattack_labels": 102,
+   "noattack_in_As": 102,
+   "noattack_out_As": 0,
+   "skip_reasons": {},
+   "groups": 27,
+   "check_states": true,
+   "check_formed": true,
+   "check_matched_split": true,
+   "check_attack_As": true,
+   "check_noattack_As": true
+  }
+ ],
+ "all_checks_pass": true
+}

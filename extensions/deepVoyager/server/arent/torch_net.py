@@ -8,10 +8,37 @@ from typing import Any, Dict, List
 import torch
 import torch.nn.functional as F
 
-from arent import net
-from arent.net import GROUPS, y_index
+from arent import joint, net
+from arent.net import GROUPS
 
 PAD = -1e30                      # вместо -inf: он остаётся конечным и не ломает sum
+
+
+def _dist(logits: torch.Tensor, mask: torch.Tensor):
+    """Замаскированное распределение: запрещённые слоты → вероятности 0 (после softmax).
+
+    Общий примитив и для BC (step_batch), и для PPO (torch_rl.act/_eval): один и тот же
+    закон головы. Возвращает (probs, logp).
+    """
+    masked = logits.masked_fill(mask == 0, PAD)
+    logp = F.log_softmax(masked, dim=-1)
+    return logp.exp(), logp
+
+
+def _joint_batch(lcs: torch.Tensor, lts: torch.Tensor, lws: torch.Tensor,
+                 legal: torch.Tensor):
+    """Нормированный joint logπ по множеству допустимых троек: произведение голов + mask.
+
+    lcs [B,P], lts [B,T], lws [B,W] — замаскированные log-softmax каждой головы; legal
+    [B,P,T,W] — 1 на совместно допустимых тройках (arent/joint.py). Совместный закон:
+    logπ(p,t,w) = Lc[p]+Lt[t]+Lw[w] − logZ, где logZ — logsumexp только по допустимым;
+    недопустимые обнулены (PAD → exp=0). Возвращает (logπ [B,P,T,W], logZ [B]). Единая
+    реализация для BC-потери и PPO (rollout==update==BC): torch_rl переимпортирует её сюда.
+    """
+    joint_t = lcs[:, :, None, None] + lts[:, None, :, None] + lws[:, None, None, :]
+    joint_t = joint_t.masked_fill(legal == 0, PAD)
+    logZ = torch.logsumexp(joint_t.reshape(joint_t.shape[0], -1), dim=1)      # [B]
+    return joint_t - logZ[:, None, None, None], logZ
 
 
 def _module(cfg: net.Config) -> torch.nn.Module:
@@ -99,6 +126,20 @@ class TorchPolicy:
             logits[group] = raw.masked_fill(masks[group] == 0, PAD)
         return logits, self.layers["value"](stem).squeeze(1)
 
+    def head_logp(self, sample: Dict[str, Any]):
+        """Полнодлинные log-softmax каждой головы + value: вход общего joint-декодера serving.
+
+        Тот же примитив закона головы (_dist), что у BC-шага и PPO act/_eval: masked
+        log-softmax по всем слотам; вне маски значения крайне отрицательные и joint-argmax
+        их не выбирает (mask A(s) их всё равно исключает).
+        """
+        state, slots, masks = self._batch([sample])
+        with torch.no_grad():
+            logits, value = self._pass(state, slots, masks)
+            vecs = {g: [float(x) for x in _dist(logits[g], masks[g])[1][0].tolist()]
+                    for g in GROUPS}
+        return vecs["cells"], vecs["targets"], vecs["weapons"], round(float(value.item()), 4)
+
     def predict(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         state, slots, masks = self._batch([sample])
         with torch.no_grad():
@@ -114,28 +155,44 @@ class TorchPolicy:
         return out
 
     def step_batch(self, batch: List[Dict[str, Any]], lr: float = None) -> Dict[str, Any]:
+        """Совместный BC-шаг: NLL нормированного joint-политики + value MSE.
+
+        Тот же закон, что у PPO (torch_rl._eval) и у инференса: logπ(a*|s) из
+        _joint_batch поверх sample["legal"]. action_loss = mean_i( -logπ(a*_i) ) =
+        mean_i( logZ_i - Σ_g Lg_g[a*_i] ). Градиент по логиту головы = joint-маргиналь -
+        onehot, а не независимая softmax - onehot (этим loss отличается от суммы CE).
+        Метка проходит joint.ensure_jointly_legal: нет маски / недопустимая -> ValueError.
+        """
         if lr is not None:
             for group_ in self.optim.param_groups:
                 group_["lr"] = lr
         state, slots, masks = self._batch(batch)
-        targets = {g: torch.tensor([y_index(s, g, self.cfg.schema) for s in batch], dtype=torch.long,
-                                   device=self.device) for g in GROUPS}
+        trip = [joint.ensure_jointly_legal(s, self.cfg.schema) for s in batch]   # (ip,it,iw)
+        idx = {"cells": [x[0] for x in trip], "targets": [x[1] for x in trip],
+               "weapons": [x[2] for x in trip]}
+        targets = {g: torch.tensor(idx[g], dtype=torch.long, device=self.device)
+                   for g in GROUPS}
         wanted = torch.tensor([float(s.get("value", 0.0)) for s in batch], dtype=torch.float32,
                               device=self.device)
+        legal = torch.tensor([s["legal"] for s in batch], dtype=torch.float32,
+                             device=self.device)                                # [B,P,T,W]
         self.optim.zero_grad(set_to_none=True)
         logits, value = self._pass(state, slots, masks)
-        parts, total = {}, torch.zeros((), device=self.device)
-        for group in GROUPS:
-            loss = F.cross_entropy(logits[group], targets[group])
-            parts[self.ykey[group]] = float(loss.item())
-            total = total + loss
+        head = {g: _dist(logits[g], masks[g])[1] for g in GROUPS}                # log-softmax [B,size]
+        logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+        ar = torch.arange(len(batch), device=self.device)
+        action_loss = -logpi[ar, targets["cells"], targets["targets"], targets["weapons"]].mean()
         value_loss = F.mse_loss(value, wanted)
         # 0.5 — чтобы градиент был value_w * diff, как в pure_net._accumulate: иначе на
         # torch стоимость давит вдвое сильнее и метрики двух бэкендов несопоставимы.
-        total = total + 0.5 * self.cfg.value_w * value_loss
+        total = action_loss + 0.5 * self.cfg.value_w * value_loss
         total.backward()
         self.optim.step()
-        report = {"loss": round(float(total.item()), 4), "value": round(float(value_loss.item()), 4)}
+        # Diagnostic per head: независимая CE каждой головы (НЕ оптимизируется, только отчёт).
+        parts = {self.ykey[g]: round(float(F.cross_entropy(logits[g], targets[g]).item()), 4)
+                 for g in GROUPS}
+        report = {"loss": round(float(total.item()), 4),
+                  "value": round(float(value_loss.item()), 4)}
         report.update(parts)
         report["n"] = len(batch)
         return report

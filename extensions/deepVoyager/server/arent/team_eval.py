@@ -10,7 +10,9 @@ import os
 from statistics import mean
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, dataset, evaluate, paths, play, polyenv
+from arent import (backend, dataset, evaluate, joint as joint_mod, net, paths, play, polyenv,
+                   spec, spec3, teachers)
+from arent import slots as slots_mod, slots_v3
 from arent.team_reward import TeamReward
 
 Row = Dict[str, Any]
@@ -106,6 +108,324 @@ def run(name: str = "team_eval", model_path: Optional[str] = None, kind: str = "
     say(f"итог: win {report['win_rate']}, loss {report['loss_rate']}, "
         f"draw {report['draw_rate']}, mutual {report['mutual_rate']}, "
         f"open {report['open_rate']}")
+    if out:
+        evaluate._write(out, report)
+    return report
+
+
+# --- командный матчбокс ДВУХ политик (Этап 1) --------------------------------- #
+#
+# team_fight выше водит ОБЕ стороны ОДНОЙ политикой (self-play). Здесь — то, чего
+# не хватало для честной оценки: КАНДИДАТ ведёт всю свою команду, СОПЕРНИК — явно
+# заданная фиксированная политика (greedy/battlecast/другие веса), и обе стороны ходят
+# через ТОТ ЖЕ PolyFightEnv, что и обучение (legalize -> slots.decode -> apply_actor[_seq]
+# -> TeamReward). Никакой отдельной упрощённой боевой логики нет: политики лишь выдают
+# тройку индексов в пространство среды, а исполняет их Simulation. Итог разворачивается к
+# перспективе кандидата; в matchup_sources стороны A/B меняются местами (side-swap).
+
+ENV_MODE = "team-2policy"
+
+
+def env_version(schema: int) -> Row:
+    """Версия боевого контура (среда/схема/терминал) — в каждый ряд журнала."""
+    return {"env": "PolyFightEnv", "schema": int(schema), "team": "TeamReward", "mode": ENV_MODE}
+
+
+class ModelController:
+    """Политика весов: схема 3 — общий joint-декодер (тот же, что play/evaluate), схема 2 — argmax.
+
+    last_baseline — диагностический независимый argmax голов (старый serving до Этапа 7):
+    им меряют «недопустимость независимого предсказания», не смешивая с действиями политики.
+    """
+
+    _is_controller = True
+
+    def __init__(self, model: Any, schema: Optional[int] = None):
+        self.model = model
+        self.schema = int(schema if schema is not None else
+                          getattr(getattr(model, "cfg", None), "schema", spec.SCHEMA))
+        yk = net.y_key(self.schema)
+        self.keys = (yk["cells"], yk["targets"], yk["weapons"])
+        self.name = getattr(model, "name", "model")
+        self.last_baseline: Optional[Dict[str, int]] = None
+
+    def describe(self) -> str:
+        return "%s@schema%d" % (self.name, self.schema)
+
+    def label(self, obs: Dict[str, Any], ctx: Any, slots: Any) -> Dict[str, int]:
+        if self.schema == spec3.SCHEMA:
+            # выбор политики — максимум совместной вероятности по A(s); среда приложила
+            # obs['legal'], поэтому маска та же, что породила наблюдение (serve==train)
+            dec = joint_mod.decode(self.model, obs, slots, ctx, self.schema)
+            self.last_baseline = joint_mod.independent_baseline(dec["logp"], self.schema)
+            return dec["label"]
+        out = self.model.predict(obs)
+        self.last_baseline = None
+        return {k: int(out.get(k, -1)) for k in self.keys}
+
+
+class TeacherController:
+    """Фиксированная политика-учитель: plan(ctx) -> индексы слотов той же среды.
+
+    Слоты мутируются на месте (ensure_cell/ensure_plan) ровно так же, как при разметке BC,
+    поэтому env.step декодирует и исполняет план учителя той же Simulation, что и модель —
+    без отдельной боевой логики учителя. Fallback «стоять/не атаковать», если план учителя
+    не лёг в слоты (у greedy/battlecast финальная клетка всегда достижима, так что не бывает).
+    """
+
+    _is_controller = True
+
+    def __init__(self, teacher: Any, schema: Optional[int] = None):
+        self.teacher = teacher
+        self.schema = int(schema if schema is not None else spec.SCHEMA)
+        self.name = getattr(teacher, "name", type(teacher).__name__)
+        self.last_baseline: Optional[Dict[str, int]] = None      # у учителя нет голов-baseline
+
+    def describe(self) -> str:
+        return "%s@schema%d" % (self.name, self.schema)
+
+    def label(self, obs: Dict[str, Any], ctx: Any, slots: Any) -> Dict[str, int]:
+        actions = self.teacher.plan(ctx)
+        if self.schema == spec3.SCHEMA:
+            slots_v3.ensure_plan(slots, ctx, actions)
+            lab = slots_v3.label_of(ctx, slots, actions)
+            return lab or {"plan": 0, "target": spec.NONE_SLOT, "weapon": spec.NONE_SLOT}
+        slots_mod.ensure_cell(slots, ctx.src_cell, slots_mod.final_cell(ctx, actions),
+                              slots_mod.dirs_of(actions))
+        lab = slots_mod.label_of(ctx, slots, actions)
+        return lab or {"cell": 0, "target": spec.NONE_SLOT, "weapon": spec.NONE_SLOT}
+
+
+def build_controller(policy: Any, schema: Optional[int] = None):
+    """Контроллер из уже собранного (.label+._is_controller), имени учителя или модели-весов."""
+    if getattr(policy, "_is_controller", False):
+        if schema is not None:
+            policy.schema = int(schema)
+        return policy
+    if isinstance(policy, str) and policy in teachers.list_teachers():
+        return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
+                                 schema)
+    return ModelController(policy, schema)
+
+
+def _flip_outcome(outcome: str, candidate_is_foes: bool) -> str:
+    """Исход якорен по hero (src). Если кандидат на стороне врагов — win/loss зеркалятся."""
+    if not candidate_is_foes:
+        return outcome
+    return {"win": "loss", "loss": "win"}.get(outcome, outcome)
+
+
+def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
+                candidate_is_foes: bool = False, rounds_cap: int = 8, draw_window: int = 4,
+                start_index: int = 0, schema: Optional[int] = None,
+                trace_limit: int = 0) -> Row:
+    """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
+
+    Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
+    исполняет среда. candidate_is_foes задаёт, какую сторону ведёт кандидат (A/B-swap).
+    trace (первые trace_limit шагов, 0 = все) — доказательство, что ходили обе команды.
+    """
+    candidate = build_controller(candidate, schema)
+    opponent = build_controller(opponent, candidate.schema)
+    environment = polyenv.PolyFightEnv(rounds_cap=rounds_cap,
+                                       team=TeamReward(draw_window=draw_window),
+                                       schema=candidate.schema)
+    obs = environment.reset(payload, start_index=start_index)
+    start_actor = environment.actor
+    steps, total, outcome, info = 0, 0.0, "open", {}
+    illegal = zero_dmg = cand_steps = opp_steps = 0
+    # РАЗДЕЛЬНЫЕ счётчики (не смешиваем, Этап 7 часть 2): недопустимое предложение,
+    # исправленное действие, реально исполненная атака, исполненная атака с нулевым уроном —
+    # по ВСЕМУ бою. «illegal_proposals» считает НЕдопустимость ВЫБРАННОГО политикой действия
+    # (для joint-декодера = 0); независимый baseline голов — отдельным счётчиком.
+    illegal_prop = corrected = exec_attacks = zero_dmg_attacks = 0
+    # То же, но только по КАНДИДАТУ (его оцениваем; соперник — фиксированная политика).
+    ci_prop = ci_corr = ci_exec = ci_zero = 0
+    # Диагностический независимый argmax голов (старый декодер): доля его предложений вне A(s)
+    # и число вызовов/фактических правок защитного legalize по кандидату.
+    ci_base = ci_base_outside = ci_legalize_calls = ci_outside = 0
+    trace: List[Row] = []
+    while obs is not None:
+        actor = environment.actor
+        side_foe = bool(environment.state.units[actor].hostile_to_hero)
+        is_candidate = (side_foe == candidate_is_foes)
+        ctrl = candidate if is_candidate else opponent
+        before = {uid: u.hp for uid, u in environment.state.units.items()}
+        chosen = ctrl.label(obs, environment._ctx, environment.slots)
+        baseline = getattr(ctrl, "last_baseline", None)
+        nt, nw = len(environment.slots.targets), len(environment.slots.weapons)
+        obs_legal = obs.get("legal") if isinstance(obs, dict) else None
+        obs, reward, terminated, truncated, info = environment.step(chosen)
+        executed = info["action"]
+        reason = info.get("legalize_reason")
+        dealt = round(sum(max(0.0, before[uid] - environment.state.units[uid].hp)
+                          for uid in before if uid in environment.state.units), 4)
+        proposed_attack = (0 <= int(chosen.get("target", -1)) < nt
+                           and 0 <= int(chosen.get("weapon", -1)) < nw)
+        executed_attack = (0 <= int(executed.get("target", -1)) < nt
+                           and 0 <= int(executed.get("weapon", -1)) < nw)
+        is_illegal = dict(executed) != dict(chosen)
+        is_illegal_prop = proposed_attack and not executed_attack   # политика хотела недопустимое
+        policy_outside = (obs_legal is not None
+                          and not joint_mod.is_jointly_legal(chosen, obs_legal, candidate.schema))
+        illegal += int(is_illegal)
+        zero_dmg += int(dealt <= 0.0)
+        illegal_prop += int(is_illegal_prop)
+        corrected += int(is_illegal)
+        exec_attacks += int(executed_attack)
+        zero_dmg_attacks += int(executed_attack and dealt <= 0.0)
+        cand_steps += int(is_candidate)
+        opp_steps += int(not is_candidate)
+        if is_candidate:
+            ci_prop += int(is_illegal_prop)
+            ci_corr += int(is_illegal)
+            ci_exec += int(executed_attack)
+            ci_zero += int(executed_attack and dealt <= 0.0)
+            ci_legalize_calls += 1                       # среда зовёт legalize на каждый шаг
+            ci_outside += int(policy_outside)            # выбранное политикой вне A(s) (не должно)
+            if baseline is not None:
+                ci_base += 1
+                bt, bw = int(baseline.get("target", -1)), int(baseline.get("weapon", -1))
+                base_attack = 0 <= bt < nt and 0 <= bw < nw
+                base_outside = base_attack and not joint_mod.is_jointly_legal(
+                    baseline, obs_legal, candidate.schema) if obs_legal is not None else False
+                ci_base_outside += int(base_outside)
+        if (not trace_limit) or steps < trace_limit:
+            trace.append({"step": steps, "actor": actor, "side": "cand" if is_candidate else "opp",
+                          "proposed": dict(chosen), "chosen": dict(chosen),
+                          "executed": dict(executed), "reason": reason,
+                          "proposed_attack": proposed_attack, "executed_attack": executed_attack,
+                          "illegal": is_illegal, "policy_outside": policy_outside,
+                          "dealt": dealt, "zero_damage": dealt <= 0.0,
+                          "value": info.get("value")})
+        steps += 1
+        total += reward
+        if terminated:
+            outcome = info["outcome"]
+            break
+        if truncated:
+            break
+    alive = lambda foe: sum(1 for u in environment.state.units.values()
+                            if u.is_alive and bool(u.hostile_to_hero) == foe)
+    cand_alive = alive(candidate_is_foes)
+    opp_alive = alive(not candidate_is_foes)
+    end_reason = ("terminated:%s" % outcome if info.get("terminated")
+                  else ("truncated:rounds_cap" if info.get("truncated") else "open"))
+    return {"outcome": _flip_outcome(outcome, candidate_is_foes), "raw_outcome": outcome,
+            "candidate": candidate.name, "opponent": opponent.name,
+            "candidate_id": candidate.describe(), "opponent_id": opponent.describe(),
+            "candidate_is_foes": bool(candidate_is_foes), "schema": candidate.schema,
+            "env_version": env_version(candidate.schema),
+            "terminated": bool(info.get("terminated", False)),
+            "truncated": bool(info.get("truncated", False)), "end_reason": end_reason,
+            "rounds": int(info.get("rounds", 0)), "steps": steps,
+            "candidate_steps": cand_steps, "opponent_steps": opp_steps,
+            "reward": round(total, 4), "candidate_alive": cand_alive, "opponent_alive": opp_alive,
+            "illegal_steps": illegal, "zero_damage_steps": zero_dmg,
+            "illegal_proposals": illegal_prop, "corrected_actions": corrected,
+            "attacks_executed": exec_attacks, "attacks_zero_damage": zero_dmg_attacks,
+            "cand_illegal_proposals": ci_prop, "cand_corrected": ci_corr,
+            "cand_attacks_executed": ci_exec, "cand_attacks_zero_damage": ci_zero,
+            "cand_baseline_steps": ci_base, "cand_baseline_outside_As": ci_base_outside,
+            "cand_legalize_calls": ci_legalize_calls, "cand_policy_outside_As": ci_outside,
+            "start_actor": start_actor, "trace": trace}
+
+
+def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict[str, Any]]],
+                    rounds_cap: int = 8, draw_window: int = 4, replays: int = 1,
+                    swap_sides: bool = True, trace_limit: int = 0) -> List[Row]:
+    """Каждая сцена x replays x обе расстановки сторон (candidate то hero-команда, то foes)."""
+    candidate = build_controller(candidate)
+    opponent = build_controller(opponent, candidate.schema)
+    rows: List[Row] = []
+    for name, payload in sources:
+        for rep in range(max(1, replays)):
+            for cand_foes in ((False, True) if swap_sides else (False,)):
+                row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
+                                  draw_window, start_index=rep, schema=candidate.schema,
+                                  trace_limit=trace_limit)
+                rows.append(dict(row, name=name, replay=rep))
+    return rows
+
+
+def summarize_matchup(rows: List[Row], rounds_cap: int = 8, draw_window: int = 4) -> Row:
+    """Доли исходов КАНДИДАТА: сводно и раздельно по каждой расстановке сторон (A/B)."""
+    def _block(sub: List[Row]) -> Row:
+        n = max(1, len(sub))
+        rate = lambda o: round(sum(1 for r in sub if r["outcome"] == o) / n, 4)
+        return {"fights": len(sub),
+                "win_rate": rate("win"), "loss_rate": rate("loss"), "draw_rate": rate("draw"),
+                "mutual_rate": rate("mutual"), "open_rate": rate("open"),
+                "mean_rounds": round(mean([r["rounds"] for r in sub]) if sub else 0.0, 2),
+                "mean_reward": round(mean([r["reward"] for r in sub]) if sub else 0.0, 3),
+                "mean_illegal_steps": round(mean([r["illegal_steps"] for r in sub]) if sub else 0.0, 3),
+                "mean_zero_damage_steps": round(mean([r["zero_damage_steps"] for r in sub]) if sub else 0.0, 3),
+                "mean_illegal_proposals": round(mean([r.get("illegal_proposals", 0) for r in sub]) if sub else 0.0, 3),
+                "mean_attacks_executed": round(mean([r.get("attacks_executed", 0) for r in sub]) if sub else 0.0, 3),
+                "mean_attacks_zero_damage": round(mean([r.get("attacks_zero_damage", 0) for r in sub]) if sub else 0.0, 3)}
+    return {"mode": ENV_MODE, "rounds_cap": rounds_cap, "draw_window": draw_window,
+            "candidate_id": rows[0]["candidate_id"] if rows else None,
+            "opponent_id": rows[0]["opponent_id"] if rows else None,
+            "fights": len(rows), "overall": _block(rows),
+            "candidate_is_hero_team": _block([r for r in rows if not r["candidate_is_foes"]]),
+            "candidate_is_foe_team": _block([r for r in rows if r["candidate_is_foes"]]),
+            "rows": rows}
+
+
+def _resolve_controller(policy: Any, kind: str, schema: Optional[int]):
+    """Спецификация стороны -> контроллер: имя учителя, путь/имя прогона весов или объект."""
+    if isinstance(policy, str):
+        if policy in teachers.list_teachers():
+            return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
+                                     schema), policy
+        path = policy
+        if not os.path.exists(path):
+            path = play.latest_checkpoint(path)
+        if not path:
+            raise RuntimeError("Нет ни учителя %r, ни чекпойнта runs/%s/model.json"
+                               % (policy, policy))
+        return ModelController(backend.load_policy(path, kind=kind), schema), path
+    return build_controller(policy, schema), getattr(policy, "describe", lambda: "?")()
+
+
+def run_matchup(candidate: str, opponent: str, name: str = "team_matchup", kind: str = "auto",
+                arenas: Optional[List[str]] = None, use_live: bool = True, rounds_cap: int = 8,
+                draw_window: int = 4, replays: int = 1, swap_sides: bool = True,
+                independent: bool = True, trace_limit: int = 0, out: Optional[str] = None,
+                log: Optional[Callable] = None) -> Row:
+    """Матчбокс двух политик на одном наборе стартовых состояний; сводка в team_matchup.json.
+
+    Отдельный файл (не перезаписывает team_eval.json/eval.json): командная оценка двух
+    политик живёт раздельно и от одиночного evaluate, и от self-play team_eval."""
+    say = log or _echo
+    cand_ctrl, cand_id = _resolve_controller(candidate, kind, None)
+    opp_ctrl, opp_id = _resolve_controller(opponent, kind, cand_ctrl.schema)
+    if independent:
+        sources = dataset.independent_sources(arenas, use_live)
+    else:
+        sources = list(dataset.sources(arenas, use_live, exclude_independent=True))
+    if not sources:
+        raise RuntimeError("Нет сцен: арены playground пусты и живых снимков нет")
+    tag = "independent" if independent else "non-independent"
+    say("матчбокс %s vs %s [%s]: %d сцен x%d, cap %d, swap %s"
+        % (cand_ctrl.describe(), opp_ctrl.describe(), tag, len(sources), replays,
+           rounds_cap, swap_sides))
+    rows = matchup_sources(cand_ctrl, opp_ctrl, sources, rounds_cap, draw_window, replays,
+                           swap_sides, trace_limit)
+    report = summarize_matchup(rows, rounds_cap, draw_window)
+    report["provenance"] = evaluate._provenance(cand_id if cand_id.endswith(".json") else None,
+                                                sources, rounds_cap, set_tag=tag)
+    report["provenance"]["candidate"] = cand_id
+    report["provenance"]["opponent"] = opp_id
+    for row in rows:
+        say("%s r%d [%s]: исход %s, раундов %d, наш жив %d, враж %d, шагов к/о %d/%d"
+            % (row["name"], row["replay"], "foes" if row["candidate_is_foes"] else "ours",
+               row["outcome"], row["rounds"], row["candidate_alive"], row["opponent_alive"],
+               row["candidate_steps"], row["opponent_steps"]))
+    evaluate._write(paths.file_in(paths.run_dir(name), "team_matchup.json"), report)
+    ov = report["overall"]
+    say("итог: win %s, loss %s, draw %s, mutual %s, open %s (у кандидата)"
+        % (ov["win_rate"], ov["loss_rate"], ov["draw_rate"], ov["mutual_rate"], ov["open_rate"]))
     if out:
         evaluate._write(out, report)
     return report

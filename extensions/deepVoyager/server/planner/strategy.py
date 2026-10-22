@@ -9,6 +9,7 @@ from planner.action import Action, move_action, target_action, use_action
 from planner.armament import Weapon, best_attack
 from planner.context import BattleContext
 from planner.geometry import apply_moves, cell_distance
+from planner.los import los_clear
 from planner.pathfinding import PathfindingService
 from planner.scoring import Scorer
 
@@ -56,8 +57,15 @@ class StrategyEnumerator:
                 )
 
     def _attack(self, enemy, path: List[str]) -> Optional[Weapon]:
-        """Оружие для атаки цели из финальной клетки маршрута (None — не достать)."""
+        """Оружие для атаки цели из финальной клетки маршрута (None — не достать/не видно).
+
+        F-C: одного расстояния мало — нужен ещё и LOS из позиции удара (тот же критерий, что
+        у sim.striking_distance и arent/slots_v3.attackable_v3), иначе учитель запланировал бы
+        удар сквозь стену, который симуляция обнуляет, а joint-маска A(s) сочла бы недопустимым.
+        """
         end = apply_moves(self._ctx.src_cell, path)
-        found = best_attack(self._ctx.weapons,
-                            cell_distance(end, self._ctx.cell_of(enemy)))
+        at = self._ctx.cell_of(enemy)
+        if not los_clear(self._ctx, end, at):
+            return None
+        found = best_attack(self._ctx.weapons, cell_distance(end, at))
         return found[0] if found else None

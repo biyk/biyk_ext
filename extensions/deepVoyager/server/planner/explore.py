@@ -15,6 +15,7 @@ from planner.action import Action, move_action, target_action, use_action
 from planner.armament import SURE, best_attack
 from planner.context import BattleContext
 from planner.geometry import cell_distance
+from planner.los import has_los, sight_segments
 from planner.pathfinding import PathfindingService
 from planner.points import Tuning, tuning
 from planner.scoring import Scorer
@@ -68,21 +69,39 @@ def reachable_paths(pf, start: Cell, src_id: str, max_steps: int) -> Dict[Cell, 
     return paths
 
 
-def best_strike(ctx: BattleContext, cell: Cell, enemies, t: Optional[Tuning] = None):
-    """Лучшая атака из клетки: (враг, оружие) по максимуму очков, при равных — ближе.
+def best_strike(ctx: BattleContext, cell: Cell, enemies, t: Optional[Tuning] = None,
+                segments=None):
+    """Лучшая атака из клетки: (враг, оружие) по максимуму очков.
 
     None, если ни одно оружие ни до кого не достает — тогда кандидат без use.
     t — действующие коэффициенты; в цикле перебора их берут один раз и передают сюда.
+    F-C: цель атакуется только при наличии линии видимости ИЗ клетки удара — тот же
+    критерий, что у sim.striking_distance и arent/slots_v3.attackable_v3. Планировщик
+    больше не «видит» цель сквозь стену: удар без LOS ни генерируется как действие,
+    ни ценится, поэтому разметка учителя гарантированно лежит внутри A(s).
+
+    ЭТАП 5 (часть 4): при равных очках цель выбирается не «ближайшая», а по осмысленному
+    порядку (лексикографически, без новых весов): (очки, можно_добить, опаснее, ближе).
+    «можно_добить» и «опасность» берутся из уже посчитанных симуляцией величин (урон оружия
+    vs hp цели, ожидаемый ответный удар цели) — то же намерение, что у battlecast
+    (ev, dmg_to_me, -dist): снять боеспособного противника и нейтрализовать угрозу важнее,
+    чем просто ударить ближайшего. Дальность остаётся последним критерием, а не первым.
     """
     t = t or tuning()
+    segments = sight_segments(ctx) if segments is None else segments
     options = []
     for enemy in enemies:
-        dist = cell_distance(cell, ctx.cell_of(enemy))
+        ecell = ctx.cell_of(enemy)
+        if not has_los(ctx, cell, ecell, segments):
+            continue
+        dist = cell_distance(cell, ecell)
         found = best_attack(ctx.weapons, dist)
         if found:
             weapon, mode = found
             points = t.attack_sure if mode == SURE else t.attack_doubt
-            options.append(((points, -dist), enemy, weapon))
+            finish = 1 if 0 < enemy.hp_current <= weapon.expected_damage else 0
+            threat = float(enemy.sim_damage_avg)
+            options.append(((points, finish, threat, -dist), enemy, weapon))
     if not options:
         return None
     _key, enemy, weapon = max(options, key=lambda o: o[0])

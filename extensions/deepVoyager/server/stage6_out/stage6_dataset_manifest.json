@@ -1,0 +1,152 @@
+{
+ "manifest_schema": 1,
+ "stage": 6,
+ "purpose": "v3 pipeline validation (small dataset)",
+ "versions": {
+  "schema_action_semantics": 3,
+  "features_version": 2,
+  "cell_feat_new": 21,
+  "cell_feat_old_rejected": 22,
+  "dims_for_v3": {
+   "state": 498,
+   "cells": 49,
+   "cell_feat": 21,
+   "targets": 9,
+   "target_feat": 22,
+   "weapons": 9,
+   "weapon_feat": 11,
+   "grid": 121,
+   "schema": 3,
+   "feat_version": 2
+  }
+ },
+ "provenance": {
+  "seed": 20261022,
+  "per_src": 6,
+  "rounds_max": 3,
+  "teachers": [
+   "greedy",
+   "battlecast"
+  ],
+  "scenario_sources": 12,
+  "arena_sources": [
+   "cover_alley",
+   "corridor_archer",
+   "door_chokepoint",
+   "pillars_three",
+   "ranged_kite",
+   "pike_standoff",
+   "javelin_open",
+   "two_weapons",
+   "fork_two_melee",
+   "five_surround",
+   "archer_pair",
+   "glass_cannon",
+   "tank_and_adds",
+   "wide_fast",
+   "bruiser_death"
+  ],
+  "workspace": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage6_out"
+ },
+ "counts": {
+  "examples": 557,
+  "train": 484,
+  "val": 73,
+  "unique_scenarios": 27,
+  "unique_states": 476
+ },
+ "checksums": {
+  "dataset_sha256": "a59ac3acbcae2845a2ed7405c51e3769354e33d337ae6715fd02df453e730828",
+  "bytes": 9955106
+ },
+ "label_distributions": {
+  "attacks_vs_noattack": {
+   "attack": 420,
+   "attack_frac": 0.754,
+   "no_attack": 137,
+   "no_attack_frac": 0.246
+  },
+  "plan_cell_geometry": {
+   "attack_same_cell": 389,
+   "attack_retreat": 31,
+   "attack_retreat_frac_of_attacks": 0.0738,
+   "all_same_cell": 526,
+   "all_retreat": 31
+  },
+  "weapon_types": {
+   "melee": 260,
+   "ranged": 152,
+   "none": 137,
+   "thrown": 8
+  },
+  "target_selection": {
+   "attacked_with_target": 420,
+   "nearest": 333,
+   "non_nearest": 87,
+   "non_nearest_frac": 0.2071,
+   "killable": 115,
+   "killable_frac": 0.2738
+  },
+  "team_and_role": {
+   "team_sizes": {
+    "6v6": 110,
+    "3v3": 109,
+    "2v2": 81,
+    "1v1": 75,
+    "5v5": 56,
+    "4v4": 45,
+    "1v2": 34,
+    "1v3": 18,
+    "3v2": 9,
+    "6v5": 8,
+    "1v5": 6,
+    "1v4": 6
+   },
+   "ally_count": {
+    "1": 139,
+    "3": 118,
+    "6": 118,
+    "2": 81,
+    "5": 56,
+    "4": 45
+   },
+   "enemy_count": {
+    "3": 127,
+    "2": 124,
+    "6": 110,
+    "1": 75,
+    "5": 70,
+    "4": 51
+   },
+   "roles": {
+    "melee": 364,
+    "ranged": 193
+   }
+  },
+  "admissibility": {
+   "matched_all_teachers": 667,
+   "in_As": 667,
+   "out_As": 0,
+   "frac_in_As": 1.0
+  }
+ },
+ "split": {
+  "groups_total": 27,
+  "train_groups": 24,
+  "val_groups": 3,
+  "train_samples": 484,
+  "val_samples": 73,
+  "group_overlap": [],
+  "exact_state_overlap": [],
+  "warnings": []
+ },
+ "constraints_met": {
+  "all_new_feature_version": true,
+  "exact_legal_mask": true,
+  "attack_labels_in_As": true,
+  "no_illegal_silently_fixed": true,
+  "retreat_examples_present": true,
+  "no_old_format_mixed": true,
+  "group_split_no_intersection": true
+ }
+}

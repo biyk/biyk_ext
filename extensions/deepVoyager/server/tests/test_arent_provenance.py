@@ -21,6 +21,9 @@ def _row(arena, variant):
             "weapons": [[base] * d["weapon_feat"] for _ in range(d["weapons"])],
             "mask": {"cells": [1] * d["cells"], "targets": [1] * d["targets"],
                      "weapons": [1] * d["weapons"]},
+            # A(s)=всё (все маски едины => декартов production): joint-BC/train работают.
+            "legal": [[[1 for _ in range(d["weapons"])] for _ in range(d["targets"])]
+                      for _ in range(d["cells"])],
             "y": {"cell": 0, "target": 0, "weapon": 0}, "value": 0.1,
             "meta": {"arena": arena, "src": "A", "variant": variant}}
 

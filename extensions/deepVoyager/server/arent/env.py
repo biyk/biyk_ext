@@ -12,6 +12,8 @@
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from arent import encode, spec
+from arent import joint as joint_mod
+from arent import legalize as legalize_mod
 from arent import slots as slots_mod
 from arent.observe import observe
 from arent.team_reward import TeamReward
@@ -52,6 +54,7 @@ class FightEnv:
         self._ctx: Any = None
         self.t = 0
         self.phi_s = 0.0
+        self._last_reason: Optional[str] = None    # причина последней правки legalization (для диагностики)
 
     def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
         """Новый бой из снимка сцены; Phi(s0) посчитан. start_index — единая сигнатура
@@ -69,26 +72,25 @@ class FightEnv:
         obs = observe(ctx)
         self.slots = slots_mod.build(ctx, obs)
         self._ctx = ctx
-        return encode.observation(ctx, obs, self.slots)
+        sample = encode.observation(ctx, obs, self.slots)
+        # множество совместно допустимых троек (для PPO-политики): тот же примитив легальности,
+        # что у legalize. Добавляем только в RL-наблюдение (датасет/serve его не несут).
+        sample["legal"] = joint_mod.legal_mask(self.slots, ctx, self.schema)
+        return sample
 
     def _phi(self, obs: Dict[str, Any]) -> float:
         return float(self.phi(obs)) if self.phi else 0.0
 
     def legalize(self, label: Dict[str, int]) -> Dict[str, int]:
-        """Полная легальность тройки в ТЕКУЩЕМ состоянии: атака вне дистанции -> «не атаковать».
+        """Полная легальность тройки в ТЕКУЩЕМ состоянии (делегует в arent/legalize.py).
 
         Головы маскируются независимо, но атака легальна условно (weapon достает цель из
-        выбранной клетки). Если атака недопустима — убираем оружие (NONE), движение и прицел
-        остаются: получаем законное действие, на котором и учится logπ (см. rollout.collect).
+        выбранной клетки/плана). Единый компонент чинит невозможную атаку до NONE и пишет
+        причину в self._last_reason; та же функция обслуживает play/evaluate/team_eval.
         """
-        cell = int(label.get("cell", 0))
-        target = int(label.get("target", spec.NONE_SLOT))
-        weapon = int(label.get("weapon", spec.NONE_SLOT))
-        n_t, n_w = len(self.slots.targets), len(self.slots.weapons)
-        if 0 <= target < n_t and 0 <= weapon < n_w:
-            if not slots_mod.attackable(self.slots, self._ctx, cell, target, weapon):
-                weapon = NONE_INDEX                 # атака невозможна -> только перемещение/прицел
-        return {"cell": cell, "target": target, "weapon": weapon}
+        action, reason = legalize_mod.legalize(label, self.schema, self.slots, self._ctx)
+        self._last_reason = reason
+        return action
 
     def step(self, label: Dict[str, int]) -> Tuple[Optional[Dict[str, Any]], float, bool, bool, Row]:
         """Применить тройку: legalize -> decode -> advance (ход героя + ответ врагов) -> награда."""
@@ -114,5 +116,6 @@ class FightEnv:
         info = {"value": round(float(value), 4), "survived": not died, "cleared": cleared,
                 "outcome": outcome, "terminated": terminated, "truncated": truncated,
                 "rounds": self.t, "foes_left": len(self.state.foes), "action": action,
+                "legalize_reason": self._last_reason,
                 "phi": round(phi_prev, 6), "phi_next": round(phi_next, 6)}
         return next_obs, reward, terminated, truncated, info

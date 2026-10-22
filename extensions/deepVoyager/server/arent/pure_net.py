@@ -8,8 +8,10 @@
 import math
 from typing import Any, Dict, List
 
-from arent import net
-from arent.net import GROUPS, masked_argmax, y_index
+from arent import joint, net
+from arent.net import GROUPS, masked_argmax
+
+PAD = -1e30     # как в torch_net: вне маски слот получает крайне отрицательный logp
 
 
 def _dot(a: List[float], b: List[float]) -> float:
@@ -80,6 +82,25 @@ class PurePolicy:
         value = p["valueB"] + _dot(p["valueW"], t)
         return a1pre, a1, z2, t, logits, cache, value
 
+    def head_logp(self, sample: Dict[str, Any]):
+        """Полнодлинные log-softmax каждой головы + value: вход общего joint-декодера serving.
+
+        Тот же закон головы, что у обучения: softmax берётся по masked-слотам forward (те же
+        allowed, что в _accumulate/joint NLL), вне маски — PAD. joint.argmax читает эти векторы
+        по индексам слотов и никогда не трогает PAD-позиции (они не входят в A(s)).
+        """
+        *_, logits, _cache, value = self.forward(sample)
+        totals = joint.group_totals(self.cfg.schema)
+        vecs: Dict[str, List[float]] = {}
+        for group in GROUPS:
+            allowed, values = logits[group]
+            vec = [PAD] * totals[group]
+            if allowed:
+                for i, p in zip(allowed, _softmax(values)):
+                    vec[i] = math.log(max(p, 1e-30))
+            vecs[group] = vec
+        return vecs["cells"], vecs["targets"], vecs["weapons"], round(float(value), 4)
+
     def predict(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         *_, logits, _cache, value = self.forward(sample)
         out: Dict[str, Any] = {"value": round(value, 4)}
@@ -107,16 +128,56 @@ class PurePolicy:
         a1pre, a1, z2, t, logits, cache, value = self.forward(sample)
         p, g = self.params, self.grad
         dt = [0.0] * len(t)
+        # Совместный BC-лог: тот же нормированный joint по A(s), что у torch_net/PPO.
+        # Метка проходит general validation (есть legal + принадлежит A(s)) -> ip,it,iw.
+        ip, it, iw = joint.ensure_jointly_legal(sample, self.cfg.schema)
+        legal = sample["legal"]
+        totals = joint.group_totals(self.cfg.schema)
+        wanted = {"cells": ip, "targets": it, "weapons": iw}
+        lp: Dict[str, Dict[int, float]] = {}
+        allowed_map: Dict[str, List[int]] = {}
         for group in GROUPS:
             allowed, values = logits[group]
-            wanted = y_index(sample, group, self.cfg.schema)
-            if not allowed or wanted not in allowed:
-                continue
             probs = _softmax(values)
-            report["loss"] -= math.log(max(probs[allowed.index(wanted)], 1e-12))
-            report[self.ykey[group]] -= math.log(max(probs[allowed.index(wanted)], 1e-12))
-            for i, prob in zip(allowed, probs):
-                delta = prob - (1.0 if i == wanted else 0.0)
+            lp[group] = {i: math.log(max(pr, 1e-30)) for i, pr in zip(allowed, probs)}
+            allowed_map[group] = allowed
+        Lc, Lt, Lw = lp["cells"], lp["targets"], lp["weapons"]
+        exps: List[float] = []
+        triples = []
+        top = float("-inf")
+        for pos in range(totals["cells"]):
+            row = legal[pos]
+            for tt in range(totals["targets"]):
+                wl = row[tt]
+                for ww in range(totals["weapons"]):
+                    if wl[ww] and pos in Lc and tt in Lt and ww in Lw:
+                        u = Lc[pos] + Lt[tt] + Lw[ww]
+                        triples.append((pos, tt, ww, u))
+                        if u > top:
+                            top = u
+        if not triples:
+            raise ValueError(f"пример {joint.example_id(sample)}: A(s) не покрывает "
+                             "размеченные слоты — пустая нормировка")
+        for pos, tt, ww, u in triples:
+            exps.append(math.exp(u - top))
+        ssum = sum(exps) or 1e-30
+        logZ = top + math.log(ssum)
+        mc, mt, mw = {}, {}, {}
+        for (pos, tt, ww, _u), e in zip(triples, exps):
+            pr = e / ssum                                    # joint-вероятность тройки
+            mc[pos] = mc.get(pos, 0.0) + pr
+            mt[tt] = mt.get(tt, 0.0) + pr
+            mw[ww] = mw.get(ww, 0.0) + pr
+        marg = {"cells": mc, "targets": mt, "weapons": mw}
+        report["loss"] += logZ - (Lc[ip] + Lt[it] + Lw[iw])   # joint NLL демонстрационного действия
+        for group in GROUPS:
+            report[self.ykey[group]] += -lp[group][wanted[group]]   # вклад головы (диагностика)
+        # dNLL/d(логит) = joint-маргиналь − onehot (независимые softmax-члены сокращаются).
+        for group in GROUPS:
+            m = marg[group]
+            wi = wanted[group]
+            for i in allowed_map[group]:
+                delta = m.get(i, 0.0) - (1.0 if i == wi else 0.0)
                 if delta:
                     self._slot_backward(group, cache[group][i], delta, dt)
         diff = value - float(sample.get("value", 0.0))

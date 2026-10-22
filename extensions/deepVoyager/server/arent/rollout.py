@@ -6,8 +6,9 @@
 # структуры данных поверх act/value_of агента, поэтому тестируются синтетикой.
 #
 # Ключевые свойства (по замечаниям консультанта):
-#  • исполняемое действие = легализованное средой (info["action"]); logπ берётся от НЕГО,
-#    поэтому PPO учится ровно на том действии, что исполняет среда (нет расхождения propose/act);
+#  • политика сэмплирует из совместного распределения по допустимому множеству (arent/joint.py),
+#    поэтому действие уже легально и legalize в среде — тождество: logπ исполненного = logπ
+#    выбранного (с той же нормировкой logZ). PPO учится ровно на том законе, что выбирал;
 #  • терминал vs усечение: на terminated next_value=0 (эпизод кончился по правилам боя),
 #    на truncated (rounds_cap) next_value=V(s') — бутстрап продолжающегося боя, цепочка GAE
 #    обрывается (alive=0), терминальной награды за усечение нет;
@@ -137,7 +138,10 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
         proposal = agent.act(sample)
         nxt, reward, terminated, truncated, info = environment.step(proposal["action"])
         action = info["action"]                                  # то, что реально исполнила среда
-        logp = joint_logp(proposal["logp_table"], action, agent.ykey)
+        # logπ исполненного действия = нормированный joint logπ того же совместного закона,
+        # из которого act сэмплировал (logZ — знаменитель этого состояния): rollout == update.
+        # Выбранная тройка уже легальна, поэтому legalization — тождество и action == proposal.
+        logp = joint_logp(proposal["logp_table"], action, agent.ykey, proposal["logZ"])
         if terminated:
             next_value, cont = 0.0, 0
         elif truncated:

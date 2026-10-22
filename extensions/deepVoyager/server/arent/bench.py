@@ -68,7 +68,7 @@ def run(name: str = "bench", samples: Optional[List[Dict[str, Any]]] = None,
                      "median_epoch": round(statistics.median(times), 2) if times else None,
                      "val": report["val"], "run": f"{name}_{kind}_{device}"})
         say(f"{kind}/{device}: {report['summary']['seconds']} с за {epochs_run} эпох, "
-            f"val joint={report['val']['joint']}")
+            f"val joint_nll={report['val']['joint_nll']}")
     done = sorted((row for row in rows if not row["skipped"]), key=lambda r: r["seconds"])
     table = {"samples": len(samples), "rows": rows, "fastest": done[0] if done else None}
     _write(paths.file_in(paths.run_dir(name), "bench.json"), table)
@@ -78,14 +78,14 @@ def run(name: str = "bench", samples: Optional[List[Dict[str, Any]]] = None,
 
 def _print(say: Callable, table: Dict[str, Any]) -> None:
     """Отчёт в лог: чем быстрее и что именно мерялось."""
-    say("замер: бэкенд/устройство -> секунды | медиана эпохи | val joint")
+    say("замер: бэкенд/устройство -> секунды | медиана эпохи | val joint_nll")
     for row in table["rows"]:
         if row["skipped"]:
             say(f"  {row['kind']}/{row['device']}: пропуск ({row['skipped']})")
         else:
             val = row["val"]
             say(f"  {row['kind']}/{row['device']} ({row['runs_on']}): {row['seconds']} с | "
-                f"{row['median_epoch']} с | joint={val['joint']}")
+                f"{row['median_epoch']} с | joint_nll={val['joint_nll']}")
 
 
 def _write(path: str, data: Any) -> None:

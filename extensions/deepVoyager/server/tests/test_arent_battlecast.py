@@ -40,7 +40,11 @@ def test_battlecast_sample_is_producible_and_jsonl_ready(tmp_path):
     with pinned(rounds=1, time_limit_sec=0.5):
         sample, reason = sample_one("corridor_archer", payload, teacher, {"src": payload["src"]})
     assert reason == "ok", reason
-    assert set(sample) == {"schema", "state", "cells", "targets", "weapons", "mask", "y", "value", "meta"}
+    assert set(sample) == {"schema", "state", "cells", "targets", "weapons", "mask", "legal",
+                           "y", "value", "meta"}
+    # метка реального учителя обязана лежать в A(s) (с учётом канона no-attack)
+    from arent import joint
+    assert joint.ensure_jointly_legal(sample, sample["schema"])
 
 
 def test_battlecast_chosen_actions_pass_our_legality_check():

@@ -36,7 +36,15 @@ def test_encode_v3_sample_matches_v2_keys_with_plan_head():
     sample = encode_v3.encode(ctx, obs, slots, label, value=1.0, meta={"arena": "gen_x"})
     # контракт: те же ключи, что у образца схемы 2
     v2 = encode.observation(ctx, obs, slots_v2.build(ctx, obs))
-    assert set(sample) == {"schema", "state", "cells", "targets", "weapons", "mask", "y", "value", "meta"}
+    assert set(sample) == {"schema", "feat_version", "state", "cells", "targets", "weapons",
+                           "mask", "legal", "y", "value", "meta"}
+    # ЭТАП 6 (1.2): пример несёт явную версию признаков головы move-plan
+    assert sample["feat_version"] == spec3.FEATURES_VERSION == 2
+    assert sample["feat_version"] == spec3.dims3()["feat_version"]
+    # legal — точная совместная маска A(s) [n_plans][targets][weapons], снятая при сборе примера
+    assert len(sample["legal"]) == spec3.K_MOVEPLAN + 1
+    assert len(sample["legal"][0]) == len(sample["mask"]["targets"])
+    assert len(sample["legal"][0][0]) == len(sample["mask"]["weapons"])
     assert set(sample["mask"]) == set(v2["mask"])
     assert sample["schema"] == spec3.SCHEMA == 3
     assert sample["meta"]["schema"] == 3

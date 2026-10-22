@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 from planner.context import BattleContext
 from planner.geometry import cell_distance
 from arent import encode as enc
-from arent import spec, spec3, slots_v3
+from arent import joint, spec, spec3, slots_v3
 from arent.observe import has_los, sight_segments
 
 D = spec.D_SCALE
@@ -29,7 +29,12 @@ def _enemy_cell(ctx: BattleContext, e: Dict[str, Any]):
 
 def plan_vector(ctx: BattleContext, obs: Dict[str, Any], plan: Dict[str, Any],
                 index: int, total: int, segments) -> List[float]:
-    """Один вектор слота move-plan (порядок = spec3.CELL3_FEATURES, длина = 22)."""
+    """Один вектор слота move-plan (порядок = spec3.CELL3_FEATURES, длина = 21).
+
+    ЭТАП 5 (часть 2): позиционный признак slotIndex убран — выводится только slotActive (=1 для
+    живого слота). plan-голова не видит, каким по счёту идёт слот, и обязана выбирать по
+    содержимому плана; это делает голову инвариантной к перестановке меню (serve/train одно).
+    """
     atk, end = plan["attack_cell"], plan["end_cell"]
     origin = ctx.src_cell
     speed = max(1, obs["me"]["speedCells"])
@@ -47,7 +52,7 @@ def plan_vector(ctx: BattleContext, obs: Dict[str, Any], plan: Dict[str, Any],
     los = any(has_los(ctx, atk, _enemy_cell(ctx, e), segments) for e in enemies)
     stay = plan["attack_cell"] == origin and plan["end_cell"] == origin
     reloc = plan["attack_cell"] == plan["end_cell"] and plan["attack_cell"] != origin
-    return enc._slot(True, index, total) + [
+    return [1.0] + [                                   # slotActive; позиционный индекс убран (ЭТАП 5)
         _r(plan["adx"] / D), _r(plan["ady"] / D), _r(plan["adist"] / D),   # adx, ady, adist
         _r(plan["edx"] / D), _r(plan["edy"] / D), _r(plan["edist"] / D),   # edx, edy, edist
         _r(plan["costIn"] / speed), _r(plan["costOut"] / speed),           # costIn, costOut
@@ -83,8 +88,14 @@ def observation(ctx: BattleContext, obs: Dict[str, Any], slots: slots_v3.SlotsV3
 
 def encode(ctx: BattleContext, obs: Dict[str, Any], slots: slots_v3.SlotsV3,
            label: Dict[str, int], value: float = 0.0, meta: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Один пример выборки схемы 3: наблюдение + метка {plan,target,weapon} + значение учителя."""
+    """Один пример выборки схемы 3: наблюдение + метка {plan,target,weapon} + значение учителя.
+
+    Mirror of encode.encode: добавляем точную совместную маску legal = joint.legal_mask(slots,
+    ctx, schema=3) там, где живы ctx/slots (serving-путь observation её не получает).
+    """
     sample = observation(ctx, obs, slots)
+    sample["feat_version"] = spec3.FEATURES_VERSION      # явная версия признаков v3 (ЭТАП 6, 1.2)
+    sample["legal"] = joint.legal_mask(slots, ctx, spec3.SCHEMA)
     sample["y"] = {"plan": label["plan"], "target": label["target"], "weapon": label["weapon"]}
     sample["value"] = _r(max(-3.0, min(3.0, value / spec.VALUE_SCALE)))
     sample["meta"] = dict(meta or {}, schema=spec3.SCHEMA, src=ctx.src_id, cell=list(ctx.src_cell))

@@ -1,0 +1,5456 @@
+{
+ "seed": 20260922,
+ "count": 12,
+ "names": [
+  "hold9_chokepoint_00",
+  "hold9_ring_01",
+  "hold9_boss_adds_02",
+  "hold9_line_03",
+  "hold9_boss_adds_04",
+  "hold9_line_05",
+  "hold9_line_06",
+  "hold9_chokepoint_07",
+  "hold9_cover_08",
+  "hold9_pair_09",
+  "hold9_line_10",
+  "hold9_ring_11"
+ ],
+ "note": "часть D: новый независимый набор; в playground НЕ писан",
+ "payloads": {
+  "hold9_chokepoint_00": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 30,
+   "weapons": [
+    {
+     "id": "jav",
+     "name": "Дротики",
+     "damage": "1d6",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 700,
+     "height": 700,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "fast-1",
+      "x": 100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 12,
+       "max": 12,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.58,
+      "initiative": 3,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "fast-2",
+      "x": 150,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.56,
+      "initiative": 27,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "reach-3",
+      "x": 100,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 17,
+       "max": 17,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.53,
+      "initiative": 23,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "melee-1",
+      "x": 550,
+      "y": 550,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 575.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.46,
+      "initiative": 18,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "reach-2",
+      "x": 550,
+      "y": 500,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 525.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 17,
+       "max": 17,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.57,
+      "initiative": 4,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "reach-3",
+      "x": 500,
+      "y": 500,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 525.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 17,
+       "max": 17,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.45,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 100
+       },
+       "B": {
+        "x": 150,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w25",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 500
+       },
+       "B": {
+        "x": 100,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w5",
+      "points": {
+       "A": {
+        "x": 350,
+        "y": 100
+       },
+       "B": {
+        "x": 400,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w14",
+      "points": {
+       "A": {
+        "x": 350,
+        "y": 550
+       },
+       "B": {
+        "x": 400,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w20",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 250
+       },
+       "B": {
+        "x": 100,
+        "y": 300
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w12",
+      "points": {
+       "A": {
+        "x": 250,
+        "y": 550
+       },
+       "B": {
+        "x": 300,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w10",
+      "points": {
+       "A": {
+        "x": 150,
+        "y": 550
+       },
+       "B": {
+        "x": 200,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w21",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 300
+       },
+       "B": {
+        "x": 100,
+        "y": 350
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w13",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 550
+       },
+       "B": {
+        "x": 350,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w16",
+      "points": {
+       "A": {
+        "x": 450,
+        "y": 550
+       },
+       "B": {
+        "x": 500,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w24",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 450
+       },
+       "B": {
+        "x": 100,
+        "y": 500
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w11",
+      "points": {
+       "A": {
+        "x": 200,
+        "y": 550
+       },
+       "B": {
+        "x": 250,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w22",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 350
+       },
+       "B": {
+        "x": 100,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w7",
+      "points": {
+       "A": {
+        "x": 450,
+        "y": 100
+       },
+       "B": {
+        "x": 500,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_ring_01": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 20,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1000,
+     "height": 1100,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "tank-1",
+      "x": 100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 42,
+       "max": 42,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+2",
+      "reachFt": 5,
+      "hitChance": 0.47,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "ranged-2",
+      "x": 150,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 13,
+       "max": 13,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.55,
+      "initiative": 9,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "tank-3",
+      "x": 100,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 27,
+       "max": 27,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+2",
+      "reachFt": 5,
+      "hitChance": 0.41,
+      "initiative": 7,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "fast-1",
+      "x": 850,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 875.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.59,
+      "initiative": 6,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "fast-2",
+      "x": 750,
+      "y": 900,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 775.0,
+       "y": 925.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.53,
+      "initiative": 2,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "melee-3",
+      "x": 750,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 775.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.47,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w34",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 350
+       },
+       "B": {
+        "x": 100,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w9",
+      "points": {
+       "A": {
+        "x": 550,
+        "y": 100
+       },
+       "B": {
+        "x": 600,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w6",
+      "points": {
+       "A": {
+        "x": 400,
+        "y": 100
+       },
+       "B": {
+        "x": 450,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w29",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 100
+       },
+       "B": {
+        "x": 100,
+        "y": 150
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 200,
+        "y": 100
+       },
+       "B": {
+        "x": 250,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w39",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 600
+       },
+       "B": {
+        "x": 100,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w15",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 950
+       },
+       "B": {
+        "x": 150,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 100
+       },
+       "B": {
+        "x": 150,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w22",
+      "points": {
+       "A": {
+        "x": 450,
+        "y": 950
+       },
+       "B": {
+        "x": 500,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w12",
+      "points": {
+       "A": {
+        "x": 700,
+        "y": 100
+       },
+       "B": {
+        "x": 750,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w5",
+      "points": {
+       "A": {
+        "x": 350,
+        "y": 100
+       },
+       "B": {
+        "x": 400,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w25",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 950
+       },
+       "B": {
+        "x": 650,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w40",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 650
+       },
+       "B": {
+        "x": 100,
+        "y": 700
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w10",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 100
+       },
+       "B": {
+        "x": 650,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_boss_adds_02": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 25,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 750,
+     "height": 750,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "ranged-1",
+      "x": 350,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 375.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.56,
+      "initiative": 8,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "fast-2",
+      "x": 250,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.69,
+      "initiative": 14,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "ranged-3",
+      "x": 250,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.59,
+      "initiative": 28,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "tank-1",
+      "x": 350,
+      "y": 600,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 375.0,
+       "y": 625.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 25,
+       "max": 25,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d12+3",
+      "reachFt": 5,
+      "hitChance": 0.54,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "tank-2",
+      "x": 250,
+      "y": 550,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 575.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 39,
+       "max": 39,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "2d6+2",
+      "reachFt": 5,
+      "hitChance": 0.51,
+      "initiative": 17,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "melee-3",
+      "x": 250,
+      "y": 600,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 625.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.59,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 50
+       },
+       "B": {
+        "x": 500,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w1",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 100
+       },
+       "B": {
+        "x": 500,
+        "y": 150
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 150
+       },
+       "B": {
+        "x": 500,
+        "y": 200
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w3",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 200
+       },
+       "B": {
+        "x": 500,
+        "y": 250
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w4",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 250
+       },
+       "B": {
+        "x": 500,
+        "y": 300
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w5",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 450
+       },
+       "B": {
+        "x": 500,
+        "y": 500
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w6",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 500
+       },
+       "B": {
+        "x": 500,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w7",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 550
+       },
+       "B": {
+        "x": 500,
+        "y": 600
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w8",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 600
+       },
+       "B": {
+        "x": 500,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w9",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 650
+       },
+       "B": {
+        "x": 500,
+        "y": 700
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_line_03": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 20,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1200,
+     "height": 1100,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "tank-1",
+      "x": 550,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 41,
+       "max": 41,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d12+3",
+      "reachFt": 5,
+      "hitChance": 0.46,
+      "initiative": 28,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "fast-2",
+      "x": 550,
+      "y": 200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 225.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.62,
+      "initiative": 14,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "mobile_archer-3",
+      "x": 500,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 60,
+      "hitChance": 0.62,
+      "initiative": 4,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A4",
+      "name": "tank-4",
+      "x": 750,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 775.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 24,
+       "max": 24,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+3",
+      "reachFt": 5,
+      "hitChance": 0.54,
+      "initiative": 25,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "ranged-1",
+      "x": 500,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.53,
+      "initiative": 17,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "mobile_archer-2",
+      "x": 500,
+      "y": 900,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 925.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d8",
+      "reachFt": 60,
+      "hitChance": 0.62,
+      "initiative": 25,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "mobile_archer-3",
+      "x": 450,
+      "y": 850,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 475.0,
+       "y": 875.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6+2",
+      "reachFt": 60,
+      "hitChance": 0.53,
+      "initiative": 17,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F4",
+      "name": "ranged-4",
+      "x": 650,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 675.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.6,
+      "initiative": 26,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 950
+       },
+       "B": {
+        "x": 600,
+        "y": 1000
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w1",
+      "points": {
+       "A": {
+        "x": 650,
+        "y": 950
+       },
+       "B": {
+        "x": 650,
+        "y": 1000
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 950
+       },
+       "B": {
+        "x": 650,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w3",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 1000
+       },
+       "B": {
+        "x": 650,
+        "y": 1000
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_boss_adds_04": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 20,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 800,
+     "height": 800,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "ranged-1",
+      "x": 400,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 425.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 12,
+       "max": 12,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.63,
+      "initiative": 6,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "fast-2",
+      "x": 300,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 325.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.58,
+      "initiative": 2,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "melee-3",
+      "x": 300,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 325.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.59,
+      "initiative": 28,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "fast-1",
+      "x": 400,
+      "y": 650,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 425.0,
+       "y": 675.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.57,
+      "initiative": 3,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "tank-2",
+      "x": 300,
+      "y": 600,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 325.0,
+       "y": 625.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 25,
+       "max": 25,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d12+3",
+      "reachFt": 5,
+      "hitChance": 0.46,
+      "initiative": 5,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "melee-3",
+      "x": 300,
+      "y": 650,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 325.0,
+       "y": 675.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 14,
+       "max": 14,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.62,
+      "initiative": 5,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 200
+       },
+       "B": {
+        "x": 550,
+        "y": 200
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w5",
+      "points": {
+       "A": {
+        "x": 150,
+        "y": 650
+       },
+       "B": {
+        "x": 200,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w1",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 650
+       },
+       "B": {
+        "x": 650,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w7",
+      "points": {
+       "A": {
+        "x": 350,
+        "y": 700
+       },
+       "B": {
+        "x": 400,
+        "y": 700
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 150,
+        "y": 500
+       },
+       "B": {
+        "x": 150,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_line_05": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 30,
+   "weapons": [
+    {
+     "id": "jav",
+     "name": "Дротики",
+     "damage": "1d6",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1000,
+     "height": 950,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "mobile_archer-1",
+      "x": 250,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8",
+      "reachFt": 60,
+      "hitChance": 0.55,
+      "initiative": 22,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "melee-2",
+      "x": 350,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 375.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 12,
+       "max": 12,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.49,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "reach-3",
+      "x": 450,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 475.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 12,
+       "max": 12,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.52,
+      "initiative": 6,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "ranged-1",
+      "x": 450,
+      "y": 800,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 475.0,
+       "y": 825.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 12,
+       "max": 12,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.65,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "ranged-2",
+      "x": 350,
+      "y": 700,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 375.0,
+       "y": 725.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d6+3",
+      "reachFt": 30,
+      "hitChance": 0.61,
+      "initiative": 29,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "mobile_archer-3",
+      "x": 500,
+      "y": 800,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 825.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 35,
+      "damage": "1d8",
+      "reachFt": 60,
+      "hitChance": 0.55,
+      "initiative": 21,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     }
+    ],
+    "walls": []
+   }
+  },
+  "hold9_line_06": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 15,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1500,
+     "height": 1550,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "ranged-1",
+      "x": 550,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.53,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "ranged-1",
+      "x": 550,
+      "y": 1300,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 1325.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d6+3",
+      "reachFt": 30,
+      "hitChance": 0.62,
+      "initiative": 29,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w20",
+      "points": {
+       "A": {
+        "x": 1300,
+        "y": 100
+       },
+       "B": {
+        "x": 1350,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w243",
+      "points": {
+       "A": {
+        "x": 400,
+        "y": 900
+       },
+       "B": {
+        "x": 400,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w355",
+      "points": {
+       "A": {
+        "x": 1350,
+        "y": 1300
+       },
+       "B": {
+        "x": 1400,
+        "y": 1300
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w271",
+      "points": {
+       "A": {
+        "x": 450,
+        "y": 1000
+       },
+       "B": {
+        "x": 500,
+        "y": 1000
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w105",
+      "points": {
+       "A": {
+        "x": 1350,
+        "y": 400
+       },
+       "B": {
+        "x": 1400,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w69",
+      "points": {
+       "A": {
+        "x": 400,
+        "y": 300
+       },
+       "B": {
+        "x": 400,
+        "y": 350
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w135",
+      "points": {
+       "A": {
+        "x": 1400,
+        "y": 500
+       },
+       "B": {
+        "x": 1400,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w18",
+      "points": {
+       "A": {
+        "x": 1100,
+        "y": 100
+       },
+       "B": {
+        "x": 1150,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w235",
+      "points": {
+       "A": {
+        "x": 50,
+        "y": 900
+       },
+       "B": {
+        "x": 100,
+        "y": 900
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w148",
+      "points": {
+       "A": {
+        "x": 350,
+        "y": 600
+       },
+       "B": {
+        "x": 400,
+        "y": 600
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w124",
+      "points": {
+       "A": {
+        "x": 900,
+        "y": 500
+       },
+       "B": {
+        "x": 950,
+        "y": 500
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w160",
+      "points": {
+       "A": {
+        "x": 1200,
+        "y": 600
+       },
+       "B": {
+        "x": 1250,
+        "y": 600
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w208",
+      "points": {
+       "A": {
+        "x": 100,
+        "y": 800
+       },
+       "B": {
+        "x": 100,
+        "y": 850
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w95",
+      "points": {
+       "A": {
+        "x": 650,
+        "y": 400
+       },
+       "B": {
+        "x": 700,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w133",
+      "points": {
+       "A": {
+        "x": 1350,
+        "y": 500
+       },
+       "B": {
+        "x": 1400,
+        "y": 500
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w85",
+      "points": {
+       "A": {
+        "x": 1350,
+        "y": 300
+       },
+       "B": {
+        "x": 1400,
+        "y": 300
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w89",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 350
+       },
+       "B": {
+        "x": 300,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w282",
+      "points": {
+       "A": {
+        "x": 200,
+        "y": 1050
+       },
+       "B": {
+        "x": 200,
+        "y": 1100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w363",
+      "points": {
+       "A": {
+        "x": 1100,
+        "y": 1350
+       },
+       "B": {
+        "x": 1100,
+        "y": 1400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w239",
+      "points": {
+       "A": {
+        "x": 200,
+        "y": 900
+       },
+       "B": {
+        "x": 200,
+        "y": 950
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_chokepoint_07": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 30,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1600,
+     "height": 1600,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "mobile_archer-1",
+      "x": 100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 60,
+      "hitChance": 0.53,
+      "initiative": 2,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "ranged-2",
+      "x": 150,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.57,
+      "initiative": 18,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "fast-3",
+      "x": 100,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.63,
+      "initiative": 10,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A4",
+      "name": "reach-4",
+      "x": 150,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 13,
+       "max": 13,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.47,
+      "initiative": 5,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A5",
+      "name": "tank-5",
+      "x": 200,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 225.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 24,
+       "max": 24,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "2d6+3",
+      "reachFt": 5,
+      "hitChance": 0.52,
+      "initiative": 15,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A6",
+      "name": "tank-6",
+      "x": 100,
+      "y": 200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 225.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 35,
+       "max": 35,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+3",
+      "reachFt": 5,
+      "hitChance": 0.55,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "reach-1",
+      "x": 1450,
+      "y": 1450,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1475.0,
+       "y": 1475.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 13,
+       "max": 13,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.57,
+      "initiative": 27,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "reach-2",
+      "x": 1450,
+      "y": 1400,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1475.0,
+       "y": 1425.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.47,
+      "initiative": 13,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "tank-3",
+      "x": 1400,
+      "y": 1400,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1425.0,
+       "y": 1425.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 25,
+       "max": 25,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "2d6+2",
+      "reachFt": 5,
+      "hitChance": 0.41,
+      "initiative": 25,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F4",
+      "name": "reach-4",
+      "x": 1400,
+      "y": 1450,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1425.0,
+       "y": 1475.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 15,
+       "max": 15,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.53,
+      "initiative": 18,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F5",
+      "name": "reach-5",
+      "x": 1350,
+      "y": 1350,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1375.0,
+       "y": 1375.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 18,
+       "max": 18,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.52,
+      "initiative": 16,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F6",
+      "name": "reach-6",
+      "x": 1400,
+      "y": 1350,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1425.0,
+       "y": 1375.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 15,
+       "max": 15,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.57,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w4",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 250
+       },
+       "B": {
+        "x": 850,
+        "y": 300
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w19",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 1150
+       },
+       "B": {
+        "x": 850,
+        "y": 1200
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w12",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 650
+       },
+       "B": {
+        "x": 850,
+        "y": 700
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w18",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 1100
+       },
+       "B": {
+        "x": 850,
+        "y": 1150
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w7",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 400
+       },
+       "B": {
+        "x": 850,
+        "y": 450
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w17",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 1050
+       },
+       "B": {
+        "x": 850,
+        "y": 1100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w1",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 100
+       },
+       "B": {
+        "x": 850,
+        "y": 150
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w26",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 1500
+       },
+       "B": {
+        "x": 850,
+        "y": 1550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 150
+       },
+       "B": {
+        "x": 850,
+        "y": 200
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w9",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 500
+       },
+       "B": {
+        "x": 850,
+        "y": 550
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w13",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 700
+       },
+       "B": {
+        "x": 850,
+        "y": 750
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 850,
+        "y": 50
+       },
+       "B": {
+        "x": 850,
+        "y": 100
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_cover_08": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 15,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1500,
+     "height": 1300,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "ranged-1",
+      "x": 1350,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1375.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 14,
+       "max": 14,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.55,
+      "initiative": 8,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "reach-2",
+      "x": 1300,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1325.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 13,
+       "max": 13,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.57,
+      "initiative": 26,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "reach-3",
+      "x": 1350,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1375.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 16,
+       "max": 16,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.59,
+      "initiative": 20,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A4",
+      "name": "fast-4",
+      "x": 1300,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1325.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.5,
+      "initiative": 9,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A5",
+      "name": "melee-5",
+      "x": 1250,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1275.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.6,
+      "initiative": 1,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A6",
+      "name": "ranged-6",
+      "x": 1200,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1225.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.6,
+      "initiative": 25,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "ranged-1",
+      "x": 100,
+      "y": 1150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 1175.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.53,
+      "initiative": 1,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "melee-2",
+      "x": 100,
+      "y": 1100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 1125.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.49,
+      "initiative": 25,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "ranged-3",
+      "x": 150,
+      "y": 1150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 1175.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.6,
+      "initiative": 9,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F4",
+      "name": "ranged-4",
+      "x": 150,
+      "y": 1100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 1125.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d6+3",
+      "reachFt": 30,
+      "hitChance": 0.51,
+      "initiative": 24,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F5",
+      "name": "melee-5",
+      "x": 100,
+      "y": 1050,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 1075.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.65,
+      "initiative": 6,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F6",
+      "name": "melee-6",
+      "x": 100,
+      "y": 1000,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 1025.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.56,
+      "initiative": 6,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w6",
+      "points": {
+       "A": {
+        "x": 550,
+        "y": 600
+       },
+       "B": {
+        "x": 600,
+        "y": 600
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w9",
+      "points": {
+       "A": {
+        "x": 950,
+        "y": 1050
+       },
+       "B": {
+        "x": 950,
+        "y": 1100
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w8",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 1200
+       },
+       "B": {
+        "x": 300,
+        "y": 1250
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w3",
+      "points": {
+       "A": {
+        "x": 1150,
+        "y": 700
+       },
+       "B": {
+        "x": 1150,
+        "y": 750
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w7",
+      "points": {
+       "A": {
+        "x": 50,
+        "y": 150
+       },
+       "B": {
+        "x": 100,
+        "y": 150
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_pair_09": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 20,
+   "weapons": [
+    {
+     "id": "bow",
+     "name": "Длинный лук",
+     "damage": "1d8+2",
+     "attackBonus": 4,
+     "sureFt": 30,
+     "doubtFt": 120
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1000,
+     "height": 1100,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "tank-1",
+      "x": 700,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 725.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 43,
+       "max": 43,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+3",
+      "reachFt": 5,
+      "hitChance": 0.5,
+      "initiative": 29,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "mobile_archer-2",
+      "x": 750,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 775.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 35,
+      "damage": "1d8",
+      "reachFt": 60,
+      "hitChance": 0.54,
+      "initiative": 23,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "reach-3",
+      "x": 750,
+      "y": 200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 775.0,
+       "y": 225.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 13,
+       "max": 13,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8+2",
+      "reachFt": 10,
+      "hitChance": 0.58,
+      "initiative": 9,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A4",
+      "name": "melee-4",
+      "x": 800,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 825.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.46,
+      "initiative": 4,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A5",
+      "name": "reach-5",
+      "x": 850,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 875.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.46,
+      "initiative": 22,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A6",
+      "name": "tank-6",
+      "x": 850,
+      "y": 200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 875.0,
+       "y": 225.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 28,
+       "max": 28,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d12+3",
+      "reachFt": 5,
+      "hitChance": 0.54,
+      "initiative": 8,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "reach-1",
+      "x": 100,
+      "y": 850,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 875.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.52,
+      "initiative": 18,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "melee-2",
+      "x": 100,
+      "y": 900,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 925.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.51,
+      "initiative": 20,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "fast-3",
+      "x": 100,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 6,
+       "max": 6,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.62,
+      "initiative": 8,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F4",
+      "name": "fast-4",
+      "x": 200,
+      "y": 900,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 225.0,
+       "y": 925.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 35,
+      "damage": "1d6+2",
+      "reachFt": 5,
+      "hitChance": 0.67,
+      "initiative": 13,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F5",
+      "name": "melee-5",
+      "x": 250,
+      "y": 850,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 875.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.61,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F6",
+      "name": "fast-6",
+      "x": 200,
+      "y": 950,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 225.0,
+       "y": 975.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 6,
+       "max": 6,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.57,
+      "initiative": 27,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w0",
+      "points": {
+       "A": {
+        "x": 550,
+        "y": 350
+       },
+       "B": {
+        "x": 550,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w1",
+      "points": {
+       "A": {
+        "x": 600,
+        "y": 350
+       },
+       "B": {
+        "x": 600,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 550,
+        "y": 350
+       },
+       "B": {
+        "x": 600,
+        "y": 350
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w3",
+      "points": {
+       "A": {
+        "x": 550,
+        "y": 400
+       },
+       "B": {
+        "x": 600,
+        "y": 400
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_line_10": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 20,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "shortbow",
+     "name": "Короткий лук",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 30,
+     "doubtFt": 60
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 750,
+     "height": 750,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "tank-1",
+      "x": 100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 41,
+       "max": 41,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+2",
+      "reachFt": 5,
+      "hitChance": 0.42,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "ranged-2",
+      "x": 100,
+      "y": 200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 225.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.61,
+      "initiative": 16,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "fast-3",
+      "x": 100,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 40,
+      "damage": "1d6",
+      "reachFt": 5,
+      "hitChance": 0.61,
+      "initiative": 30,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "A4",
+      "name": "tank-4",
+      "x": 250,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 275.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 33,
+       "max": 33,
+       "temp": 0
+      },
+      "speed": 20,
+      "damage": "2d6+3",
+      "reachFt": 5,
+      "hitChance": 0.51,
+      "initiative": 29,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "ranged-1",
+      "x": 550,
+      "y": 600,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 575.0,
+       "y": 625.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 7,
+       "max": 7,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.59,
+      "initiative": 13,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "mobile_archer-2",
+      "x": 600,
+      "y": 500,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 625.0,
+       "y": 525.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d6+2",
+      "reachFt": 60,
+      "hitChance": 0.64,
+      "initiative": 27,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "ranged-3",
+      "x": 500,
+      "y": 550,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 525.0,
+       "y": 575.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d6+2",
+      "reachFt": 30,
+      "hitChance": 0.56,
+      "initiative": 21,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "F4",
+      "name": "ranged-4",
+      "x": 600,
+      "y": 600,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 625.0,
+       "y": 625.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 11,
+       "max": 11,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d6+3",
+      "reachFt": 30,
+      "hitChance": 0.52,
+      "initiative": 8,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     }
+    ],
+    "walls": [
+     {
+      "id": "w2",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 700
+       },
+       "B": {
+        "x": 350,
+        "y": 700
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w6",
+      "points": {
+       "A": {
+        "x": 650,
+        "y": 600
+       },
+       "B": {
+        "x": 650,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w5",
+      "points": {
+       "A": {
+        "x": 500,
+        "y": 200
+       },
+       "B": {
+        "x": 550,
+        "y": 200
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w4",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 500
+       },
+       "B": {
+        "x": 350,
+        "y": 500
+       }
+      },
+      "move": 1,
+      "sight": 1,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     },
+     {
+      "id": "w3",
+      "points": {
+       "A": {
+        "x": 300,
+        "y": 650
+       },
+       "B": {
+        "x": 350,
+        "y": 650
+       }
+      },
+      "move": 1,
+      "sight": 0,
+      "type": "wall",
+      "door": null,
+      "closed": false,
+      "locked": false
+     }
+    ]
+   }
+  },
+  "hold9_ring_11": {
+   "src": "A1",
+   "token": "F1",
+   "mode": "direct",
+   "speed": 25,
+   "weapons": [
+    {
+     "id": "sword",
+     "name": "Меч",
+     "damage": "1d6+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    },
+    {
+     "id": "axe",
+     "name": "Боевой топор",
+     "damage": "1d8+2",
+     "attackBonus": 3,
+     "sureFt": 5,
+     "doubtFt": 5
+    }
+   ],
+   "data": {
+    "scene": {
+     "width": 1550,
+     "height": 1350,
+     "gridSize": 50
+    },
+    "npcs": [
+     {
+      "id": "A1",
+      "name": "melee-1",
+      "x": 100,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.52,
+      "initiative": 5,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "axe",
+        "name": "Боевой топор",
+        "damage": "1d8+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     },
+     {
+      "id": "A2",
+      "name": "ranged-2",
+      "x": 150,
+      "y": 100,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 175.0,
+       "y": 125.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 10,
+       "max": 10,
+       "temp": 0
+      },
+      "speed": 15,
+      "damage": "1d8+2",
+      "reachFt": 30,
+      "hitChance": 0.55,
+      "initiative": 11,
+      "weapons": [
+       {
+        "id": "bow",
+        "name": "Длинный лук",
+        "damage": "1d8+2",
+        "attackBonus": 4,
+        "sureFt": 30,
+        "doubtFt": 120
+       }
+      ]
+     },
+     {
+      "id": "A3",
+      "name": "reach-3",
+      "x": 100,
+      "y": 150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 125.0,
+       "y": 175.0
+      },
+      "disposition": -1,
+      "hp": {
+       "current": 14,
+       "max": 14,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8",
+      "reachFt": 10,
+      "hitChance": 0.52,
+      "initiative": 7,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F1",
+      "name": "melee-1",
+      "x": 1400,
+      "y": 1200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1425.0,
+       "y": 1225.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 30,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.47,
+      "initiative": 14,
+      "weapons": [
+       {
+        "id": "jav",
+        "name": "Дротики",
+        "damage": "1d6",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F2",
+      "name": "melee-2",
+      "x": 1300,
+      "y": 1150,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1325.0,
+       "y": 1175.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 8,
+       "max": 8,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d4",
+      "reachFt": 5,
+      "hitChance": 0.57,
+      "initiative": 22,
+      "weapons": [
+       {
+        "id": "sword",
+        "name": "Меч",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       },
+       {
+        "id": "shortbow",
+        "name": "Короткий лук",
+        "damage": "1d6+2",
+        "attackBonus": 3,
+        "sureFt": 30,
+        "doubtFt": 60
+       }
+      ]
+     },
+     {
+      "id": "F3",
+      "name": "melee-3",
+      "x": 1300,
+      "y": 1200,
+      "width": 50,
+      "height": 50,
+      "center": {
+       "x": 1325.0,
+       "y": 1225.0
+      },
+      "disposition": 1,
+      "hp": {
+       "current": 9,
+       "max": 9,
+       "temp": 0
+      },
+      "speed": 25,
+      "damage": "1d8",
+      "reachFt": 5,
+      "hitChance": 0.48,
+      "initiative": 12,
+      "weapons": [
+       {
+        "id": "gsword",
+        "name": "Двуручный",
+        "damage": "2d6+3",
+        "attackBonus": 3,
+        "sureFt": 5,
+        "doubtFt": 5
+       }
+      ]
+     }
+    ],
+    "walls": []
+   }
+  }
+ }
+}

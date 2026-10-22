@@ -1,0 +1,744 @@
+{
+ "split": {
+  "train": 484,
+  "val": 73,
+  "group_overlap": [],
+  "exact_state_overlap": []
+ },
+ "grad_cosine_at_init": {
+  "cos": -0.3674879019140197,
+  "norm_action": 24.4106,
+  "norm_value": 92.6114,
+  "note": "aditivность: g_full = g_action + g_value c одних весов; минус — признак конфликта задач"
+ },
+ "B0": {
+  "cfg": {
+   "hidden": 96,
+   "head": 24,
+   "seed": 20261022,
+   "epochs": 12,
+   "lr": 0.03,
+   "batch": 32,
+   "value_w": 0.5,
+   "weight_decay": 0.0001,
+   "momentum": 0.9,
+   "val_frac": 0.85,
+   "kind": "pure",
+   "device": "cpu",
+   "schema": 3
+  },
+  "seconds": 147.7,
+  "best_epoch": 8,
+  "best": {
+   "cell": 0.616,
+   "target": 0.712,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.315,
+   "joint_decode_accuracy": 0.397,
+   "joint_nll": 2.08482,
+   "value_mae": 2.5971,
+   "value_mse": 9.79253,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_val": {
+   "cell": 0.521,
+   "target": 0.658,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.233,
+   "joint_decode_accuracy": 0.315,
+   "joint_nll": 2.4159,
+   "value_mae": 1.2097,
+   "value_mse": 1.985168,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_train": {
+   "cell": 0.614,
+   "target": 0.479,
+   "weapon": 0.603,
+   "independent_baseline_accuracy": 0.174,
+   "joint_decode_accuracy": 0.444,
+   "joint_nll": 2.15872,
+   "value_mae": 0.8064,
+   "value_mse": 1.02714,
+   "n": 484,
+   "n_joint": 484
+  },
+  "best_is_last": false,
+  "history": [
+   {
+    "epoch": 1,
+    "loss": 4.6767,
+    "val_joint_nll": 3.6887,
+    "val_decode": 0.096,
+    "val_baseline": 0.041,
+    "val_value_mae": 0.8673,
+    "val_value_mse": 1.160631
+   },
+   {
+    "epoch": 2,
+    "loss": 3.1604,
+    "val_joint_nll": 2.96397,
+    "val_decode": 0.288,
+    "val_baseline": 0.164,
+    "val_value_mae": 0.8281,
+    "val_value_mse": 1.055259
+   },
+   {
+    "epoch": 3,
+    "loss": 2.7757,
+    "val_joint_nll": 2.56126,
+    "val_decode": 0.356,
+    "val_baseline": 0.219,
+    "val_value_mae": 0.9784,
+    "val_value_mse": 1.276294
+   },
+   {
+    "epoch": 4,
+    "loss": 2.601,
+    "val_joint_nll": 2.57294,
+    "val_decode": 0.315,
+    "val_baseline": 0.178,
+    "val_value_mae": 1.1308,
+    "val_value_mse": 1.955587
+   },
+   {
+    "epoch": 5,
+    "loss": 2.5337,
+    "val_joint_nll": 2.23864,
+    "val_decode": 0.356,
+    "val_baseline": 0.219,
+    "val_value_mae": 1.1001,
+    "val_value_mse": 1.814455
+   },
+   {
+    "epoch": 6,
+    "loss": 2.4915,
+    "val_joint_nll": 2.22838,
+    "val_decode": 0.356,
+    "val_baseline": 0.247,
+    "val_value_mae": 1.0412,
+    "val_value_mse": 1.60558
+   },
+   {
+    "epoch": 7,
+    "loss": 2.3893,
+    "val_joint_nll": 2.0883,
+    "val_decode": 0.37,
+    "val_baseline": 0.274,
+    "val_value_mae": 1.2469,
+    "val_value_mse": 2.304751
+   },
+   {
+    "epoch": 8,
+    "loss": 2.3236,
+    "val_joint_nll": 2.08482,
+    "val_decode": 0.397,
+    "val_baseline": 0.315,
+    "val_value_mae": 2.5971,
+    "val_value_mse": 9.79253
+   },
+   {
+    "epoch": 9,
+    "loss": 2.5506,
+    "val_joint_nll": 2.46117,
+    "val_decode": 0.356,
+    "val_baseline": 0.247,
+    "val_value_mae": 2.4707,
+    "val_value_mse": 7.104336
+   },
+   {
+    "epoch": 10,
+    "loss": 2.591,
+    "val_joint_nll": 2.28476,
+    "val_decode": 0.329,
+    "val_baseline": 0.205,
+    "val_value_mae": 1.1994,
+    "val_value_mse": 1.891586
+   },
+   {
+    "epoch": 11,
+    "loss": 2.4259,
+    "val_joint_nll": 2.12421,
+    "val_decode": 0.411,
+    "val_baseline": 0.342,
+    "val_value_mae": 1.21,
+    "val_value_mse": 1.987822
+   },
+   {
+    "epoch": 12,
+    "loss": 2.3418,
+    "val_joint_nll": 2.4159,
+    "val_decode": 0.315,
+    "val_baseline": 0.233,
+    "val_value_mae": 1.2097,
+    "val_value_mse": 1.985168
+   }
+  ],
+  "model_best_path": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b0_joint\\model_best.json"
+ },
+ "B1": {
+  "cfg": {
+   "hidden": 96,
+   "head": 24,
+   "seed": 20261022,
+   "epochs": 12,
+   "lr": 0.03,
+   "batch": 32,
+   "value_w": 0.0,
+   "weight_decay": 0.0001,
+   "momentum": 0.9,
+   "val_frac": 0.85,
+   "kind": "pure",
+   "device": "cpu",
+   "schema": 3
+  },
+  "seconds": 172.3,
+  "best_epoch": 9,
+  "best": {
+   "cell": 0.589,
+   "target": 0.548,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.192,
+   "joint_decode_accuracy": 0.329,
+   "joint_nll": 2.29255,
+   "value_mae": 0.9368,
+   "value_mse": 1.202256,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_val": {
+   "cell": 0.575,
+   "target": 0.575,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.192,
+   "joint_decode_accuracy": 0.315,
+   "joint_nll": 2.38602,
+   "value_mae": 0.9357,
+   "value_mse": 1.203701,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_train": {
+   "cell": 0.587,
+   "target": 0.457,
+   "weapon": 0.61,
+   "independent_baseline_accuracy": 0.134,
+   "joint_decode_accuracy": 0.417,
+   "joint_nll": 2.29695,
+   "value_mae": 1.2684,
+   "value_mse": 1.765166,
+   "n": 484,
+   "n_joint": 484
+  },
+  "best_is_last": false,
+  "history": [
+   {
+    "epoch": 1,
+    "loss": 4.4055,
+    "val_joint_nll": 3.70223,
+    "val_decode": 0.096,
+    "val_baseline": 0.041,
+    "val_value_mae": 1.3345,
+    "val_value_mse": 2.615837
+   },
+   {
+    "epoch": 2,
+    "loss": 2.9249,
+    "val_joint_nll": 3.0101,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 1.1519,
+    "val_value_mse": 1.717051
+   },
+   {
+    "epoch": 3,
+    "loss": 2.6407,
+    "val_joint_nll": 2.71196,
+    "val_decode": 0.274,
+    "val_baseline": 0.178,
+    "val_value_mae": 0.9362,
+    "val_value_mse": 1.210868
+   },
+   {
+    "epoch": 4,
+    "loss": 2.5184,
+    "val_joint_nll": 2.68895,
+    "val_decode": 0.247,
+    "val_baseline": 0.082,
+    "val_value_mae": 0.9073,
+    "val_value_mse": 1.295306
+   },
+   {
+    "epoch": 5,
+    "loss": 2.4565,
+    "val_joint_nll": 2.40935,
+    "val_decode": 0.247,
+    "val_baseline": 0.137,
+    "val_value_mae": 0.9295,
+    "val_value_mse": 1.211569
+   },
+   {
+    "epoch": 6,
+    "loss": 2.3865,
+    "val_joint_nll": 2.51003,
+    "val_decode": 0.26,
+    "val_baseline": 0.082,
+    "val_value_mae": 0.9349,
+    "val_value_mse": 1.203597
+   },
+   {
+    "epoch": 7,
+    "loss": 2.3729,
+    "val_joint_nll": 2.33122,
+    "val_decode": 0.329,
+    "val_baseline": 0.164,
+    "val_value_mae": 0.938,
+    "val_value_mse": 1.200622
+   },
+   {
+    "epoch": 8,
+    "loss": 2.3306,
+    "val_joint_nll": 2.39422,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 0.938,
+    "val_value_mse": 1.200803
+   },
+   {
+    "epoch": 9,
+    "loss": 2.3328,
+    "val_joint_nll": 2.29255,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 0.9368,
+    "val_value_mse": 1.202256
+   },
+   {
+    "epoch": 10,
+    "loss": 2.3416,
+    "val_joint_nll": 2.62061,
+    "val_decode": 0.233,
+    "val_baseline": 0.055,
+    "val_value_mae": 0.9364,
+    "val_value_mse": 1.202819
+   },
+   {
+    "epoch": 11,
+    "loss": 2.3547,
+    "val_joint_nll": 2.297,
+    "val_decode": 0.342,
+    "val_baseline": 0.205,
+    "val_value_mae": 0.936,
+    "val_value_mse": 1.203373
+   },
+   {
+    "epoch": 12,
+    "loss": 2.326,
+    "val_joint_nll": 2.38602,
+    "val_decode": 0.315,
+    "val_baseline": 0.192,
+    "val_value_mae": 0.9357,
+    "val_value_mse": 1.203701
+   }
+  ],
+  "model_best_path": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b1_action_only\\model_best.json"
+ },
+ "B2": {
+  "cfg": {
+   "hidden": 96,
+   "head": 24,
+   "seed": 20261022,
+   "epochs": 12,
+   "lr": 0.03,
+   "batch": 32,
+   "value_w": 0.5,
+   "weight_decay": 0.0001,
+   "momentum": 0.9,
+   "val_frac": 0.85,
+   "kind": "pure",
+   "device": "cpu",
+   "schema": 3
+  },
+  "seconds": 148.2,
+  "best_epoch": 2,
+  "best": {
+   "cell": 0.151,
+   "target": 0.356,
+   "weapon": 0.137,
+   "independent_baseline_accuracy": 0.0,
+   "joint_decode_accuracy": 0.11,
+   "joint_nll": 4.94701,
+   "value_mae": 1.1119,
+   "value_mse": 1.915983,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_val": {
+   "cell": 0.082,
+   "target": 0.26,
+   "weapon": 0.137,
+   "independent_baseline_accuracy": 0.014,
+   "joint_decode_accuracy": 0.041,
+   "joint_nll": 4.96547,
+   "value_mae": 1.1933,
+   "value_mse": 1.841023,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_train": {
+   "cell": 0.103,
+   "target": 0.246,
+   "weapon": 0.262,
+   "independent_baseline_accuracy": 0.017,
+   "joint_decode_accuracy": 0.056,
+   "joint_nll": 4.81535,
+   "value_mae": 0.8527,
+   "value_mse": 1.038151,
+   "n": 484,
+   "n_joint": 484
+  },
+  "best_is_last": false,
+  "history": [
+   {
+    "epoch": 1,
+    "loss": 0.2308,
+    "val_joint_nll": 5.00792,
+    "val_decode": 0.027,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.8585,
+    "val_value_mse": 4.401306
+   },
+   {
+    "epoch": 2,
+    "loss": 0.3497,
+    "val_joint_nll": 4.94701,
+    "val_decode": 0.11,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.1119,
+    "val_value_mse": 1.915983
+   },
+   {
+    "epoch": 3,
+    "loss": 0.3066,
+    "val_joint_nll": 4.99306,
+    "val_decode": 0.068,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.0503,
+    "val_value_mse": 1.485654
+   },
+   {
+    "epoch": 4,
+    "loss": 0.219,
+    "val_joint_nll": 4.9897,
+    "val_decode": 0.041,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.078,
+    "val_value_mse": 1.586909
+   },
+   {
+    "epoch": 5,
+    "loss": 0.1952,
+    "val_joint_nll": 5.03799,
+    "val_decode": 0.041,
+    "val_baseline": 0.0,
+    "val_value_mae": 3.4796,
+    "val_value_mse": 13.672894
+   },
+   {
+    "epoch": 6,
+    "loss": 0.4684,
+    "val_joint_nll": 4.9752,
+    "val_decode": 0.041,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.2339,
+    "val_value_mse": 2.308183
+   },
+   {
+    "epoch": 7,
+    "loss": 0.2427,
+    "val_joint_nll": 4.95334,
+    "val_decode": 0.055,
+    "val_baseline": 0.0,
+    "val_value_mae": 1.1537,
+    "val_value_mse": 1.779522
+   },
+   {
+    "epoch": 8,
+    "loss": 0.2088,
+    "val_joint_nll": 4.96547,
+    "val_decode": 0.041,
+    "val_baseline": 0.014,
+    "val_value_mae": 1.0723,
+    "val_value_mse": 1.301843
+   },
+   {
+    "epoch": 9,
+    "loss": 0.3315,
+    "val_joint_nll": 4.96547,
+    "val_decode": 0.041,
+    "val_baseline": 0.014,
+    "val_value_mae": 1.3881,
+    "val_value_mse": 2.839662
+   },
+   {
+    "epoch": 10,
+    "loss": 0.2793,
+    "val_joint_nll": 4.96547,
+    "val_decode": 0.041,
+    "val_baseline": 0.014,
+    "val_value_mae": 1.1763,
+    "val_value_mse": 1.709087
+   },
+   {
+    "epoch": 11,
+    "loss": 0.2655,
+    "val_joint_nll": 4.96547,
+    "val_decode": 0.041,
+    "val_baseline": 0.014,
+    "val_value_mae": 1.2586,
+    "val_value_mse": 2.234645
+   },
+   {
+    "epoch": 12,
+    "loss": 0.2599,
+    "val_joint_nll": 4.96547,
+    "val_decode": 0.041,
+    "val_baseline": 0.014,
+    "val_value_mae": 1.1933,
+    "val_value_mse": 1.841023
+   }
+  ],
+  "model_best_path": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\model_best.json"
+ },
+ "B3": {
+  "cfg": {
+   "hidden": 96,
+   "head": 24,
+   "seed": 20261022,
+   "epochs": 12,
+   "lr": 0.03,
+   "batch": 32,
+   "value_w": 0.5,
+   "weight_decay": 0.0001,
+   "momentum": 0.9,
+   "val_frac": 0.85,
+   "kind": "pure",
+   "device": "cpu",
+   "schema": 3
+  },
+  "seconds": 163.1,
+  "best_epoch": 9,
+  "best": {
+   "cell": 0.589,
+   "target": 0.548,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.192,
+   "joint_decode_accuracy": 0.329,
+   "joint_nll": 2.29255,
+   "value_mae": 2.3939833268542063e+72,
+   "value_mse": 5.834191413270336e+144,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_val": {
+   "cell": 0.575,
+   "target": 0.575,
+   "weapon": 0.726,
+   "independent_baseline_accuracy": 0.192,
+   "joint_decode_accuracy": 0.315,
+   "joint_nll": 2.38602,
+   "value_mae": 1.1718590542054362e+106,
+   "value_mse": 1.396174799430809e+212,
+   "n": 73,
+   "n_joint": 73
+  },
+  "final_train": {
+   "cell": 0.587,
+   "target": 0.457,
+   "weapon": 0.61,
+   "independent_baseline_accuracy": 0.134,
+   "joint_decode_accuracy": 0.417,
+   "joint_nll": 2.29695,
+   "value_mae": 1.0864200729170902e+106,
+   "value_mse": 1.2078258312931076e+212,
+   "n": 484,
+   "n_joint": 484
+  },
+  "best_is_last": false,
+  "history": [
+   {
+    "epoch": 1,
+    "loss": 4.662,
+    "val_joint_nll": 3.70223,
+    "val_decode": 0.096,
+    "val_baseline": 0.041,
+    "val_value_mae": 0.9125,
+    "val_value_mse": 1.088545
+   },
+   {
+    "epoch": 2,
+    "loss": 3.1895,
+    "val_joint_nll": 3.0101,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 1.3001,
+    "val_value_mse": 2.468706
+   },
+   {
+    "epoch": 3,
+    "loss": 255.9821,
+    "val_joint_nll": 2.71196,
+    "val_decode": 0.274,
+    "val_baseline": 0.178,
+    "val_value_mae": 1630.1607,
+    "val_value_mse": 2707153.589328
+   },
+   {
+    "epoch": 4,
+    "loss": 3.5521132732062047e+25,
+    "val_joint_nll": 2.68895,
+    "val_decode": 0.247,
+    "val_baseline": 0.082,
+    "val_value_mae": 241960006395209.47,
+    "val_value_mse": 5.960750523186309e+28
+   },
+   {
+    "epoch": 5,
+    "loss": 8.931886339197975e+48,
+    "val_joint_nll": 2.40935,
+    "val_decode": 0.247,
+    "val_baseline": 0.137,
+    "val_value_mae": 2.4919757498417702e+26,
+    "val_value_mse": 6.316039911496765e+52
+   },
+   {
+    "epoch": 6,
+    "loss": 6.754028269047754e+72,
+    "val_joint_nll": 2.51003,
+    "val_decode": 0.26,
+    "val_baseline": 0.082,
+    "val_value_mae": 5.495091811797618e+37,
+    "val_value_mse": 3.0696468633724686e+75
+   },
+   {
+    "epoch": 7,
+    "loss": 3.481716437036877e+95,
+    "val_joint_nll": 2.33122,
+    "val_decode": 0.329,
+    "val_baseline": 0.164,
+    "val_value_mae": 2.1111548411957565e+49,
+    "val_value_mse": 4.533437509308149e+98
+   },
+   {
+    "epoch": 8,
+    "loss": 6.21252764093217e+118,
+    "val_joint_nll": 2.39422,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 1.4149124211633771e+61,
+    "val_value_mse": 2.035626671116417e+122
+   },
+   {
+    "epoch": 9,
+    "loss": 4.1118172161972817e+142,
+    "val_joint_nll": 2.29255,
+    "val_decode": 0.329,
+    "val_baseline": 0.192,
+    "val_value_mae": 2.3939833268542063e+72,
+    "val_value_mse": 5.834191413270336e+144
+   },
+   {
+    "epoch": 10,
+    "loss": 1.3077566411668791e+165,
+    "val_joint_nll": 2.62061,
+    "val_decode": 0.233,
+    "val_baseline": 0.055,
+    "val_value_mae": 7.375517846174567e+83,
+    "val_value_mse": 5.533034801031476e+167
+   },
+   {
+    "epoch": 11,
+    "loss": 1.2069476874307048e+188,
+    "val_joint_nll": 2.297,
+    "val_decode": 0.342,
+    "val_baseline": 0.205,
+    "val_value_mae": 3.2921765054326862e+94,
+    "val_value_mse": 1.102416558076014e+189
+   },
+   {
+    "epoch": 12,
+    "loss": 3.2384087901006607e+209,
+    "val_joint_nll": 2.38602,
+    "val_decode": 0.315,
+    "val_baseline": 0.192,
+    "val_value_mae": 1.1718590542054362e+106,
+    "val_value_mse": 1.396174799430809e+212
+   }
+  ],
+  "model_best_path": "C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b3_frozen_trunk_value\\model_best.json"
+ },
+ "total_training_seconds": 631.3,
+ "grad_cosine_at_B0_best": {
+  "cos": -0.2694332205516012,
+  "norm_action": 4.3494,
+  "norm_value": 926.3473
+ },
+ "const_value_baselines_val": {
+  "median_train": {
+   "const": -0.1,
+   "mae": 1.418,
+   "mse": 2.989627
+  },
+  "mean_train": {
+   "const": -0.5581,
+   "mae": 1.2124,
+   "mse": 2.008102
+  }
+ },
+ "random_init_val": {
+  "cell": 0.137,
+  "target": 0.26,
+  "weapon": 0.137,
+  "independent_baseline_accuracy": 0.0,
+  "joint_decode_accuracy": 0.055,
+  "joint_nll": 4.97888,
+  "value_mae": 1.3861,
+  "value_mse": 2.874057,
+  "n": 73,
+  "n_joint": 73
+ },
+ "checks": {
+  "split_clean": true,
+  "all_variants_ran": true,
+  "cosine_computed": true,
+  "b0_reproduces_stage8_selection": true
+ },
+ "log_lines": [
+  "epoch 4/12 loss=0.219 (4.53 с) | val: joint_nll=4.9897 decode_acc=0.041 baseline_acc=0.0 value_mae=1.078 cell=0.082 target=0.192 weapon=0.137",
+  "epoch 5/12 loss=0.1952 (4.67 с) | val: joint_nll=5.03799 decode_acc=0.041 baseline_acc=0.0 value_mae=3.4796 cell=0.041 target=0.014 weapon=0.137",
+  "epoch 6/12 loss=0.4684 (4.3 с) | val: joint_nll=4.9752 decode_acc=0.041 baseline_acc=0.0 value_mae=1.2339 cell=0.082 target=0.247 weapon=0.137",
+  "epoch 7/12 loss=0.2427 (3.86 с) | val: joint_nll=4.95334 decode_acc=0.055 baseline_acc=0.0 value_mae=1.1537 cell=0.178 target=0.26 weapon=0.137",
+  "epoch 8/12 loss=0.2088 (4.48 с) | val: joint_nll=4.96547 decode_acc=0.041 baseline_acc=0.014 value_mae=1.0723 cell=0.082 target=0.26 weapon=0.137",
+  "epoch 9/12 loss=0.3315 (5.53 с) | val: joint_nll=4.96547 decode_acc=0.041 baseline_acc=0.014 value_mae=1.3881 cell=0.082 target=0.26 weapon=0.137",
+  "epoch 10/12 loss=0.2793 (3.75 с) | val: joint_nll=4.96547 decode_acc=0.041 baseline_acc=0.014 value_mae=1.1763 cell=0.082 target=0.26 weapon=0.137",
+  "epoch 11/12 loss=0.2655 (3.75 с) | val: joint_nll=4.96547 decode_acc=0.041 baseline_acc=0.014 value_mae=1.2586 cell=0.082 target=0.26 weapon=0.137",
+  "epoch 12/12 loss=0.2599 (3.91 с) | val: joint_nll=4.96547 decode_acc=0.041 baseline_acc=0.014 value_mae=1.1933 cell=0.082 target=0.26 weapon=0.137",
+  "чекпойнты C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\model.json (последняя эпоха) и C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b2_value_only\\model_best.json (лучшая, epoch 2 по val.joint_nll) | 147.67 с",
+  "бэкенд pure на cpu: 484 train / 73 val, 12 эпох",
+  "epoch 1/12 loss=4.662 (4.78 с) | val: joint_nll=3.70223 decode_acc=0.096 baseline_acc=0.041 value_mae=0.9125 cell=0.11 target=0.397 weapon=0.726",
+  "epoch 2/12 loss=3.1895 (6.97 с) | val: joint_nll=3.0101 decode_acc=0.329 baseline_acc=0.192 value_mae=1.3001 cell=0.493 target=0.589 weapon=0.726",
+  "epoch 3/12 loss=255.9821 (5.64 с) | val: joint_nll=2.71196 decode_acc=0.274 baseline_acc=0.178 value_mae=1630.1607 cell=0.411 target=0.548 weapon=0.726",
+  "epoch 4/12 loss=3.5521132732062047e+25 (6.34 с) | val: joint_nll=2.68895 decode_acc=0.247 baseline_acc=0.082 value_mae=241960006395209.47 cell=0.589 target=0.397 weapon=0.726",
+  "epoch 5/12 loss=8.931886339197975e+48 (5.72 с) | val: joint_nll=2.40935 decode_acc=0.247 baseline_acc=0.137 value_mae=2.4919757498417702e+26 cell=0.507 target=0.521 weapon=0.726",
+  "epoch 6/12 loss=6.754028269047754e+72 (5.74 с) | val: joint_nll=2.51003 decode_acc=0.26 baseline_acc=0.082 value_mae=5.495091811797618e+37 cell=0.603 target=0.205 weapon=0.726",
+  "epoch 7/12 loss=3.481716437036877e+95 (5.72 с) | val: joint_nll=2.33122 decode_acc=0.329 baseline_acc=0.164 value_mae=2.1111548411957565e+49 cell=0.603 target=0.521 weapon=0.726",
+  "epoch 8/12 loss=6.21252764093217e+118 (5.83 с) | val: joint_nll=2.39422 decode_acc=0.329 baseline_acc=0.192 value_mae=1.4149124211633771e+61 cell=0.603 target=0.548 weapon=0.726",
+  "epoch 9/12 loss=4.1118172161972817e+142 (7.56 с) | val: joint_nll=2.29255 decode_acc=0.329 baseline_acc=0.192 value_mae=2.3939833268542063e+72 cell=0.589 target=0.548 weapon=0.726",
+  "epoch 10/12 loss=1.3077566411668791e+165 (6.42 с) | val: joint_nll=2.62061 decode_acc=0.233 baseline_acc=0.055 value_mae=7.375517846174567e+83 cell=0.603 target=0.178 weapon=0.726",
+  "epoch 11/12 loss=1.2069476874307048e+188 (8.47 с) | val: joint_nll=2.297 decode_acc=0.342 baseline_acc=0.205 value_mae=3.2921765054326862e+94 cell=0.603 target=0.575 weapon=0.726",
+  "epoch 12/12 loss=3.2384087901006607e+209 (6.27 с) | val: joint_nll=2.38602 decode_acc=0.315 baseline_acc=0.192 value_mae=1.1718590542054362e+106 cell=0.575 target=0.575 weapon=0.726",
+  "чекпойнты C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b3_frozen_trunk_value\\model.json (последняя эпоха) и C:\\Users\\b5\\AppData\\Local\\FoundryVTT\\Data\\modules\\biyk_ext\\extensions\\deepVoyager\\server\\stage9_out\\runs\\stage9_b3_frozen_trunk_value\\model_best.json (лучшая, epoch 9 по val.joint_nll) | 162.59 с"
+ ]
+}

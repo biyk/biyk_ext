@@ -107,14 +107,19 @@ class PolyFightEnv(FightEnv):
         next_obs = None if terminated else self._observe()
         phi_prev = self.phi_s
         phi_next = 0.0 if terminated or next_obs is None else self._phi(next_obs)
-        reward = shape_reward(base, phi_prev, phi_next, terminated, self.gamma)
-        reward = round(reward + self._tactics_addend(prev_units, actions, actor, self.t), 6)
+        shaped = shape_reward(base, phi_prev, phi_next, terminated, self.gamma)
+        addend = self._tactics_addend(prev_units, actions, actor, self.t)
+        reward = round(shaped + addend, 6)
         self.phi_s = phi_next
+        potential = round(self.gamma * (0.0 if terminated else phi_next) - phi_prev, 6)
+        breakdown = {"base": round(base, 6), "potential": potential,
+                     "tactical_applied": round(addend, 6), "outcome": outcome,
+                     "tags": (self.shaper.last_diag if self.shaper is not None else None)}
         info = {"value": round(float(value), 4), "survived": not died, "cleared": cleared,
                 "outcome": outcome, "terminated": terminated, "truncated": truncated,
                 "rounds": self.t, "foes_left": sum(1 for u in self.state.units.values()
                                                    if u.hostile_to_hero and u.is_alive),
                 "action": action, "actor": actor, "next_actor": nxt_actor,
-                "legalize_reason": self._last_reason,
+                "legalize_reason": self._last_reason, "reward_breakdown": breakdown,
                 "phi": round(phi_prev, 6), "phi_next": round(phi_next, 6)}
         return next_obs, reward, terminated, truncated, info

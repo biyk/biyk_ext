@@ -108,8 +108,15 @@ class BattlecastTeacher(TeacherPolicy):
         return self._actions(ctx, observe(ctx))
 
     def label(self, payload: Dict[str, Any]) -> Labeled:
-        """payload -> план battlecast-политики; value — на шкале НАШЕЙ симуляции (rollout)."""
-        ctx = BattleContext.from_payload(payload)
+        """payload -> план battlecast-политики; value — на шкале НАШЕЙ симуляции (rollout).
+
+        Обёртка над label_ctx (тот же план с живым контекстом) — единый источник разметки
+        для стартовых сцен и для посещённых DAgger состояний.
+        """
+        return self.label_ctx(BattleContext.from_payload(payload))
+
+    def label_ctx(self, ctx: BattleContext) -> Labeled:
+        """Разметить ГОТОВЫЙ контекст (живое состояние из среды) — вход для DAgger-агрегации."""
         actions = self._actions(ctx, observe(ctx))
         # Значение — общей шкалой (rollout), а не внутренней суммой эвристик battlecast.
         value = rollout(ctx, actions, self.value_rounds)

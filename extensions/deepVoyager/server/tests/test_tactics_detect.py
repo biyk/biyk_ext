@@ -50,10 +50,12 @@ def test_idle_turn_penalizes_wasted_turn():
     assert Penalty.idle_turn.value in violated_keys(c)
 
 
-def test_moving_closer_counts_as_no_idle_not_idle():
+def test_moving_closer_without_attack_earns_no_idle():
+    # §Переразметка: no_idle больше НЕ платит за ход без атаки. Сближение-без-выстрела —
+    # нейтрально (ни бонуса, ни штрафа): морковка теперь строго за ДЕЙСТВИЕ, ведущее к победе.
     foe = unit("F1", (0, 5))
     c = ctx(actor=melee_actor((0, 0)), foes=(foe,), moved=True, cell_after=(0, 4))
-    assert Tag.no_idle.value in fired_keys(c)
+    assert Tag.no_idle.value not in fired_keys(c)
     assert Penalty.idle_turn.value not in violated_keys(c)
 
 
@@ -97,6 +99,25 @@ def test_kite_max_range_back_off_and_shoot():
     assert Tag.kite_max_range.value in fired_keys(c)
 
 
+def test_kite_max_range_fires_on_single_cell_retreat():
+    # §Дисциплина дистанции: порог расслаблен — достаточно отойти хотя бы на клетку и
+    # выстрелить. Раньше требовался шаг >= speed/2 (для speed=6 — 3 клетки), что на тесной
+    # аренде недостижимо: kite_max_range имел 334 applicable и 0 fired.
+    archer = melee_actor((0, 0), ranged=True, role="ranged", speed=6)
+    melee_foe = unit("F1", (0, 4), speed=6)
+    c = ctx(actor=archer, foes=(melee_foe,), cell_after=(0, -1), moved=True,
+            attacked=True, target_id="F1", strike_range=8.0)
+    assert Tag.kite_max_range.value in fired_keys(c)
+
+
+def test_kite_max_range_not_fire_when_not_attacking():
+    archer = melee_actor((0, 0), ranged=True, role="ranged", speed=6)
+    melee_foe = unit("F1", (0, 4), speed=6)
+    c = ctx(actor=archer, foes=(melee_foe,), cell_after=(0, -1), moved=True,
+            attacked=False, strike_range=8.0)
+    assert Tag.kite_max_range.value not in fired_keys(c)
+
+
 def test_approach_milishnik_as_archer_penalized():
     archer = melee_actor((0, 0), ranged=True, role="ranged")
     melee_foe = unit("F1", (0, 8), speed=6)
@@ -119,6 +140,34 @@ def test_shoot_from_open_penalized():
     c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1", cover_after=False,
             strike_range=8.0)
     assert Penalty.shoot_from_open.value in violated_keys(c)
+
+
+# --------------------------------------------------------------------------- stand_off_shoot
+def test_stand_off_shoot_fires_when_ranged_attacks_from_out_of_reach():
+    # §Дисциплина дистанции: главный бонус для дальнобойного — стрелять, оставаясь вне
+    # melee-зоны врага. На Этапе 3 укрытий нет, поэтому именно stand_off (а не cover_shoot)
+    # должен вести политику; раньше такой морковки не существовало вовсе.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 5))
+    c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1",
+            in_reach_after=False, strike_range=8.0)
+    assert Tag.stand_off_shoot.value in fired_keys(c)
+
+
+def test_stand_off_shoot_not_fire_when_stood_in_enemy_reach():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1",
+            in_reach_after=True, strike_range=8.0)
+    assert Tag.stand_off_shoot.value not in fired_keys(c)
+
+
+def test_stand_off_shoot_not_applicable_without_attack():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 5))
+    c = ctx(actor=archer, foes=(foe,), attacked=False, moved=False,
+            in_reach_after=False, strike_range=8.0)
+    assert Tag.stand_off_shoot.value not in fired_keys(c)
 
 
 # --------------------------------------------------------------------------- reach
@@ -201,6 +250,16 @@ def test_retreat_low_hp_fires_when_fleeing():
     actor = melee_actor((0, 0), hp=5)
     foe = unit("F1", (0, 2))
     c = ctx(actor=actor, foes=(foe,), moved=True, cell_after=(0, 6), contacts_after=0)
+    assert Tag.retreat_low_hp.value in fired_keys(c)
+
+
+def test_retreat_low_hp_fires_even_with_contacts():
+    # §Дисциплина дистанции: убрано требование contacts_after==0. На тесной арене
+    # дальнобойный почти никогда полностью не сбрасывает контакт, поэтому прежний порог
+    # давал retreat_low_hp 277 applicable и 0 fired. Растянуть дистанцию = уже отход.
+    actor = melee_actor((0, 0), hp=5)
+    foe = unit("F1", (0, 2))
+    c = ctx(actor=actor, foes=(foe,), moved=True, cell_after=(0, -1), contacts_after=1)
     assert Tag.retreat_low_hp.value in fired_keys(c)
 
 

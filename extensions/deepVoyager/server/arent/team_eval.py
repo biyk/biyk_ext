@@ -292,7 +292,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 candidate_is_foes: bool = False, rounds_cap: int = 8, draw_window: int = 4,
                 start_index: int = 0, schema: Optional[int] = None,
                 trace_limit: int = 0, counters: Optional[Counters] = None,
-                opens: Optional[bool] = None, rich_trace: bool = False) -> Row:
+                opens: Optional[bool] = None, rich_trace: bool = False,
+                shape_stage: Optional[str] = None) -> Row:
     """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
 
     Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
@@ -321,7 +322,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
     if counters is not None:
         shape = tactics_config.config()
         if shape.enabled_global:
-            environment.set_shaper(TacticsShaper(shape, shape.allowed(None), counters,
+            allowed = shape.allowed(shape_stage) if shape_stage else shape.allowed(None)
+            environment.set_shaper(TacticsShaper(shape, allowed, counters,
                                                  record_only=True))
     obs = environment.reset(payload, start_index=start_index)
     start_actor = environment.actor
@@ -408,6 +410,8 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 rec["board"] = [[uid, ("F" if bool(u.hostile_to_hero) else "A"),
                                  int(bool(u.is_alive)), round(float(u.hp), 1), list(u.cell)]
                                 for uid, u in environment.state.units.items()]
+                rec["reward"] = round(float(reward), 4)         # награда шага (base+потенц+тактич)
+                rec["reward_breakdown"] = info.get("reward_breakdown")
             trace.append(rec)
         steps += 1
         total += reward
@@ -448,7 +452,8 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                     rounds_cap: int = 8, draw_window: int = 4, replays: int = 1,
                     swap_sides: bool = True, trace_limit: int = 0,
                     counters: Optional[Counters] = None,
-                    openings: bool = False, rich_trace: bool = False) -> List[Row]:
+                    openings: bool = False, rich_trace: bool = False,
+                    shape_stage: Optional[str] = None) -> List[Row]:
     """Каждая сцена x replays x обе расстановки сторон x (опц.) очередность первого хода.
 
     openings=True (Этап 2) добавляет измерение «открывающий»: половина боёв стартует
@@ -466,7 +471,7 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                     row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
                                       draw_window, start_index=rep, schema=candidate.schema,
                                       trace_limit=trace_limit, counters=counters, opens=op,
-                                      rich_trace=rich_trace)
+                                      rich_trace=rich_trace, shape_stage=shape_stage)
                     rows.append(dict(row, name=name, replay=rep))
     return rows
 
@@ -498,7 +503,32 @@ def render_battle_trace(row: Row) -> str:
         board = st.get("board") or []
         lines.append("     доска: " + "  ".join("%s%s hp%g@%s" % (b[1], b[0], b[3], b[4])
                                                 for b in board))
+        lines.append("     " + _format_reward_line(st))
     return "\n".join(lines)
+
+
+def _format_reward_line(st: Row) -> str:
+    """Строка разложения награды шага: base + потенциал + тактический as-if с весами тегов.
+
+    Позволяет поймать вредную награду: если ход БЕЗ атаки/с правкой даёт +тактический член,
+    модель на train будет подкреплять именно это (не ведущее к победе) поведение.
+    """
+    rb = st.get("reward_breakdown") or {}
+    tags = rb.get("tags") or {}
+    weights = tags.get("weights", {})
+    parts = ["+%s%g" % (k, weights.get(k, 0.0)) for k in tags.get("fired", [])]
+    parts += ["-%s%g" % (k, weights.get(k, 0.0)) for k in tags.get("violated", [])]
+    field = tags.get("field", 0.0)
+    if field:
+        parts.append("поле%+g" % field)
+    asif = tags.get("asif", rb.get("tactical_applied", 0.0))
+    tail = (" | as-if такт %+g [%s]" % (asif, " ".join(parts))) if parts else ""
+    flag = ""
+    if (not st.get("executed_attack")) and asif > 1e-9:
+        flag = "  <<< ВРЕДНО: не атакует, но получает +тактический"
+    return ("награда %+.3f = base %+.3f + потенци %+.3f + такт %+.3f%s%s"
+            % (st.get("reward", 0.0), rb.get("base", 0.0), rb.get("potential", 0.0),
+               rb.get("tactical_applied", 0.0), tail, flag))
 
 
 def summarize_matchup(rows: List[Row], rounds_cap: int = 8, draw_window: int = 4) -> Row:

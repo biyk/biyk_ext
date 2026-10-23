@@ -153,8 +153,15 @@ class Teacher(TeacherPolicy):
         return best_actions + [move_action(d) for d in best_dirs]
 
     def label(self, payload: Dict[str, Any]) -> Labeled:
-        """payload -> состояние + лучший план учителя + значение его линии (rollout)."""
-        ctx = BattleContext.from_payload(payload)
+        """payload -> состояние + лучший план учителя + значение его линии (rollout).
+
+        Тонкая обёртка над label_ctx: разметка стартовых сцен и разметка посещённых DAgger
+        состояний обязаны давать идентичный Labeled — поэтому вся логика живёт в label_ctx.
+        """
+        return self.label_ctx(BattleContext.from_payload(payload))
+
+    def label_ctx(self, ctx: BattleContext) -> Labeled:
+        """Разметить ГОТОВЫЙ контекст (живое состояние из среды) — вход для DAgger-агрегации."""
         if self.rounds > 1:
             result = PlannerService(time_limit_sec=self.time_limit_sec).plan_result(ctx)
             base = list(result.actions)          # PlannerService не добавляет уход после удара

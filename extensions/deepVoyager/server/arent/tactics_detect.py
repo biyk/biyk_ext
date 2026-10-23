@@ -65,8 +65,11 @@ def _no_idle(c: StepCtx):
     foes = _alive(c.foes)
     if not foes:
         return (False, False)
-    approached = c.moved and _nearest_dist(c.cell_after, foes) < _nearest_dist(c.actor.cell, foes) - 1e-9
-    return (True, bool(c.attacked or approached))
+    # §Переразметка (поиск вредных наград): раньше no_idle платил и за сближение БЕЗ атаки,
+    # из-за чего политика получала + за беготню без выстрела (богатый трейс: десятки «не
+    # атакует, но +no_idle»). Теперь бонус — только за ход, нанесший атаку: морковка ведёт к
+    # добиванию, а не к имитации активности. idle_turn ниже всё ещё штрафует чистый простой.
+    return (True, bool(c.attacked))
 
 
 def _idle_turn(c: StepCtx):
@@ -118,7 +121,9 @@ def _kite_max_range(c: StepCtx):
         return (False, False)
     before = _nearest_dist(c.actor.cell, measurers)
     after = _nearest_dist(c.cell_after, measurers)
-    return (True, c.attacked and after >= before + c.actor.speed / 2.0)
+    # §Дисциплина дистанции: засчитываем кайт за ЛЮБОЕ увеличение дистанции + выстрел.
+    # Прежний порог (>= speed/2) был недостижим на тесной аренде: 334 applicable, 0 fired.
+    return (True, c.attacked and after > before + 1e-9)
 
 
 def _approach_as_archer(c: StepCtx):
@@ -132,6 +137,14 @@ def _cover_shoot(c: StepCtx):
     if not (c.actor.ranged and c.attacked):
         return (False, False)
     return (True, c.cover_after)
+
+
+def _stand_off_shoot(c: StepCtx):
+    # §Дисциплина дистанции: дальнобойный стреляет, оставаясь вне melee-зоны врага. Это
+    # основная морковка для неравных дуэлей Этапа 3 (укрытий на арене нет -> cover_shoot мёртв).
+    if not (c.actor.ranged and c.attacked):
+        return (False, False)
+    return (True, not c.in_reach_after)
 
 
 def _shoot_from_open(c: StepCtx):
@@ -212,7 +225,9 @@ def _retreat_low_hp(c: StepCtx):
     if c.actor.hp_frac >= LOW_HP or not foes:
         return (False, False)
     fled = _nearest_dist(c.cell_after, foes) > _nearest_dist(c.actor.cell, foes) + 1e-9
-    return (True, c.moved and fled and c.contacts_after == 0)
+    # §Дисциплина дистанции: убрали contacts_after==0 — растянуть дистанцию на низком HP
+    # уже отход, даже если враг успевает достать. Прежний порог: 277 applicable, 0 fired.
+    return (True, c.moved and fled)
 
 
 def _melee_at_low_hp(c: StepCtx):
@@ -243,6 +258,7 @@ DETECTORS: Dict[str, Callable[[StepCtx], Tuple[bool, bool]]] = {
     Tag.kite_max_range.value: _kite_max_range,
     Penalty.approach_milishnik_as_archer.value: _approach_as_archer,
     Tag.cover_shoot.value: _cover_shoot, Penalty.shoot_from_open.value: _shoot_from_open,
+    Tag.stand_off_shoot.value: _stand_off_shoot,
     Tag.avoid_reach.value: _avoid_reach, Penalty.enter_reach.value: _enter_reach,
     Penalty.reach_penalty.value: _reach_penalty,
     Tag.break_ring.value: _break_ring, Penalty.widen_contacts.value: _widen_contacts,
@@ -286,3 +302,35 @@ def bonus_for(detection: Detection, allowed: Optional[set], weights: Dict[str, f
     for key in detection.violated & allow:
         total += float(penalties.get(key, 0.0))
     return round(total, 6)
+
+
+def distance_field_value(c: StepCtx, df) -> float:
+    """Непрерывная дистанционная награда дальнобойного (переразметка).
+
+    r = dist(клетка_после .. ближайшая melee-угроза) / R_conf, где R_conf = reach оружия актёра
+    (дистанция уверенной атаки). Трапеция: r<near_cut -> штраф; near_cut..peak -> рост к +amp;
+    peak..far_cut -> спад к 0; r>far_cut -> 0. Ноль, если актёр не дальнобойный, нет melee-угроз
+    или поле выключено (тогда не искажает симметричные перестрелки).
+    """
+    if not getattr(df, "enabled", False) or not c.actor.ranged:
+        return 0.0
+    threats = _melee_threats(c)
+    if not threats:
+        return 0.0
+    conf = max(1e-9, float(c.actor.reach))
+    r = _nearest_dist(c.cell_after, threats) / conf
+    amp = float(df.amp)
+    if r < df.near_cut:
+        return round(-amp * (df.near_cut - r) / df.near_cut, 6)
+    # §Закрыть вредную награду (переразметка): положительная морковка поля платится ТОЛЬКО за
+    # ход, нанесший атаку. Иначе дальнобойный фармит +field простой беготнёй от melee-угрозы без
+    # единого выстрела — награда растёт от вредного (не ведущего к победе) поведения. Отрицательная
+    # ветка (вплотную к melee) выше уже вернула штраф и остаётся в силе и без атаки: он не раздувает
+    # награду, а наказывает опасное стояние.
+    if not c.attacked:
+        return 0.0
+    if r <= df.peak:
+        return round(amp * (r - df.near_cut) / max(1e-9, df.peak - df.near_cut), 6)
+    if r <= df.far_cut:
+        return round(amp * (df.far_cut - r) / max(1e-9, df.far_cut - df.peak), 6)
+    return 0.0

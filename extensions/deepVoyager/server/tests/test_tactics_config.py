@@ -19,6 +19,12 @@ def test_missing_section_disables_shaping():
     assert cfg.weights == {} and cfg.penalties == {}
 
 
+def test_distance_field_defaults_disabled():
+    # без блока distance_field поле выключено -> обратная совместимость (в shaping не лезет).
+    cfg = parse({"weights": {}})
+    assert cfg.distance_field.enabled is False
+
+
 def test_unknown_weight_key_raises():
     with pytest.raises(ValueError):
         parse({"weights": {"not_a_tag": 0.1}})
@@ -55,6 +61,15 @@ def test_shipped_points_json_parses_and_uses_registry_keys():
     assert cfg.penalties[Penalty.enter_reach.value] == pytest.approx(-0.12)
 
 
+def test_shipped_distance_field_and_upweighted_ranged_carrots():
+    # §Переразметка: включена непрерывная дистанционная шкала + усилены морковки дальнего.
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    assert cfg.distance_field.enabled is True
+    assert cfg.distance_field.amp == pytest.approx(0.15)
+    assert cfg.weights[Tag.stand_off_shoot.value] == pytest.approx(0.15)
+    assert cfg.weights[Tag.kite_max_range.value] == pytest.approx(0.15)
+
+
 def test_from_file_missing_returns_disabled():
     cfg = from_file(os.path.join(SERVER, "does_not_exist_points.json"))
     assert cfg.enabled_global is False
@@ -85,4 +100,6 @@ def test_stage3_enables_priority_and_retreat():
     assert Tag.retreat_low_hp.value not in s2        # на Этапе 2 отход выключен
     assert Tag.retreat_low_hp.value in s3            # на Этапе 3 включился
     assert Tag.kite_max_range.value in s3            # наследует Этап 2
+    assert Tag.stand_off_shoot.value in s3            # §Дисциплина дистанции: новая морковка активна
+    assert Penalty.shoot_from_open.value not in s3    # на аренде нет укрытий -> штраф был 100% шумом
     assert Tag.cover_shoot.value not in s3 and Tag.focus_fire.value not in s3

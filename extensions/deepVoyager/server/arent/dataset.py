@@ -177,6 +177,18 @@ def sample_one_v3(name: str, payload: Dict[str, Any], teacher: TeacherPolicy,
     должна совпасть с декодом, иначе пример отбрасываем (учим ровно тому, что исполнит sim).
     """
     labeled = teacher.label(payload)
+    return sample_from_labeled_v3(name, labeled, meta, initiative)
+
+
+def sample_from_labeled_v3(name: str, labeled, meta: Dict[str, Any],
+                           initiative: Optional[Tuple[str, ...]] = None
+                           ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 3: готовый Labeled (из payload ИЛИ из живого ctx) -> пример BC.
+
+    Единый core разметки для двух дорожек: генерации стартовых сцен (teacher.label(payload)) и
+    DAgger-агрегации (teacher.label_ctx(ctx) на посещённом состоянии). Оба входа обязаны давать
+    идентичный пример, иначе политика училась бы на разметке разного качества.
+    """
     ctx = labeled.ctx
     if not ctx.weapons or not ctx.hostile_targets():
         return None, "no_attack"

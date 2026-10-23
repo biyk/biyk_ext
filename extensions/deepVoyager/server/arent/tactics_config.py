@@ -19,6 +19,21 @@ _DEFAULT_PENALTIES: Dict[str, float] = {}
 
 
 @dataclass(frozen=True)
+class DistanceField:
+    """Непрерывная дистанционная шкала для дальнобойного (переразметка наград).
+
+    Награда как функция r = дистанция_до_ближней_melee-угрозы / R_conf (R_conf = reach оружия,
+    «дистанция уверенной атаки»): штраф при r<near_cut, рост к +amp при r=peak, спад к 0 при
+    r=far_cut. enabled=False (по умолчанию) -> поле не влияет на shaping (обратная совместимость).
+    """
+    enabled: bool = False
+    amp: float = 0.15
+    near_cut: float = 0.30
+    peak: float = 1.0
+    far_cut: float = 2.0
+
+
+@dataclass(frozen=True)
 class TacticsConfig:
     """Действующая секция tactics. Пустые weights/penalties = shaping выключен по существу."""
     enabled_global: bool = True
@@ -28,6 +43,7 @@ class TacticsConfig:
     weights: Dict[str, float] = field(default_factory=lambda: dict(_DEFAULT_WEIGHTS))
     penalties: Dict[str, float] = field(default_factory=lambda: dict(_DEFAULT_PENALTIES))
     per_stage_disable: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
+    distance_field: DistanceField = field(default_factory=DistanceField)
 
     def lam(self, iter_index: int, total_iters: int) -> float:
         """λ(iter): decay_mode=linear -> затухание к decay_floor; unknown -> 1.0 (без затухания)."""
@@ -55,6 +71,14 @@ def parse(section: Optional[dict]) -> TacticsConfig:
             raise ValueError(f"tactics.penalties: неизвестный ключ {key!r} (реестр arent/tactics)")
     decay = section.get("decay") or {}
     disable = {str(s): tuple(v) for s, v in (section.get("per_stage_disable") or {}).items()}
+    dfr = section.get("distance_field") or {}
+    distance_field = DistanceField(
+        enabled=bool(dfr.get("enabled", False)),
+        amp=float(dfr.get("amp", DistanceField.amp)),
+        near_cut=float(dfr.get("near_cut", DistanceField.near_cut)),
+        peak=float(dfr.get("peak", DistanceField.peak)),
+        far_cut=float(dfr.get("far_cut", DistanceField.far_cut)),
+    )
     return TacticsConfig(
         enabled_global=bool(section.get("enabled_global", True)),
         cap_of_win=float(section.get("shaping_cap_of_win", 0.3)),
@@ -63,6 +87,7 @@ def parse(section: Optional[dict]) -> TacticsConfig:
         weights={k: float(v) for k, v in (section.get("weights") or {}).items()},
         penalties={k: float(v) for k, v in (section.get("penalties") or {}).items()},
         per_stage_disable=disable,
+        distance_field=distance_field,
     )
 
 

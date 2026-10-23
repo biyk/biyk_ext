@@ -14,6 +14,7 @@ from arent.tactics import ALL_KEYS, KIND, Penalty, Tag
 # Canonical keys from teaching_plan §2.2 (table rows) + §3 (map) + §5 (points.json).
 PLAN_BONUS_KEYS = {
     "focus_wounded", "kill_shot", "priority_soft", "kite_max_range", "cover_shoot",
+    "stand_off_shoot",
     "break_ring", "hold_choke", "avoid_reach", "charge_from_cover", "anti_pincer",
     "no_stack", "use_high_ground", "no_idle", "retreat_low_hp", "focus_fire",
 }

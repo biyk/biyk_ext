@@ -23,6 +23,7 @@ class Tag(str, Enum):
     priority_soft = "priority_soft"
     kite_max_range = "kite_max_range"
     cover_shoot = "cover_shoot"
+    stand_off_shoot = "stand_off_shoot"
     break_ring = "break_ring"
     hold_choke = "hold_choke"
     avoid_reach = "avoid_reach"

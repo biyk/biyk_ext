@@ -13,7 +13,7 @@ from typing import Dict, Optional
 from arent.tactics import FocusFireAccumulator
 from arent.tactics_config import TacticsConfig
 from arent.tactics_counters import Counters
-from arent.tactics_detect import bonus_for, detect
+from arent.tactics_detect import bonus_for, detect, distance_field_value
 from arent.team_reward import WIN
 
 
@@ -32,6 +32,8 @@ class TacticsShaper:
         self.S = 0.0
         self.hp_max: Dict[str, float] = {}
         self.ff = FocusFireAccumulator()
+        #: as-if-разбор последнего шага для диагностики в трейсе (fired/violated + веса + as-if).
+        self.last_diag: Optional[dict] = None
 
     def reset(self, units: Dict) -> None:
         """Новый бой: shaping-сумма и фокус-аккумулятор с нуля; hp_max засечён по старту."""
@@ -61,10 +63,26 @@ class TacticsShaper:
         return round(step, 6)
 
     def addend(self, ctx) -> float:
-        """Шаг shaping: детект -> счётчики -> λ·bonus по allowed -> cap. record_only даёт 0."""
+        """Шаг shaping: детект -> счётчики -> as-if-разбор -> λ·bonus по allowed -> cap.
+
+        record_only возвращает 0.0 в награду (§1.1), НО as-if-разбор (self.last_diag) пишет всегда:
+        именно он нужен, чтобы в трейсе увидеть, какое действие сколько shaping ПОЛУЧИЛО БЫ на
+        train — и поймать reward-hacking, когда вредный ход даёт положительный член.
+        """
         detection = detect(ctx)
         self.counters.record(detection.applicable, detection.fired, detection.violated)
+        allow = set(self.allowed)
+        weights = {**self.cfg.weights, **self.cfg.penalties}
+        fired = sorted(detection.fired & allow)
+        violated = sorted(detection.violated & allow)
+        contrib = {k: float(weights.get(k, 0.0)) for k in fired + violated}
+        lam = self.cfg.lam(self.iter, self.total)
+        bonus = bonus_for(detection, self.allowed, self.cfg.weights, self.cfg.penalties)
+        # непрерывная дистанционная шкала дальнобойного (переразметка): не тег, а форма награды
+        # по r=дистанция/R_conf; подмешивается в total до cap. enabled=False -> 0 (без изменений).
+        field = distance_field_value(ctx, self.cfg.distance_field)
+        self.last_diag = {"fired": fired, "violated": violated, "weights": contrib,
+                          "field": round(field, 6), "asif": round(lam * (bonus + field), 6)}
         if self.record_only:
             return 0.0
-        bonus = bonus_for(detection, self.allowed, self.cfg.weights, self.cfg.penalties)
-        return self._cap(self.cfg.lam(self.iter, self.total) * bonus)
+        return self._cap(lam * (bonus + field))

@@ -63,6 +63,30 @@ def _can_strike(ctx: BattleContext, cell: Cell, enemies: List[Dict[str, Any]],
     return False
 
 
+# Клеточный «почти вплотную» порог, синхронный с teacher_select.RANGE_MIN_CELLS: оружие,
+# чья doubt-зона длиннее, считается дальним, и меню для него ранжится роль-осведомлённо.
+RANGED_REACH_CELLS = 3.0
+
+
+def _ideal_distance(origin: Cell, enemies: List[Dict[str, Any]], weapons: List[Dict[str, Any]],
+                    ctx: BattleContext) -> float:
+    """Целевая дистанция для дальнего бойца — функция состояния, детерминированная.
+
+    band_lo = 1 + min(reachCells+speedCells) — вне зоны «враг допрыгнет и ударит» за один ход;
+    сверху ограничиваем эффективной дальностью оружия (wreach+0.5) — дальше стрелять нельзя;
+    и не увеличиваем против текущего d0 — если уже безопасно, держим позицию (hold),
+    а не гоним актёра «к максимальной дистанции» (безусловного отступления нет).
+    """
+    d0 = _nearest(origin, enemies, ctx)
+    band_lo = 1.0 + min(float(e["reachCells"]) + float(e["speedCells"]) for e in enemies)
+    wreach = max((float(w["doubtCells"]) for w in weapons), default=1.0)
+    return max(band_lo, min(d0, wreach + 0.5))
+
+
+def _is_ranged(weapons: List[Dict[str, Any]]) -> bool:
+    return bool(weapons) and max(float(w["doubtCells"]) for w in weapons) >= RANGED_REACH_CELLS
+
+
 def build(ctx: BattleContext, obs: Dict[str, Any]) -> SlotsV3:
     """Перечислить move-plan'ы (attack_cell, end_cell) в бюджете; усечь до K_MOVEPLAN.
 
@@ -90,11 +114,31 @@ def build(ctx: BattleContext, obs: Dict[str, Any]) -> SlotsV3:
             continue
         for end_cell, dirs_out in reachable_paths(pf, attack_cell, ctx.src_id, remaining).items():
             plans.append(_plan(ctx, origin, attack_cell, end_cell, dirs_in, dirs_out, cost_in))
-    # ЭТАП 5: «можно ударить» → близость к врагу → длина маршрута → координаты (все — state-fn)
-    plans.sort(key=lambda p: (0 if _can_strike(ctx, p["attack_cell"], enemies, weapons, segments)
-                              else 1, _nearest(p["attack_cell"], enemies, ctx),
-                              p["costTotal"], p["attack_cell"], p["end_cell"]))
-    plans = plans[:spec3.K_MOVEPLAN]
+    # Ранжир: для ближнего — прежняя «страйк-далее-ближе-к-врагу» логика (ЭТАП 5, побитово);
+    # для дальнобойного — роль-осведомлённая: близость к целевой дистанции ПОСЛЕ хода, что
+    # даёт hold при уже удобной позиции и retreat при опасном контакте, не форсируя ни то,
+    # ни другое (консультант: «Не задавать безусловное правило всегда отходить»).
+    strike_bucket = lambda p: 0 if _can_strike(ctx, p["attack_cell"], enemies, weapons, segments) else 1  # noqa: E731
+    if enemies and _is_ranged(weapons):
+        ideal = _ideal_distance(origin, enemies, weapons, ctx)
+        plans.sort(key=lambda p: (strike_bucket(p),
+                                  round(abs(_nearest(p["end_cell"], enemies, ctx) - ideal), 3),
+                                  p["costTotal"], p["attack_cell"], p["end_cell"]))
+    else:
+        plans.sort(key=lambda p: (strike_bucket(p), _nearest(p["attack_cell"], enemies, ctx),
+                                  p["costTotal"], p["attack_cell"], p["end_cell"]))
+    # Резерв hold: если стоять на месте легально (та план всегда в переборе: dirs=[]) и это
+    # дальнобойный боец, hold обязан остаться в меню. Меняем местами с последним (наихудшим)
+    # из усечённого списка — это genuine кандидат, а не фиктивное действие.
+    if enemies and _is_ranged(weapons) and len(plans) > spec3.K_MOVEPLAN:
+        hold = next((p for p in plans
+                     if p["attack_cell"] == origin and p["end_cell"] == origin), None)
+        kept = plans[:spec3.K_MOVEPLAN]
+        if hold is not None and hold not in kept:
+            kept[-1] = hold
+        plans = kept
+    else:
+        plans = plans[:spec3.K_MOVEPLAN]
     return SlotsV3(plans=plans, targets=enemies[:spec.K_TARGETS],
                    weapons=[w for w in obs["weapons"][:spec.K_WEAPONS]])
 

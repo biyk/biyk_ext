@@ -18,6 +18,7 @@ import random
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from arent import scenario_layout as sl
+from arent.tactics_geom import chokepoint_cells
 from arent.scenario_units import (
     ARCHETYPES, ARSENAL_NAMES, CLASS_NAMES, HERO_ARSENALS, TACTICAL,
     UNIT_CLASSES, make_unit, mirror_size, stats,
@@ -139,6 +140,8 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
         "seed": seed, "seq": seq, "group_id": name, "archetype": arch,
         "field": [rows, cols], "field_profile": field_profile,
         "wall_profile": wall_profile, "n_walls": len(raw["walls"]),
+        # has_choke уточняется в build_valid (нужен ctx); здесь честный placeholder по профилю стен.
+        "has_choke": wall_profile in ("corridor", "ring", "maze_lite"),
         "deployment": used_mode, "layout": "random" if do_random else "structured",
         # n_allies/n_foes сохранены как имена-стажы (split/тесты), но теперь sides равны
         "n_allies": n_side, "n_foes": n_side,
@@ -161,6 +164,7 @@ def build_valid(seq: int, seed: int, tries: int = 6, random_start: Optional[bool
             payload = arena.build_payload(raw, name)
             ctx = _bc(payload)
             if ctx.hostile_targets() and ctx.src.is_alive and payload.get("weapons"):
+                params = dict(params, has_choke=len(chokepoint_cells(ctx)) > 0)
                 return name, raw, params
         except Exception:
             continue

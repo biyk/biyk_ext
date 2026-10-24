@@ -61,6 +61,14 @@ GATE_THRESHOLDS: Dict[str, Dict[str, Any]] = {
         "min_win_vs_random": 0.30,          # не хуже random (нижняя граница §0.1)
         "follow_rate_min": {"no_idle": 0.90},
     },
+    # ЭТАП 4: укрытия/узости + случайная расстановка. гейт cover_shoot follow_rate>=0.70,
+    # win_rate vs учителя (greedy/battlecast) >=0.50 на >=30 боёв side-swap. hold_choke —
+    # справочно (порога нет: на малом числе узостных шагов follow_rate часто N/A).
+    "stage4": {
+        "min_fights": 30,
+        "min_win_vs_random": 0.50,
+        "follow_rate_min": {"cover_shoot": 0.70},
+    },
 }
 
 

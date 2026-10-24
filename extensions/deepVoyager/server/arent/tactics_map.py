@@ -49,6 +49,10 @@ def infer_strategies(params: Dict[str, Any]) -> Dict[str, List[str]]:
     if int(params.get("n_walls", 0)) > 0:
         enabled.add("cover_shoot")
         penalties.add("shoot_from_open")
+    # на поле есть узость (артикуляционная клетка графа проходимости) -> держать узость важно
+    if params.get("has_choke"):
+        enabled.add("hold_choke")
+        penalties.add("leave_choke")
     # нас минимум двое -> фокус огня против россыпи
     if int(params.get("n_allies", 1)) >= 2:
         enabled.add("focus_fire")

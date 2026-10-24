@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Dict, Optional, Tuple
 
 from arent.tactics import StepCtx, UnitView
+from arent.tactics_geom import is_choke
 from planner.action import ACTION_TARGET, ACTION_USE
 from planner.geometry import cell_distance
 from planner.initiative import side_of
@@ -108,6 +109,8 @@ def build_step_ctx(sim, prev_units: Dict, units: Dict, actor_id: str, cell_after
         took_damage=(actor_after.hp < actor_prev.hp - 1e-9),
         cover_before=(bool(enemy_units) and not any_seen_before),
         cover_after=(bool(enemy_units) and not any_seen_after),
+        at_choke_before=is_choke(base, actor_prev.cell),
+        at_choke_after=is_choke(base, cell_after),
         in_reach_after=_contacts(cell_after, enemy_units) >= 1,
         contacts_before=_contacts(actor_prev.cell, enemy_units),
         contacts_after=_contacts(cell_after, enemy_units),

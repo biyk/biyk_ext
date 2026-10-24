@@ -19,11 +19,10 @@ SCHEMA = 3
 # признаков клетки, поэтому смена признаков (убран slotIndex: 22 -> 21 на ЭТАПЕ 5) НЕ
 # должна трогать номер схемы. Отделяем её отдельным номером:
 #   v1 = голова с позиционным slotIndex (ширина 22) — до ЭТАПА 5;
-#   v2 = permutation-invariant голова без slotIndex (ширина 21) — ЭТАП 5/6;
-#   v3 = +coverLos/atChokeEnd в голове move-plan (ширина 23) — ЭТАП 4 (укрытия и узости).
+#   v2 = permutation-invariant голова без slotIndex (ширина 21) — ЭТАП 5/6.
 # Пишется в dims3() и в каждый пример, сверяется при загрузке чекпойнта и датасета: модель
-# или выборка версии v1/v2 (cell_feat=22/21) ОТВЕРГАЮТСЯ новым конвейером явно, а не молча.
-FEATURES_VERSION = 3
+# или выборка версии v1 (cell_feat=22) ОТВЕРГАЮТСЯ новым конвейером явно, а не молча.
+FEATURES_VERSION = 2
 CELL_FEAT_V1 = 22                # ширина старой головы (для сообщения об ошибке/диагностики)
 
 # Голова move-plan: пары (attack_cell, end_cell), достижимые в пределах бюджета хода.
@@ -56,7 +55,6 @@ CELL3_FEATURES: tuple = (
     "sureAttack", "doubtAttack", "canAttack",     # зона удара ИЗ attack_cell
     "stay", "pureMove", "retreatToOrigin", "gapIncrease",
     "coverFinal", "threatFinal", "losAttack",
-    "coverLos", "atChokeEnd",        # ЭТАП 4: LOS-укрытие и узость финальной клетки
 )
 
 

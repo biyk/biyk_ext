@@ -16,7 +16,7 @@ from arent import (backend, dataset, evaluate, joint as joint_mod, net, paths, p
 from arent import slots as slots_mod, slots_v3
 from arent.tactics_counters import Counters
 from arent.tactics_shaper import TacticsShaper
-from arent.team_reward import TeamReward
+from arent.team_reward import configured_team
 
 Row = Dict[str, Any]
 
@@ -25,7 +25,7 @@ def team_fight(model: Any, payload: Dict[str, Any], rounds_cap: int = 8,
                draw_window: int = 4, start_index: int = 0) -> Row:
     """Один бой: вся сцена ходит политикой модели, терминал — исход команды."""
     environment = polyenv.PolyFightEnv(rounds_cap=rounds_cap,
-                                       team=TeamReward(draw_window=draw_window))
+                                       team=configured_team(draw_window=draw_window))
     obs = environment.reset(payload, start_index=start_index)
     start_actor = environment.actor
     steps, total, outcome, info = 0, 0.0, "open", {}
@@ -317,7 +317,7 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
     if opens is not None:
         payload = _apply_candidate_opener(payload, candidate_is_foes, opens)
     environment = polyenv.PolyFightEnv(rounds_cap=rounds_cap,
-                                       team=TeamReward(draw_window=draw_window),
+                                       team=configured_team(draw_window=draw_window),
                                        schema=candidate.schema)
     if counters is not None:
         shape = tactics_config.config()
@@ -473,6 +473,80 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                                       trace_limit=trace_limit, counters=counters, opens=op,
                                       rich_trace=rich_trace, shape_stage=shape_stage)
                     rows.append(dict(row, name=name, replay=rep))
+    return rows
+
+
+# --- параллельный прогон матчбокса (стенка тест-боёв -> процессорный пул) ------ #
+#
+# matchup_sources выше идёт последовательно: бои друг за другом. Тестовым прогонам
+# (дамп трейсов, приёмка) ждать незачем: бой ДЕТЕРМИНИРОВАН (predict/plan = argmax, а
+# record_only-шейпер пишет as-if по ground-truth ШАГА — накопленный между боями counters
+# на поля строк не влияет), значит бои независимы и раскладываются по процессам. Итог —
+# ТЕ ЖЕ rows, что у sequential, лишь быстрее; порядок сохраняем (ex.map по sources).
+#
+# candidate/opponent задаём СПЕЦИФИКАЦИЕЙ-строкой (путь к model.json / имя рана / имя
+# учителя / "random"), а не живым объектом: через pickle в Windows-spawn torch-объект не
+# передаём — каждый воркер грузит политики сам, один раз на процесс.
+
+_MP_CAND: Any = None
+_MP_OPP: Any = None
+
+
+def _mp_init(candidate: str, opponent: str, kind: str, run_name: Optional[str]) -> None:
+    """Воркер при старте: собрать политики из спецификаций (путь/имя) в глобальные."""
+    global _MP_CAND, _MP_OPP
+    _MP_CAND, _ = _resolve_controller(candidate, kind, None)
+    _MP_OPP, _ = _resolve_controller(opponent, kind, _MP_CAND.schema)
+    if run_name:                                        # имя в rows.candidate — как у sequential
+        _MP_CAND.name = run_name
+        if getattr(_MP_CAND, "model", None) is not None:
+            _MP_CAND.model.name = run_name
+
+
+def _mp_task(task: Tuple[Any, ...]) -> List[Row]:
+    """Воркер: одна сцена -> её развёртка (swap x openings) тем же matchup_sources (та же логика)."""
+    (name, payload, rounds_cap, draw_window, swap_sides, openings, trace_limit,
+     rich_trace, shape_stage, with_counters) = task
+    return matchup_sources(_MP_CAND, _MP_OPP, [(name, payload)], rounds_cap=rounds_cap,
+                           draw_window=draw_window, swap_sides=swap_sides, openings=openings,
+                           trace_limit=trace_limit, rich_trace=rich_trace,
+                           shape_stage=shape_stage,
+                           counters=Counters() if with_counters else None)
+
+
+def matchup_parallel(candidate: str, opponent: str, sources: List[Tuple[str, Dict[str, Any]]],
+                     rounds_cap: int = 8, draw_window: int = 4, swap_sides: bool = True,
+                     openings: bool = False, trace_limit: int = 0, rich_trace: bool = False,
+                     shape_stage: Optional[str] = None, workers: Optional[int] = None,
+                     kind: str = "auto", run_name: Optional[str] = None,
+                     with_counters: bool = True) -> List[Row]:
+    """Как matchup_sources, но бои раскиданы по процессам (ProcessPoolExecutor).
+
+    candidate/opponent — спецификации-строки: путь к model.json (или имя рана) либо имя
+    учителя ("greedy"/"battlecast")/"random". candidate==opponent по пути = self-play.
+    Порядок rows = порядок sources (ex.map), внутри сцены — как у matchup_sources.
+    workers=None -> min(cpu_count, число сцен). Детерминирован идентично sequential:
+    строки совпадают побитово, отличается только wall-time. with_counters=True навешивает
+    record_only-шейпер (as-if-теги в reward_breakdown.tags); агрегат counters между боями
+    в параллельном режиме НЕ суммируется — для агрегата есть sequential matchup_sources.
+    """
+    if not sources:
+        return []
+    nw = workers if workers else max(1, min(os.cpu_count() or 1, len(sources)))
+    nw = max(1, min(int(nw), len(sources)))
+    tasks = [(nm, payload, rounds_cap, draw_window, swap_sides, openings, trace_limit,
+              rich_trace, shape_stage, with_counters) for nm, payload in sources]
+    rows: List[Row] = []
+    if nw == 1:                                         # один воркер — без оверхеда пула
+        _mp_init(candidate, opponent, kind, run_name)
+        for t in tasks:
+            rows.extend(_mp_task(t))
+        return rows
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=nw, initializer=_mp_init,
+                             initargs=(candidate, opponent, kind, run_name)) as ex:
+        for got in ex.map(_mp_task, tasks):             # ex.map сохраняет порядок задач
+            rows.extend(got)
     return rows
 
 

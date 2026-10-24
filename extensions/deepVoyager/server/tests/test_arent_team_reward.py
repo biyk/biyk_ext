@@ -103,6 +103,23 @@ def test_to_dict_exposes_scale_and_points():
     assert d["r_draw"] == DRAW
 
 
+#--- единое место управления: числа базы приходят извне (points.json tactics.base) --- #
+def test_from_base_empty_equals_defaults():
+    assert TeamReward.from_base().points == TeamReward().points
+
+
+def test_from_base_overrides_numbers():
+    tr = TeamReward.from_base(base={"win": 7.0, "kill": 0.25})
+    nxt = {"A": unit("A", 20), "B": unit("B", 0, hostile=True)}
+    reward, outcome = tr.step(_both_alive(), nxt, "A")
+    assert outcome == "win"
+    assert reward == pytest.approx(7.0 + 0.25 + HIT + 0.0, abs=1e-6)   # исход 7, убийство 0.25
+
+
+def test_from_base_ignores_unknown_keys():
+    assert TeamReward.from_base(base={"not_an_event": 9.0}).points == TeamReward().points
+
+
 #--- 4. интеграция со средой ------------------------------------------------
 def _far_scene(hero_hp=50):
     hero = make_npc("A", 0, 0, disposition=-1, hp=hero_hp, speed=30, damage="1d8")

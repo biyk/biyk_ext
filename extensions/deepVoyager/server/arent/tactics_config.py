@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-from arent.tactics import BONUS_KEYS, PENALTY_KEYS, decay_linear
+from arent.tactics import ALL_KEYS, BONUS_KEYS, PENALTY_KEYS, decay_linear
 from planner import points as _points
 
 _DEFAULT_WEIGHTS: Dict[str, float] = {}
@@ -44,6 +44,10 @@ class TacticsConfig:
     penalties: Dict[str, float] = field(default_factory=lambda: dict(_DEFAULT_PENALTIES))
     per_stage_disable: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
     distance_field: DistanceField = field(default_factory=DistanceField)
+    # единое место управления: базовые события исхода (уже сведённые к эффективному числу:
+    # enabled=False -> 0.0) и теги, глобально снятые флагом enabled=False (mineus в allowed()).
+    base: Dict[str, float] = field(default_factory=dict)
+    disabled: frozenset = frozenset()
 
     def lam(self, iter_index: int, total_iters: int) -> float:
         """λ(iter): decay_mode=linear -> затухание к decay_floor; unknown -> 1.0 (без затухания)."""
@@ -52,11 +56,40 @@ class TacticsConfig:
         return 1.0
 
     def allowed(self, stage: Optional[str] = None) -> set:
-        """Ключи, разрешённые на этом этапе: весь реестр минус per_stage_disable[stage]."""
-        out = set(self.weights) | set(self.penalties)
+        """Ключи, разрешённые на этом этапе: реестр минус глобально снятые (enabled=False)
+        минус per_stage_disable[stage]."""
+        out = (set(self.weights) | set(self.penalties)) - set(self.disabled)
         if stage is not None:
             out -= set(self.per_stage_disable.get(stage, ()))
         return out
+
+
+def _base_entry(entry: Any) -> Tuple[float, bool]:
+    """Запись base -> (число, enabled). Форма: {value, enabled} или голое число (enabled=True)."""
+    if isinstance(entry, dict):
+        return float(entry.get("value", 0.0)), bool(entry.get("enabled", True))
+    return float(entry), True
+
+
+def _parse_base(section: dict) -> Dict[str, float]:
+    """tactics.base -> {имя_события: эффективное число}; enabled=False -> 0.0 (вклад гаснет)."""
+    out: Dict[str, float] = {}
+    for key, entry in (section.get("base") or {}).items():
+        value, enabled = _base_entry(entry)
+        out[key] = value if enabled else 0.0
+    return out
+
+
+def _parse_disabled(section: dict) -> frozenset:
+    """tactics.tags -> frozenset ключей с enabled=False (опечатка в ключе = ValueError, §2.3)."""
+    out = set()
+    for key, entry in (section.get("tags") or {}).items():
+        if key not in ALL_KEYS:
+            raise ValueError(f"tactics.tags: неизвестный ключ {key!r} (реестр arent/tactics)")
+        enabled = True if not isinstance(entry, dict) else bool(entry.get("enabled", True))
+        if not enabled:
+            out.add(key)
+    return frozenset(out)
 
 
 def parse(section: Optional[dict]) -> TacticsConfig:
@@ -88,6 +121,8 @@ def parse(section: Optional[dict]) -> TacticsConfig:
         penalties={k: float(v) for k, v in (section.get("penalties") or {}).items()},
         per_stage_disable=disable,
         distance_field=distance_field,
+        base=_parse_base(section),
+        disabled=_parse_disabled(section),
     )
 
 

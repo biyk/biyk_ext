@@ -39,7 +39,7 @@ def test_encode_v3_sample_matches_v2_keys_with_plan_head():
     assert set(sample) == {"schema", "feat_version", "state", "cells", "targets", "weapons",
                            "mask", "legal", "y", "value", "meta"}
     # ЭТАП 6 (1.2): пример несёт явную версию признаков головы move-plan
-    assert sample["feat_version"] == spec3.FEATURES_VERSION == 3
+    assert sample["feat_version"] == spec3.FEATURES_VERSION == 2
     assert sample["feat_version"] == spec3.dims3()["feat_version"]
     # legal — точная совместная маска A(s) [n_plans][targets][weapons], снятая при сборе примера
     assert len(sample["legal"]) == spec3.K_MOVEPLAN + 1

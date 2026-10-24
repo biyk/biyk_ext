@@ -3,7 +3,7 @@
 # 1.2: SCHEMA=3 задаёт СЕМАНТИКУ действия, а версия ПРИЗНАКОВ головы клетки вынесена в
 #      spec3.FEATURES_VERSION. Старая v3-конфигурация (до ЭТАПА 5: cell_feat=22, без метки
 #      версии) обязана ОТВЕРГАТЬСЯ новым конвейером явно — и в чекпойнте (net.load), и в
-#      выборке (dataset.load), — а не примешиваться молча. Новая (feat_version=3, 23 признака)
+#      выборке (dataset.load), — а не примешиваться молча. Новая (feat_version=2, 21 признак)
 #      проходит. Старые артефакты не трогаем: проверяем именно отказ загрузки.
 # 1.3: value BC-примера берётся из rollout(..., rounds=1), который исполняет ход ПОРЯДКОВО
 #      (sim.advance_seq -> apply_actor_seq): удар резолвится из клетки атаки, отход меняет лишь
@@ -33,13 +33,13 @@ def _adjacent_ctx():
 
 #--- 1.2. версия признаков: конфигурация и различение старой/новой -----------
 def test_feature_version_is_declared_and_stamped_in_dims():
-    # SCHEMA остаётся семантикой действия (=3); версия признаков — отдельный номер (=3)
+    # SCHEMA остаётся семантикой действия (=3); версия признаков — отдельный номер (=2)
     assert spec3.SCHEMA == 3
-    assert spec3.FEATURES_VERSION == 3
+    assert spec3.FEATURES_VERSION == 2
     assert spec3.CELL_FEAT_V1 == 22                     # ширина старой головы (до ЭТАПА 5)
-    assert len(spec3.CELL3_FEATURES) == 23               # голова +coverLos/atChokeEnd (ЭТАП 4)
+    assert len(spec3.CELL3_FEATURES) == 21               # новая permutation-invariant голова
     d = net.dims_for(3)
-    assert d["cell_feat"] == 23 and d["feat_version"] == spec3.FEATURES_VERSION
+    assert d["cell_feat"] == 21 and d["feat_version"] == spec3.FEATURES_VERSION
     assert net.feature_version(3) == spec3.FEATURES_VERSION and net.feature_version(2) == 1
 
 

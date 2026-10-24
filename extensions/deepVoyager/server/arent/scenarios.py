@@ -6,12 +6,13 @@
 # арены — НЕ новые сценарии, а возмущение одного. Здесь же сцена собирается заново по осям:
 #   • тактический архетип (построение) + профиль поля + профиль стен (стены НЕ из архетипа);
 #   • симметричные составы 1..6 своих vs 1..6 врагов из ОБЩЕГО пула ролей и вооружения;
-#   • расстановка: две зоны deployment + джиттер ±2 (random) против канона без джиттера
-#     (structured) — канон держим для тактических архетипов, чтобы A/B «политика vs учитель»
-#     шёл на идентичном старте.
+#   • расстановка: random_start — uniform по всему полю с мин-дистанцией между командами
+#     (scenario_layout.place), structured — канон (две зоны + якоря без джиттера); канон
+#     держим для тактических архетипов, чтобы A/B «политика vs учитель» шёл на идентичном старте.
 # Реестр ролей/архетипов/арсеналов — в scenario_units.py, геометрия — в scenario_layout.py.
 # ho_*/ho2_* (замороженные независимые наборы) не производятся и не перезаписываются.
 import copy
+import itertools
 import json
 import os
 import random
@@ -213,16 +214,19 @@ STAGE2_DUEL_PROFILES: Dict[str, Dict[str, Any]] = {
 }
 _STAGE2_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open", "field_profile": "small"}
 
-# Матрица неравных пар Этапа 3 (§Этап 3): unordered-классы. generate_stage3_pool раскрывает
-# каждую пару в ОБЕИХ перестановках состава, чтобы ни один класс не сидел в выгодной зоне.
-STAGE3_PAIRS: Tuple[Tuple[str, str], ...] = (
-    ("ranged", "melee"),
-    ("reach", "fast"),
-    ("tank", "melee"),
-    ("mobile_archer", "melee"),
-    ("ranged", "fast"),
-    ("tank", "reach"),
-)
+# Этап 3 (учебный пул): поле ОТКРЫТОЕ (wall=open), но РАЗНООБРАЗНОГО размера (нет field_profile ->
+# pick_field по весам small/medium/large) и СЛУЧАЙНОЙ расстановкой (random_start=True: uniform по
+# всему полю + мин-дистанция между команды, place/DEPLOY_MIN_DIST). Бойцы не привыкают к одной
+# карте/точкам. Честность A/B держится тем, что ОБЕ стороны играют на ОДНОЙ и той же сгенерированной
+# сцене; случайность — между сценами, а не внутри пары (учитель и политика видят один сценарий).
+_STAGE3_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open"}
+
+# Полный перебор «каждый с каждым» Этапа 3: ВСЕ упорядоченные пары 6×6 (product = 36),
+# ВКЛЮЧАЯ одноклассовые (melee×melee, tank×tank, …) и обе ориентации крест-накрест. Модель
+# учится драться против ЛЮБОГО типа врага, в том числе против собственного класса. Пары уже
+# упорядочены, поэтому generate_stage3_pool берёт каждую ОДИН раз (без двойной перестановки).
+_STAGE3_CLASSES: Tuple[str, ...] = ("melee", "fast", "reach", "ranged", "mobile_archer", "tank")
+STAGE3_PAIRS: Tuple[Tuple[str, str], ...] = tuple(itertools.product(_STAGE3_CLASSES, _STAGE3_CLASSES))
 
 
 def _retag(pool: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],
@@ -247,13 +251,17 @@ def generate_mirror_duels(cls: str, count: int, seed: int
     return _retag(pool, "s2_%s" % cls)
 
 
-def _asym_pool(cls_a: str, cls_b: str, count: int, seed: int,
-               prefix: str) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """count 1v1 A=cls_a vs B=cls_b, structured; единый путь для асимметрии Этапов 2–3."""
+def _asym_pool(cls_a: str, cls_b: str, count: int, seed: int, prefix: str, *,
+               geom: Optional[Dict[str, Any]] = None,
+               random_start: bool = False) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """count 1v1 A=cls_a vs B=cls_b. geom/random_start — профиль геометрии: по умолчанию
+    прежний structured/small бенчмарк Этапа 2; Этап 3 передаёт _STAGE3_GEOM + random_start=True
+    (разнообразие поля и расстановки)."""
     pa, pb = STAGE2_DUEL_PROFILES[cls_a], STAGE2_DUEL_PROFILES[cls_b]
-    pool = generate(count, seed, random_start=False, archetype="duel",
+    pool = generate(count, seed, random_start=random_start, archetype="duel",
                     classes=pa["classes"], foe_classes=pb["classes"],
-                    arsenals=pa["arsenals"], foe_arsenals=pb["arsenals"], **_STAGE2_GEOM)
+                    arsenals=pa["arsenals"], foe_arsenals=pb["arsenals"],
+                    **(_STAGE2_GEOM if geom is None else geom))
     return _retag(pool, prefix)
 
 
@@ -265,16 +273,21 @@ def generate_asym_duels(cls_a: str, cls_b: str, count: int, seed: int
 
 def generate_stage3_pool(count_each: int, seed: int, pairs: Optional[Sequence[Tuple[str, str]]] = None
                          ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """Неравные дуэли Этапа 3: каждая unordered-пара в ОБЕИХ перестановках состава (§1.9).
+    """Неравные дуэли Этапа 3: ПОЛНЫЙ перебор «каждый с каждым» (product 6×6 = 36 пар).
 
-    count_each сцен на каждый УПОРЯДОЧЕННЫЙ вариант; для (a,b) выдаём и a×b, и b×a — тогда у
-    каждого класса равное число боёв на A- и на B-зоне, и исход решают тактика/класс, а не
-    то, какой стороне досталась выгодная геометрия. Имена s3_*, не коллидируют с s2_*.
+    count_each сцен на каждую УПОРЯДОЧЕННУЮ пару (a,b) — обе ориентации (a,b) и (b,a) и
+    одноклассовые (a,a) уже внутри STAGE3_PAIRS, поэтому каждая берётся один раз (§1.9).
+    Для self-пары стороны одного класса, но оружие/статы рисуются независимо -> асимметрия.
+    Геометрия — _STAGE3_GEOM при random_start=True: открытое поле РАЗНОГО размера и СЛУЧАЙНАЯ
+    расстановка (uniform). Сид сдвигается на номер пары (seed + idx), иначе все пары с одним
+    seed давали бы ~одну и ту же карту (seq внутри generate пересчитывается с нуля на пару).
+    Сдвиг детерминирован (зависит только от пары и seed) -> повторный вызов идентичен.
+    Имена s3_*, не коллидируют с s2_*.
     """
     out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
-    for a, b in (pairs if pairs is not None else STAGE3_PAIRS):
-        for x, y in ((a, b), (b, a)):
-            out += _asym_pool(x, y, count_each, seed, "s3_%sv%s" % (x, y))
+    for idx, (x, y) in enumerate(pairs if pairs is not None else STAGE3_PAIRS):
+        out += _asym_pool(x, y, count_each, seed + idx, "s3_%sv%s" % (x, y),
+                          geom=_STAGE3_GEOM, random_start=True)
     return out
 
 

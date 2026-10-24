@@ -1,7 +1,9 @@
 # arent/scenario_layout.py — геометрия сцены: профили поля, узоры стен, зоны расстановки.
 #
-# Отвечает ровно за «где что стоит»: размеры поля, узор стен, две зоны deployment и
-# размещение обеих команд (с джиттером или без). Состав/классы/оружие — в scenarios.py.
+# Отвечает ровно за «где что стоит»: размеры поля, узор стен и размещение обеих команд:
+# structured — две зоны deployment + якоря/построение без джиттера; random_start — uniform по
+# всему полю с минимальной дистанцией между команды (см. place / DEPLOY_MIN_DIST).
+# Состав/классы/оружие — в scenarios.py.
 # Всё детерминировано переданным rng: один seed -> та же карта и те же стартовые клетки.
 # Детерминизм критичен для честного A/B: учитель и политика обязаны видеть ИДЕНТИЧНЫЙ
 # сценарий, иначе сравнение ходов теряет смысл (память: Independent Evaluation Protocol).
@@ -13,6 +15,7 @@ Offset = Tuple[int, int]
 
 GRID = 50            # px в клетке (=футов): rows = height_px // GRID
 MARGIN = 2           # защитная рамка: юниты не ставим вплотную к краю
+DEPLOY_MIN_DIST = 4  # random_start (uniform): мин. клеточная дистанция (Чебышёв) между командами
 
 # Профили поля: [min,max] клеток по оси; вероятность small/medium/large = .25/.5/.25.
 FIELD_PROFILES: Sequence[Tuple[str, int, int]] = (
@@ -188,10 +191,56 @@ def _team_cells(rng, anchor: Cell, offsets: Sequence[Offset], count: int,
     return cells
 
 
+def _rand_cell(rng: random.Random, rows: int, cols: int) -> Cell:
+    """Случайная клетка uniformly по всему внутреннему полю (в рамке MARGIN)."""
+    return (rng.randint(MARGIN, rows - 1 - MARGIN), rng.randint(MARGIN, cols - 1 - MARGIN))
+
+
+def _too_close(cell: Cell, others: Sequence[Cell], dist: int) -> bool:
+    """True, если cell ближе dist (метрика Чебышёва) к любому из others."""
+    return any(max(abs(cell[0] - o[0]), abs(cell[1] - o[1])) < dist for o in others)
+
+
+def _place_uniform(rng: random.Random, rows: int, cols: int, n_ours: int, n_foes: int,
+                   min_dist: int) -> Tuple[List[Cell], List[Cell]]:
+    """random_start: бойцы uniformly по всему полю (не прикованы к рамке), клетки уникальны,
+    команды разнесены не ближе min_dist. Отсеиваем коллизии ограниченным числом попыток, на
+    тесном поле отступаем к ближайшей свободной. Всё детерминировано rng (один seed = та же сцена)."""
+    occ: set = set()
+    ours: List[Cell] = []
+    for _ in range(n_ours):
+        cell = _rand_cell(rng, rows, cols)
+        for _t in range(200):
+            if cell not in occ:
+                break
+            cell = _rand_cell(rng, rows, cols)
+        occ.add(cell)
+        ours.append(cell)
+    foes: List[Cell] = []
+    for _ in range(n_foes):
+        cell = _rand_cell(rng, rows, cols)
+        for _t in range(200):
+            if cell not in occ and not _too_close(cell, ours, min_dist):
+                break
+            cell = _rand_cell(rng, rows, cols)
+        if cell in occ or _too_close(cell, ours, min_dist):        # pole тесное — к свободе
+            cell = _find_free(cell, rows, cols, occ)
+        occ.add(cell)
+        foes.append(cell)
+    return ours, foes
+
+
 def place(rng: random.Random, rows: int, cols: int, n_ours: int, off_ours: Sequence[Offset],
           n_foes: int, off_foes: Sequence[Offset], mode: str, jitter: int
           ) -> Tuple[List[Cell], List[Cell], str]:
-    """Клетки обеих команд: якоря по режиму, построение по offset, опц. джиттер ±j."""
+    """Клетки обеих команд.
+
+    jitter>0 (random_start) -> uniform по всему полю + min-дистанция между командами (бойцы
+    не привыкают к одним точкам); used_mode -> "uniform". jitter==0 (structured) -> канон:
+    якоря по режиму + построение по offset без джиттера (честный A/B на идентичном старте)."""
+    if jitter:
+        ours, foes = _place_uniform(rng, rows, cols, n_ours, n_foes, DEPLOY_MIN_DIST)
+        return ours, foes, "uniform"
     a_ours, a_foes = anchors(mode, rows, cols)
     occ: set = set()
     ours = _team_cells(rng, a_ours, off_ours, n_ours, rows, cols, jitter, occ)

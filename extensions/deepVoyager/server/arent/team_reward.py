@@ -9,7 +9,7 @@
 # значение хода симуляции (шкала сотен) в ту же полосу ±5, когда его решают подмешать
 # (raw_weight>0); по умолчанию 0.0 — сырые очки в награду не текут (см. env.py).
 from collections import deque
-from typing import Dict, Optional, Tuple
+from typing import Dict, Mapping, Optional, Tuple
 
 from planner.initiative import Unit, side_of
 
@@ -19,6 +19,7 @@ KILL, HIT, LIVING_COST = 0.5, 0.01, -0.01
 DRAW_WINDOW = 4                         # раундов подряд без событий -> пат (DRAW)
 
 OUTCOMES = ("win", "loss", "draw", "mutual")
+BASE_KEYS = ("win", "loss", "draw", "mutual", "kill", "hit", "living_cost")
 
 
 class TeamReward:
@@ -34,6 +35,18 @@ class TeamReward:
         self.points = {"win": win, "loss": loss, "draw": draw, "mutual": mutual,
                        "kill": kill, "hit": hit, "living_cost": living_cost}
         self.reset()
+
+    @classmethod
+    def from_base(cls, draw_window: int = DRAW_WINDOW, reward_scale: float = REWARD_SCALE,
+                  raw_weight: float = 0.0,
+                  base: Optional[Mapping[str, float]] = None) -> "TeamReward":
+        """TeamReward из конфигурируемой базы (points.json tactics.base, уже сведённой к числам
+        через tactics_config: enabled=False -> 0.0). Пустая база == прежние константы; неизвестные
+        ключи молча игнорируются (за валидацию ключей отвечает tactics_config)."""
+        b = base or {}
+        over = {k: float(b[k]) for k in BASE_KEYS if k in b}
+        return cls(draw_window=draw_window, reward_scale=reward_scale,
+                   raw_weight=raw_weight, **over)
 
     def reset(self) -> None:
         """Новый бой: окно событий пусто (пат считается заново), внутрираундовый флаг чист."""
@@ -93,3 +106,12 @@ class TeamReward:
         """Параметры награды для манифеста (воспроизводимость шкалы без чтения кода)."""
         return {"reward_scale": self.reward_scale, "raw_weight": self.raw_weight,
                 "draw_window": self.draw_window, **{f"r_{k}": v for k, v in self.points.items()}}
+
+
+def configured_team(draw_window: int = DRAW_WINDOW, reward_scale: float = REWARD_SCALE,
+                    raw_weight: float = 0.0) -> TeamReward:
+    """TeamReward из единого места управления: базовые числа берутся из tactics.base
+    действующего points.json (hot-reload через tactics_config.config()); нет секции base ->
+    константы этого модуля (обратная совместимость)."""
+    from arent.tactics_config import config          # лениво: без цикла импортов на старте
+    return TeamReward.from_base(draw_window, reward_scale, raw_weight, config().base)

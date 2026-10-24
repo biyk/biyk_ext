@@ -43,31 +43,233 @@
     "comment": "Тактический shaping (teaching_plan §5): веса бонусов/штрафов за правомерные ходы. Ключи weights/penalties = реестр arent/tactics.py (Tag/Penalty); неизвестный ключ — ошибка загрузки, а не нулевой вес. Действует ТОЛЬКО на train (в evaluate/team_eval shaping выключен, принцип §1.1). enabled_global — общий рубильник; shaping_cap_of_win — |Σ shaping| за бой не больше этой доли от |WIN|; decay — затухание λ(iter).",
     "enabled_global": true,
     "shaping_cap_of_win": 0.3,
-    "decay": {"mode": "linear", "floor": 0.0},
-    "distance_field": {"enabled": true, "amp": 0.15, "near_cut": 0.3, "peak": 1.0, "far_cut": 2.0},
+    "decay": {
+      "mode": "linear",
+      "floor": 0.0
+    },
+    "distance_field": {
+      "enabled": true,
+      "amp": 0.15,
+      "near_cut": 0.3,
+      "peak": 1.0,
+      "far_cut": 2.0
+    },
     "weights": {
-      "focus_wounded": 0.10, "kill_shot": 0.15, "priority_soft": 0.10,
-      "kite_max_range": 0.15, "cover_shoot": 0.15, "stand_off_shoot": 0.15, "break_ring": 0.10,
-      "hold_choke": 0.10, "avoid_reach": 0.05, "charge_from_cover": 0.10,
-      "anti_pincer": 0.10, "no_stack": 0.03, "use_high_ground": 0.08,
-      "no_idle": 0.03, "retreat_low_hp": 0.10, "focus_fire": 0.10
+      "focus_wounded": 0.1,
+      "kill_shot": 0.15,
+      "priority_soft": 0.1,
+      "kite_max_range": 0.15,
+      "cover_shoot": 0.15,
+      "stand_off_shoot": 0.15,
+      "break_ring": 0.1,
+      "hold_choke": 0.1,
+      "avoid_reach": 0.05,
+      "charge_from_cover": 0.1,
+      "anti_pincer": 0.1,
+      "no_stack": 0.03,
+      "use_high_ground": 0.08,
+      "no_idle": 0.03,
+      "retreat_low_hp": 0.1,
+      "focus_fire": 0.1
     },
     "penalties": {
-      "spread_fire": -0.04, "approach_milishnik_as_archer": -0.15,
-      "shoot_from_open": -0.10, "enter_reach": -0.12, "widen_contacts": -0.12,
-      "leave_choke": -0.08, "idle_turn": -0.05, "melee_at_low_hp": -0.10,
-      "hit_boss_with_adds": -0.10, "stack_close": -0.06, "reach_penalty": -0.12
+      "spread_fire": -0.04,
+      "approach_milishnik_as_archer": -0.15,
+      "shoot_from_open": -0.1,
+      "enter_reach": -0.12,
+      "widen_contacts": -0.12,
+      "leave_choke": -0.08,
+      "idle_turn": -0.05,
+      "melee_at_low_hp": -0.1,
+      "hit_boss_with_adds": -0.1,
+      "stack_close": -0.06,
+      "reach_penalty": -0.12
     },
     "per_stage_disable": {
-      "stage1": ["kite_max_range", "cover_shoot", "hold_choke", "break_ring", "anti_pincer",
-                 "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
-                 "retreat_low_hp"],
-      "stage2": ["cover_shoot", "hold_choke", "break_ring", "anti_pincer",
-                 "focus_fire", "priority_soft", "no_stack", "use_high_ground", "charge_from_cover",
-                 "retreat_low_hp"],
-      "stage3": ["cover_shoot", "hold_choke", "break_ring", "anti_pincer",
-                 "focus_fire", "no_stack", "use_high_ground", "charge_from_cover",
-                 "shoot_from_open"]
+      "stage1": [
+        "kite_max_range",
+        "cover_shoot",
+        "hold_choke",
+        "break_ring",
+        "anti_pincer",
+        "focus_fire",
+        "priority_soft",
+        "no_stack",
+        "use_high_ground",
+        "charge_from_cover",
+        "retreat_low_hp"
+      ],
+      "stage2": [
+        "cover_shoot",
+        "hold_choke",
+        "break_ring",
+        "anti_pincer",
+        "focus_fire",
+        "priority_soft",
+        "no_stack",
+        "use_high_ground",
+        "charge_from_cover",
+        "retreat_low_hp"
+      ],
+      "stage3": [
+        "cover_shoot",
+        "hold_choke",
+        "break_ring",
+        "anti_pincer",
+        "focus_fire",
+        "no_stack",
+        "use_high_ground",
+        "charge_from_cover",
+        "shoot_from_open"
+      ]
+    },
+    "_управление_комментарий": "ЕДИНОЕ МЕСТО наград/штрафов. base — базовые события исхода команды (TeamReward, шкала ±5): у каждого value (число), enabled (false => вклад 0) и desc (что и как применяется). tags — тактические теги шейпера: enabled (false => глобально снят с allowed() на всех этапах, в награду не течёт даже на train) и desc; сами числа тегов — в weights/penalties выше. kind (награда/штраф) выводится из того, в weights или penalties ключ. Всё перечитывается на лету (hot-reload). В eval/дампах шейпер record_only: теги лишь описывают as-if, reward = честный исход.",
+    "base": {
+      "win": {
+        "value": 5.0,
+        "enabled": true,
+        "desc": "команда победила: врагов не осталось (терминал боя) — финальная добавка к награде за шаг, закрывший бой"
+      },
+      "loss": {
+        "value": -5.0,
+        "enabled": true,
+        "desc": "наша команда уничтожена — зеркало победы"
+      },
+      "draw": {
+        "value": -4.0,
+        "enabled": true,
+        "desc": "пат: draw_window (4) раунда подряд без урона ни одной стороне — бой встал ( терминал DRAW)"
+      },
+      "mutual": {
+        "value": 0.0,
+        "enabled": true,
+        "desc": "взаимное уничтожение обеих команд — нейтрально (0), но события урона за шаг считаются"
+      },
+      "kill": {
+        "value": 0.5,
+        "enabled": true,
+        "desc": "убитый за ход враг — плотная добавка: кончать быстрее, а не пилить HP"
+      },
+      "hit": {
+        "value": 0.01,
+        "enabled": true,
+        "desc": "попадание: враг получил урон в этом ходу (даже без смерти)"
+      },
+      "living_cost": {
+        "value": -0.01,
+        "enabled": true,
+        "desc": "издержки за КАЖДОГО живого врага на закрытии раунда — пинать неубитых, не бросать их жить"
+      }
+    },
+    "tags": {
+      "focus_wounded": {
+        "enabled": false,
+        "desc": "атакован самый раненый из достижимых врагов (добивание, а не стреляние по полным)"
+      },
+      "kill_shot": {
+        "enabled": true,
+        "desc": "ожидаемый урон >= остатка HP цели — ход добивает"
+      },
+      "priority_soft": {
+        "enabled": true,
+        "desc": "целью выбран «мягкий» враг: дальнобойный или мобильный лучник"
+      },
+      "kite_max_range": {
+        "enabled": true,
+        "desc": "дальнобойник увеличил дистанцию до ближников и выстрелил (кайт на максимум)"
+      },
+      "cover_shoot": {
+        "enabled": true,
+        "desc": "выстрел из-за укрытия (на аренах без укрытий не срабатывает)"
+      },
+      "stand_off_shoot": {
+        "enabled": true,
+        "desc": "дальнобойник выстрелил, оставшись вне зоны melee-рук врага — основная морковка Этапа 3"
+      },
+      "break_ring": {
+        "enabled": true,
+        "desc": "разорвал окружение: контактов было >=2, стало <=1"
+      },
+      "hold_choke": {
+        "enabled": true,
+        "desc": "удержал узкое место, атаковал и не допустил более 1 контакта"
+      },
+      "avoid_reach": {
+        "enabled": true,
+        "desc": "передвинулся так, что вышел из зоны поражения melee-врагов"
+      },
+      "charge_from_cover": {
+        "enabled": true,
+        "desc": "атака с выходом из укрытия (объявлено, движок высот не поддерживает — фактически N/A)"
+      },
+      "anti_pincer": {
+        "enabled": true,
+        "desc": "при >=2 контактах врагов атаковал ближайшего — не даёт зайти в клещи"
+      },
+      "no_stack": {
+        "enabled": true,
+        "desc": "после движения ни к одному союзнику не подошёл ближе ~1.6 клетки (не сбивается в кучу)"
+      },
+      "use_high_ground": {
+        "enabled": true,
+        "desc": "использование высоты (объявлено, отложено: высот в движке нет — N/A)"
+      },
+      "no_idle": {
+        "enabled": true,
+        "desc": "ход реально нанёс атаку: беготня без выстрела больше не оплачивается (после переразметки)"
+      },
+      "retreat_low_hp": {
+        "enabled": true,
+        "desc": "на низком HP (<30%) двинулся увеличивая дистанцию до ближайшего врага — отход"
+      },
+      "focus_fire": {
+        "enabled": true,
+        "desc": "атаковал цель, по которой уже били союзники в этом раунде — концентрация огня"
+      },
+      "spread_fire": {
+        "enabled": true,
+        "desc": "штраф: размазал огонь — ударил цель, в которую союзники ещё не стреляли"
+      },
+      "approach_milishnik_as_archer": {
+        "enabled": true,
+        "desc": "штраф: дальнобойник сблизился с ближним врагом — полез в «руки» вместо держания дистанции"
+      },
+      "shoot_from_open": {
+        "enabled": true,
+        "desc": "штраф: выстрел с открытой позиции без укрытия"
+      },
+      "enter_reach": {
+        "enabled": true,
+        "desc": "штраф: оказался в «руках» врагов и получил урон"
+      },
+      "widen_contacts": {
+        "enabled": true,
+        "desc": "штраф: добровольно расширил кольцо контактов — было <=1, стало >=3"
+      },
+      "leave_choke": {
+        "enabled": true,
+        "desc": "штраф: покинул узкое место, на котором стоял"
+      },
+      "idle_turn": {
+        "enabled": true,
+        "desc": "штраф: чистый простой — ни атаки, ни сближения с ближайшим врагом за ход"
+      },
+      "melee_at_low_hp": {
+        "enabled": true,
+        "desc": "штраф: на низком HP (<30%) остался в контакте с врагами вместо отхода"
+      },
+      "hit_boss_with_adds": {
+        "enabled": true,
+        "desc": "штраф: удар по боссу (tank), пока рядом достижимы живые прислуги — сначала миньоны"
+      },
+      "stack_close": {
+        "enabled": true,
+        "desc": "штраф: встал впритык к союзнику (дистанция <= ~1.6 клетки)"
+      },
+      "reach_penalty": {
+        "enabled": true,
+        "desc": "штраф: двинулся в зону поражения ближних врагов (даже если ещё не били)"
+      }
     }
   }
 }

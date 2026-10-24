@@ -17,7 +17,6 @@ from planner.geometry import cell_distance
 from arent import encode as enc
 from arent import joint, spec, spec3, slots_v3
 from arent.observe import has_los, sight_segments
-from arent.tactics_geom import enemy_cover, is_choke
 
 D = spec.D_SCALE
 _r = enc._r
@@ -30,7 +29,7 @@ def _enemy_cell(ctx: BattleContext, e: Dict[str, Any]):
 
 def plan_vector(ctx: BattleContext, obs: Dict[str, Any], plan: Dict[str, Any],
                 index: int, total: int, segments) -> List[float]:
-    """Один вектор слота move-plan (порядок = spec3.CELL3_FEATURES, длина = 23).
+    """Один вектор слота move-plan (порядок = spec3.CELL3_FEATURES, длина = 21).
 
     ЭТАП 5 (часть 2): позиционный признак slotIndex убран — выводится только slotActive (=1 для
     живого слота). plan-голова не видит, каким по счёту идёт слот, и обязана выбирать по
@@ -51,11 +50,6 @@ def plan_vector(ctx: BattleContext, obs: Dict[str, Any], plan: Dict[str, Any],
                  if cell_distance(end, _enemy_cell(ctx, e)) <= e["reachCells"] + e["speedCells"] + 1)
     cover = 1.0 if threat == 0 else 0.0                       # end_cell вне досягаемости ответки
     los = any(has_los(ctx, atk, _enemy_cell(ctx, e), segments) for e in enemies)
-    # ЭТАП 4: LOS-укрытие финальной клетки (ни один враг не видит end) и узость финальной клетки.
-    # Признаки контентные (не позиционные) -> permutation-invariance plan-головы сохраняется.
-    foes_cells = [_enemy_cell(ctx, e) for e in enemies]
-    cover_los = 1.0 if enemies and enemy_cover(ctx, end, foes_cells, segments) else 0.0
-    at_choke = 1.0 if is_choke(ctx, end) else 0.0
     stay = plan["attack_cell"] == origin and plan["end_cell"] == origin
     reloc = plan["attack_cell"] == plan["end_cell"] and plan["attack_cell"] != origin
     return [1.0] + [                                   # slotActive; позиционный индекс убран (ЭТАП 5)
@@ -68,7 +62,6 @@ def plan_vector(ctx: BattleContext, obs: Dict[str, Any], plan: Dict[str, Any],
         1.0 if plan["retreatToOrigin"] else 0.0,                           # retreatToOrigin
         1.0 if e_gap > o_gap + 1e-9 else 0.0,                              # gapIncrease
         cover, _r(threat / max(1, len(enemies))), 1.0 if los else 0.0,     # coverFinal, threatFinal, losAttack
-        cover_los, at_choke,                                               # coverLos, atChokeEnd (ЭТАП 4)
     ]
 
 

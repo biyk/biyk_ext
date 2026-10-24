@@ -23,7 +23,7 @@ from arent.tactics_config import TacticsConfig
 from arent.tactics_counters import Counters
 from arent.tactics_map import allowed_set
 from arent.tactics_shaper import TacticsShaper
-from arent.team_reward import TeamReward
+from arent.team_reward import TeamReward, configured_team
 from arent.torch_rl import PPOAgent, joint_logp
 
 Row = Dict[str, Any]
@@ -94,10 +94,13 @@ def normalize(advantages: List[float]) -> List[float]:
 
 
 def _team_reward(cfg: RlConfig) -> Optional[TeamReward]:
-    """Командная награда по конфигу (None, если use_team_reward выкл. — остаётся legacy-путь)."""
+    """Командная награда по конфигу (None, если use_team_reward выкл. — остаётся legacy-путь).
+
+    Базовые числа исхода/событий берутся из единого места управления (points.json
+    tactics.base), параметры прогона (окно пата/масштаб) — по-прежнему из RlConfig."""
     if not cfg.use_team_reward:
         return None
-    return TeamReward(draw_window=cfg.draw_window, reward_scale=cfg.reward_scale)
+    return configured_team(draw_window=cfg.draw_window, reward_scale=cfg.reward_scale)
 
 
 def _make_env(cfg: RlConfig, team: Optional[TeamReward],

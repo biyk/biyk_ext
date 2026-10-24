@@ -75,6 +75,38 @@ def test_from_file_missing_returns_disabled():
     assert cfg.enabled_global is False
 
 
+#--- единое место управления: базовые события (base) и флаг вкл/выкл тега ---- #
+def test_parse_base_values_and_disabled_to_zero():
+    # base принимает {value,enabled} или голое число; enabled=False -> эффективный 0 (вклад гаснет).
+    cfg = parse({"weights": {}, "base": {"win": {"value": 6.0, "enabled": True},
+                                           "kill": {"value": 0.5, "enabled": False}}})
+    assert cfg.base["win"] == pytest.approx(6.0)
+    assert cfg.base["kill"] == pytest.approx(0.0)          # выключен -> 0
+
+
+def test_parse_base_plain_number_without_wrapper():
+    cfg = parse({"weights": {}, "base": {"loss": -9.0}})
+    assert cfg.base["loss"] == pytest.approx(-9.0)
+
+
+def test_tags_enabled_false_excludes_globally_from_allowed():
+    cfg = parse({"weights": {Tag.no_idle.value: 0.03, Tag.cover_shoot.value: 0.15},
+                 "penalties": {}, "tags": {Tag.cover_shoot.value: {"enabled": False}}})
+    assert cfg.disabled == frozenset({Tag.cover_shoot.value})
+    assert Tag.cover_shoot.value not in cfg.allowed()       # снят по флагу на всех этапах
+    assert Tag.no_idle.value in cfg.allowed()
+
+
+def test_shipped_points_json_base_and_tags():
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    assert cfg.base.get("win") == pytest.approx(5.0)        # base == прежним константам TeamReward
+    assert cfg.base.get("living_cost") == pytest.approx(-0.01)
+    assert cfg.base.get("kill") == pytest.approx(0.5)
+    # флагом enabled сейчас ничего глобально не выключено -> allowed() не изменился (без регрессий)
+    assert cfg.disabled == frozenset()
+    assert Tag.focus_wounded.value in cfg.allowed("stage3")
+
+
 def test_stage2_enables_kiting_and_reach_but_not_multitarget():
     # §Этап 2: тактики = stage1 + kite_max_range (avoid_reach и так не гаснет на stage1);
     # многоцели/рельеф (focus_fire, cover_shoot) остаются выключены до более поздних этапов.

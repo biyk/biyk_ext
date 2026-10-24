@@ -104,6 +104,22 @@ def test_random_start_moves_starting_positions_across_seeds():
     assert len(hero_cells) >= 2, "рандомная расстановка не меняет старт от seed к seed"
 
 
+def test_random_start_scatters_units_off_the_border():
+    """random_start = uniform: стартовые ряды не прикованы к рамке, а гуляют по глубине поля."""
+    rows_seen, near_border, total = set(), 0, 0
+    for seed in range(1, 21):
+        _name, raw, _p = scenarios.build(seed, seed, random_start=True)
+        grid_rows = raw["scene"]["height"] // sl.GRID
+        for t in raw["tokens"]:
+            r = t["cell"][0]
+            rows_seen.add(r)
+            total += 1
+            if r in (sl.MARGIN, grid_rows - 1 - sl.MARGIN):
+                near_border += 1
+    assert max(rows_seen) - min(rows_seen) >= 4, "uniform не даёт разброса по рядам"
+    assert near_border < total, "юниты по-прежнему ставятся только на рамку"
+
+
 def test_structured_layout_is_canonical_and_reproducible():
     _n1, raw1, p1 = scenarios.build(9, 4, random_start=False)
     _n2, raw2, p2 = scenarios.build(9, 4, random_start=False)

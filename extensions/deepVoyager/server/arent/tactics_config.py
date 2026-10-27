@@ -48,6 +48,11 @@ class TacticsConfig:
     # enabled=False -> 0.0) и теги, глобально снятые флагом enabled=False (mineus в allowed()).
     base: Dict[str, float] = field(default_factory=dict)
     disabled: frozenset = frozenset()
+    #: ключи вне λ-затухания shaping (§неугасающее ядро): их полный вес доживает до последних
+    #: итераций, когда общий shaping уже погас к 0. ВАЖНО: они ВСЁ РАВНО под общим потолком
+    #: cap_of_win·|WIN| за бой — без капа неугасающий штраф даёт runaway-минус и роняет value-хед.
+    #: Пример: ranged_grabbed + морковки дистанции (симметричный выживающий канал кнут+пряник).
+    hard: frozenset = frozenset()
 
     def lam(self, iter_index: int, total_iters: int) -> float:
         """λ(iter): decay_mode=linear -> затухание к decay_floor; unknown -> 1.0 (без затухания)."""
@@ -92,6 +97,16 @@ def _parse_disabled(section: dict) -> frozenset:
     return frozenset(out)
 
 
+def _parse_hard(section: dict) -> frozenset:
+    """tactics.hard -> frozenset ключей вне λ/потолка (опечатка в ключе = ValueError, §2.3)."""
+    out = set()
+    for key in (section.get("hard") or []):
+        if key not in ALL_KEYS:
+            raise ValueError(f"tactics.hard: неизвестный ключ {key!r} (реестр arent/tactics)")
+        out.add(key)
+    return frozenset(out)
+
+
 def parse(section: Optional[dict]) -> TacticsConfig:
     """raw['tactics'] -> TacticsConfig с проверкой ключей против реестра. Нет секции -> выкл."""
     if not isinstance(section, dict) or not section:
@@ -123,6 +138,7 @@ def parse(section: Optional[dict]) -> TacticsConfig:
         distance_field=distance_field,
         base=_parse_base(section),
         disabled=_parse_disabled(section),
+        hard=_parse_hard(section),
     )
 
 

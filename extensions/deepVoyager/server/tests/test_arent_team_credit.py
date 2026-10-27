@@ -110,7 +110,7 @@ def test_death_penalty_argument_does_not_touch_team_path_rewards():
     dead_a = Unit("A", (0, 0), 0.0, 6, 5, 1, .65, False)
     live_b = Unit("B", (1, 0), 20.0, 6, 5, 1, .65, True)
     tr = TeamReward().step({"A": dead_a}, {"A": dead_a, "B": live_b}, "A")
-    assert tr[1] == "loss" and tr[0] < 0                # минус LOSS, без отдельного штрафа за смерть
+    assert tr[1] == "loss" and tr[0] == 0.0              # LOSS=0: смерть не отдельный штраф (за этот шаг урона нет)
 
 
 #--- 4. окно пата тикает раундами, события раунда копятся -----------------------
@@ -142,4 +142,4 @@ def test_win_reward_scale_dominates_dense_terms():
     nxt = {"A": Unit("A", (0, 0), 20.0, 6, 5, 1, .65, False),
            "B": Unit("B", (1, 0), 0.0, 6, 5, 1, .65, True)}
     reward, outcome = tr.step(prev, nxt, "A")
-    assert outcome == "win" and reward > WIN - 1.0      # ±5 исход, плотные мелкие не перебивают
+    assert outcome == "win" and reward > WIN - 1.0      # исход +50 доминирует плотные урон-слагаемые

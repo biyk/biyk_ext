@@ -9,7 +9,7 @@ import os
 import pytest
 
 from arent import backend, evaluate, paths
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 
 class StubPolicy:
@@ -21,6 +21,9 @@ class StubPolicy:
 
     def predict(self, sample):                       # sample нам не нужен — выбор фиксирован
         return dict(self.choice)
+
+    def head_logp(self, sample):                     # joint-декодер serving-пути читает головы
+        return stub_head_logp(self.choice)
 
 
 def _fight_scene(foe_hp=1, hero_hp=50):

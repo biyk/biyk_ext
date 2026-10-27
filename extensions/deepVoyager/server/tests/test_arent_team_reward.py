@@ -1,23 +1,19 @@
-# tests/test_arent_team_reward.py — командная награда v2 (коммит №4): нормализованная ±5.
+# tests/test_arent_team_reward.py — v3: награда по ВЕЛИЧИНЕ нанесённого урона.
 #
-# Проверяем semantics награды, а не красивые float: исход команды (win/loss/mutual/draw),
-# плотные события (убил/попал/живые-враги-пинать) и главное — окно пата: draw_window раундов
-# подряд без попаданий/убийств => DRAW (терминал), а не бесконечное усечение. reward_scale
-# переводит сырое значение хода в полосу ±5 только когда raw_weight>0 (по умолчанию выкл.).
-# Отдельно — интеграция со средой: с TeamReward терминал берётся из исхода команды, а без него
-# legacy-путь (одиночный герой) остаётся ровно прежним.
+# Основная цель — наносить урон (dealt_hp * coef+), полученный = штраф (taken_hp * 0.9).
+# Победа абсолютна (+50), убийство побочная (+5), поражение/ничья/взаимное = 0.
 import pytest
 
 from arent.env import FightEnv
-from arent.team_reward import (DRAW, HIT, KILL, LIVING_COST, LOSS, REWARD_SCALE, WIN,
-                               TeamReward)
+from arent.team_reward import (DRAW, DAMAGE_DEALT, DAMAGE_TAKEN, KILL, LOSS,
+                               REWARD_SCALE, WIN, TeamReward)
 from conftest import make_npc, make_scene_payload, make_weapon
 from planner.initiative import Unit
 
 
-def unit(uid, hp, hostile=False, ally=False):
+def unit(uid, hp, hostile=False, ally=False, reach=1.0):
     return Unit(id=uid, cell=(0, 0) if not hostile else (1, 0), hp=float(hp), speed_steps=6,
-                damage_avg=5.0, reach_cells=1.0, chance=0.65, hostile_to_hero=hostile,
+                damage_avg=5.0, reach_cells=float(reach), chance=0.65, hostile_to_hero=hostile,
                 ally_to_hero=ally)
 
 
@@ -32,7 +28,8 @@ def test_win_when_all_foes_dead_and_own_alive():
     nxt = {"A": unit("A", 20), "B": unit("B", 0, hostile=True)}
     reward, outcome = tr.step(prev, nxt, "A")
     assert outcome == "win"
-    assert reward == pytest.approx(WIN + KILL + HIT + LIVING_COST * 0, abs=1e-6)
+    # dealt 20 HP, kill 1, win terminal: KILL + DAMAGE_DEALT*20 + WIN
+    assert reward == pytest.approx(WIN + KILL + DAMAGE_DEALT * 20, abs=1e-6)
 
 
 def test_loss_when_own_dead_foes_alive():
@@ -40,7 +37,8 @@ def test_loss_when_own_dead_foes_alive():
     nxt = {"A": unit("A", 0), "B": unit("B", 20, hostile=True)}
     reward, outcome = tr.step(_both_alive(), nxt, "A")
     assert outcome == "loss"
-    assert reward == pytest.approx(LOSS + LIVING_COST, abs=1e-6)      # один живой враг пинаем
+    # taken 20 HP -> penalty -DAMAGE_TAKEN*20; LOSS = 0 (смерть не штраф)
+    assert reward == pytest.approx(-DAMAGE_TAKEN * 20 + LOSS, abs=1e-6)
 
 
 def test_mutual_when_both_sides_wiped():
@@ -48,14 +46,38 @@ def test_mutual_when_both_sides_wiped():
     nxt = {"A": unit("A", 0), "B": unit("B", 0, hostile=True)}
     reward, outcome = tr.step(_both_alive(), nxt, "A")
     assert outcome == "mutual"
-    assert reward == pytest.approx(KILL + HIT, abs=1e-6)          # исход 0, но урон-события считаем
+    # dealt=20 + taken=20, kill=1, MUTUAL=0
+    assert reward == pytest.approx(KILL + DAMAGE_DEALT * 20 - DAMAGE_TAKEN * 20, abs=1e-6)
 
 
 def test_alive_both_sides_is_not_terminal():
     tr = TeamReward()
     reward, outcome = tr.step(_both_alive(), _both_alive(), "A")
     assert outcome is None
-    assert reward == pytest.approx(LIVING_COST, abs=1e-6)             # без событий, 1 живой враг
+    assert reward == pytest.approx(0.0, abs=1e-6)   # без урона и событий — ноль
+
+
+def test_reward_is_proportional_to_damage_dealt():
+    tr = TeamReward()
+    hit = {"A": unit("A", 20), "B": unit("B", 12, hostile=True)}      # снято 8 HP
+    reward, outcome = tr.step(_both_alive(), hit, "A")
+    assert outcome is None
+    assert reward == pytest.approx(DAMAGE_DEALT * 8, abs=1e-6)
+
+
+def test_reward_penalizes_damage_taken_softer_than_dealt():
+    tr = TeamReward()
+    hurt = {"A": unit("A", 12), "B": unit("B", 20, hostile=True)}     # потеряно 8 HP
+    reward, outcome = tr.step(_both_alive(), hurt, "A")
+    assert outcome is None
+    assert reward == pytest.approx(-DAMAGE_TAKEN * 8, abs=1e-6)
+
+
+def test_symmetric_trade_net_is_dealt_minus_softened_taken():
+    tr = TeamReward()
+    nxt = {"A": unit("A", 15), "B": unit("B", 12, hostile=True)}      # dealt 8, taken 5
+    reward, _o = tr.step(_both_alive(), nxt, "A")
+    assert reward == pytest.approx(DAMAGE_DEALT * 8 - DAMAGE_TAKEN * 5, abs=1e-6)
 
 
 #--- 2. окно пата: раунды без событий => DRAW -------------------------------
@@ -80,13 +102,58 @@ def test_reset_clears_the_stall_window():
     assert tr.step(_both_alive(), _both_alive(), "A")[1] is None      # окно снова пустое
 
 
+#--- 2b. победа по очкам: таймаут(cap) и пат судим по разнице урона -----------
+def test_cap_with_more_damage_dealt_is_win():
+    # арчер чипит танка (нанёс 10, не получил) и доживает до cap никто не уничтожен -> WIN по очкам
+    tr = TeamReward()
+    hit = {"A": unit("A", 20), "B": unit("B", 10, hostile=True)}   # dealt 10, taken 0
+    _r, outcome = tr.step(_both_alive(), hit, "A")
+    assert outcome is None                                          # оба живы — бой идёт
+    _r, outcome = tr.step(hit, hit, "A", at_cap=True)              # cap, урона больше нет
+    assert outcome == "win"
+
+
+def test_cap_with_more_damage_taken_is_loss():
+    tr = TeamReward()
+    hurt = {"A": unit("A", 10), "B": unit("B", 20, hostile=True)}   # taken 10, dealt 0
+    tr.step(_both_alive(), hurt, "A")
+    _r, outcome = tr.step(hurt, hurt, "A", at_cap=True)
+    assert outcome == "loss"
+
+
+def test_cap_equal_damage_tie_break_gives_winnner_to_hunted_ranged():
+    # безуронная глухая ничья: у кого дальность больше (дальник, «кого гоняли») — тот и победил
+    tr = TeamReward()
+    a = unit("A", 20, reach=5.0)                                     # дальник (рогатка)
+    b = unit("B", 20, hostile=True, reach=1.0)                      # мили-танк
+    _r, outcome = tr.step({"A": a, "B": b}, {"A": a, "B": b}, "A", at_cap=True)
+    assert outcome == "win"                                         # очки равны (0), ничья по reach -> our win
+
+
+def test_cap_equal_damage_and_reach_is_draw():
+    tr = TeamReward()
+    _r, outcome = tr.step(_both_alive(), _both_alive(), "A", at_cap=True)   # оба reach1, урона нет
+    assert outcome == "draw"
+
+
+def test_stall_is_judged_by_points_not_blanket_draw():
+    # накопил преимущество по урону, затем draw_window тихих раундов -> победа по очкам, не −4 ничья
+    tr = TeamReward(draw_window=2)
+    hit = {"A": unit("A", 20), "B": unit("B", 10, hostile=True)}
+    tr.step(_both_alive(), hit, "A", tick=True)                     # событие: +5 dealt
+    tr.step(hit, hit, "A", tick=True)                               # тихий 1
+    _r, outcome = tr.step(hit, hit, "A", tick=True)                # тихий 2 -> окно заполнено
+    assert outcome == "win"                                         # очки +10 -> win вместо draw
+
+
 #--- 3. плотные события и сырой подмес --------------------------------------
 def test_kill_credit_counts_enemies_that_died():
     tr = TeamReward()
     prev = {"A": unit("A", 20), "B": unit("B", 1, hostile=True), "C": unit("C", 1, hostile=True)}
     nxt = {"A": unit("A", 20), "B": unit("B", 0, hostile=True), "C": unit("C", 0, hostile=True)}
     reward, outcome = tr.step(prev, nxt, "A")
-    assert outcome == "win" and reward == pytest.approx(WIN + 2 * KILL + 2 * HIT, abs=1e-6)
+    # kills 2, dealt = 1+1 = 2 HP
+    assert outcome == "win" and reward == pytest.approx(WIN + 2 * KILL + DAMAGE_DEALT * 2, abs=1e-6)
 
 
 def test_raw_value_scaled_by_reward_scale_only_when_weighted():
@@ -100,7 +167,8 @@ def test_raw_value_scaled_by_reward_scale_only_when_weighted():
 def test_to_dict_exposes_scale_and_points():
     d = TeamReward().to_dict()
     assert d["reward_scale"] == REWARD_SCALE and d["r_win"] == WIN and d["r_loss"] == LOSS
-    assert d["r_draw"] == DRAW
+    assert d["r_draw"] == DRAW and d["r_damage_dealt"] == DAMAGE_DEALT
+    assert d["r_damage_taken"] == DAMAGE_TAKEN
 
 
 #--- единое место управления: числа базы приходят извне (points.json tactics.base) --- #
@@ -113,7 +181,8 @@ def test_from_base_overrides_numbers():
     nxt = {"A": unit("A", 20), "B": unit("B", 0, hostile=True)}
     reward, outcome = tr.step(_both_alive(), nxt, "A")
     assert outcome == "win"
-    assert reward == pytest.approx(7.0 + 0.25 + HIT + 0.0, abs=1e-6)   # исход 7, убийство 0.25
+    # dealt 20 HP with default DAMAGE_DEALT (1.0), kill 0.25, win 7.0
+    assert reward == pytest.approx(7.0 + 0.25 + DAMAGE_DEALT * 20, abs=1e-6)
 
 
 def test_from_base_ignores_unknown_keys():

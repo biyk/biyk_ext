@@ -15,6 +15,9 @@ __pycache__/
 # журнал запросов/ответов планировщика deepVoyager
 extensions/deepVoyager/server/logs/
 
+# генерируемый вьюер: sidecar-файлы входа модели (parse_traces.py -> obs/<uid>_step<N>.json)
+extensions/deepVoyager/server/tools/trace_viewer/obs/
+
 # генерируемые данные каталогизатора weather_by_day_time
 extensions/weather_by_day_time/data/sounds/
 extensions/weather_by_day_time/data/ydisk/tree.json

@@ -77,6 +77,31 @@ def make_scene_payload(walls=None, npcs=None, grid=50, weapons=None, token="B"):
     }
 
 
+def stub_head_logp(choice, schema=2, value=0.0, _top=1.0, _pad=-1e30):
+    """Лог-векторы голов для test-заглушки: независимый argmax каждой головы == choice.
+
+    Serving-пути схемы 2 после Этапа 7 выбирают совместную тройку из model.head_logp
+    (joint-декодер), поэтому «модели» из одного predict уже мало: заглушка обязана
+    отдавать те же полнодлинные log-softmax, что настоящая политика. choice — тройка
+    {cell|plan, target, weapon}, где -1 трактуется как NONE-слот (последний индекс группы).
+    """
+    from arent import joint
+    totals = joint.group_totals(schema)
+    pos_key = "plan" if int(schema) == 3 else "cell"
+
+    def _vec(group, idx):
+        n = totals[group]
+        idx = int(idx)
+        idx = n - 1 if idx < 0 else max(0, min(idx, n - 1))
+        v = [_pad] * n
+        v[idx] = _top
+        return v
+    cells = _vec("cells", choice.get(pos_key, choice.get("cell", 0)))
+    targets = _vec("targets", choice.get("target", -1))
+    weapons = _vec("weapons", choice.get("weapon", -1))
+    return cells, targets, weapons, value
+
+
 @pytest.fixture(autouse=True)
 def pin_default_tuning():
     """Фиксируем встроенные коэффициенты на время теста.

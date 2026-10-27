@@ -4,7 +4,8 @@
 # векторы -> три индекса -> slots.decode. Схемы 3: конечная тройка выбирается ОБЩИМ
 # joint-декодером (arent/joint.py: максимум совместной вероятности по A(s)), поэтому
 # действие политики всегда легально и защитный legalize — тождество; независимый argmax
-# голов остаётся только диагностическим baseline (y_proposed). Схема 2 — прежний путь.
+# голов остаётся только диагностическим baseline (y_proposed). Схема 2 декодируется тем же
+# joint-декодером (Этап 7 завершён: serving==train по множеству A(s)).
 # Поэтому ответ модели устроен точно как
 # ответ планировщика, и Foundry его принимает без особых доработок: цель, шаги, атака.
 # Ни lookahead, ни таймеров здесь нет — один прямой проход сети.
@@ -84,14 +85,20 @@ def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
             "me": obs["me"]["name"], "src": ctx.src_id, "grid": obs["grid"],
         }
     slots = slots_mod.build(ctx, obs)
-    out = model.predict(encode.observation(ctx, obs, slots))
+    sample = encode.observation(ctx, obs, slots)
+    out = model.predict(sample)                # диагностический baseline: независимый argmax
     raw = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
-    label, reason = legalize_mod.legalize(raw, schema, slots, ctx)
+    # схема 2 переведена на тот же joint-декодер, что и обучение (BC joint NLL / PPO берут
+    # logπ по A(s)): выбор политики уже совместен, protective legalize — тождество.
+    dec = joint_mod.decode(model, sample, slots, ctx, schema)
+    label, reason = legalize_mod.legalize(dec["label"], schema, slots, ctx)
+    violation = bool(reason) or dict(label) != dict(dec["label"])
     actions = slots_mod.decode(slots, label)
     return {
         "schema": schema, "actions": [a.to_dict() for a in actions], "y": label, "value": out["value"],
-        "y_proposed": raw, "legalize": _attack_view(raw, label, reason, slots),
-        "prob": {Y_KEY[group]: out[Y_KEY[group] + "Prob"] for group in GROUPS},
+        "y_proposed": raw, "decoder": "joint_argmax", "legalize": _attack_view(raw, label, reason, slots),
+        "joint": {"prob": dec["joint_prob"], "violation": violation},
+        "prob": _head_probs(dec["logp"], label, Y_KEY, GROUPS),
         "names": {"cell": _cell(slots, label["cell"]), "target": _name(slots.targets, label["target"]),
                   "weapon": _name(slots.weapons, label["weapon"])},
         "counts": {"cells": len(slots.cells), "targets": len(slots.targets),

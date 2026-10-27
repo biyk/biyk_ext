@@ -29,7 +29,10 @@ DEFAULT_GLOBS = [
     os.path.join(HERE, "..", "..", ".ray", "stage3_traces_*.log"),
     os.path.join(HERE, "..", "..", ".ray", "stage3_reward_hack*.log"),
     os.path.join(HERE, "..", "..", ".ray", "traces_all_*.json"),
+    os.path.join(HERE, "..", "..", ".ray", "traces_win_*.json"),
 ]
+RAY_DIR = os.path.normpath(os.path.join(HERE, "..", "..", ".ray"))
+GATE_LOG_GLOB = os.path.join(RAY_DIR, "stage3_imitate*.log")
 
 # --- structural anchors (ASCII) ------------------------------------------------
 HDR_RE = re.compile(
@@ -49,6 +52,12 @@ NUM_RE = re.compile(r"[+-]?\d+\.?\d*")
 LEGAL_RE = re.compile(r"\(([a-z_]{6,}[^)]*)\)")
 PAIR_RE = re.compile(r"(mobile_archer|melee|fast|reach|ranged|tank)"
                      r"v(mobile_archer|melee|fast|reach|ranged|tank)")
+# гейт-этап обучения: строки «s3_vs_<opponent> : win=.. bootCI>=.. loss=.. draw=.. [PASS/FAIL]»
+# и закрывающая «STAGE3 GATE (<label>): PASS/FAIL». ASCII-якоря — не зависят от mojibake.
+VS_RE = re.compile(
+    r"s3_vs_(\w+)\s*:\s*win=([0-9.]+)\s+bootCI>=([0-9.]+)\s+loss=([0-9.]+)"
+    r"\s+draw=([0-9.]+).*?\[(PASS|FAIL)")
+GATE_RE = re.compile(r"STAGE3 GATE \((.*?)\):\s*(PASS|FAIL)")
 
 # --- таблица починки mojibake (символ-из-лога -> настоящий символ) -------------
 MOJIBAKE = {
@@ -232,14 +241,31 @@ def arena_geometry(arena, c_max, r_max):
     return {"w": gw, "h": gh}, walls, field
 
 
-def parse_json_file(path):
-    """traces_all_*.json {run, rows:[team_eval-нативные]} -> бои формата вьюера."""
+def parse_json_file(path, obs_dir=None):
+    """traces_all/win_*.json {run, set, rows:[team_eval-нативные]} -> бои формата вьюера.
+
+    Набор (set): "winrate" (стандартный канон) | "chaos" (учебный). Берём из row['set'],
+    иначе из top-level d['set'], иначе по имени файла (traces_win_* -> winrate). Legacy-бои
+    из логов и старые дампы без поля -> "chaos" (галочка вьюера по умолчанию их и показывает).
+
+    obs_dir: если задан — каждый шаг дампа с obs_input (team_eval obs_trace=cand|all)
+    выгружается sidecar-файлом obs/<battle_uid>_step<N>.json, а в battle.js остаётся лишь
+    ссылка st["obsFile"]. Сами obs_input из rows ВЫРЕЗАЮТСЯ — иначе battles.js раздуется.
+    Перед записью боя его прежние sidecar-файлы удаляются (защита от stale-шагов)."""
     d = json.load(open(path, encoding="utf-8"))
     run = d.get("run", "?")
     fname = os.path.basename(path)
+    file_set = d.get("set") or ("winrate" if fname.startswith("traces_win") else "chaos")
     battles = []
     for r in d.get("rows", []):
         name = r.get("name", "?")
+        b_uid = r.get("battle_uid")
+        if obs_dir and b_uid:                     # прежнее поколение этого боя — долой
+            for old in glob.glob(os.path.join(obs_dir, "%s_step*.json" % b_uid)):
+                try:
+                    os.remove(old)
+                except OSError:
+                    pass
         cls_a, cls_f = classes_from_sid(name)
         steps, r_max, c_max = [], -1.0, -1.0     # board-клетки [row,col]: row~Y, col~X
         actors, hp_max = set(), {}
@@ -259,12 +285,22 @@ def parse_json_file(path):
                 if rw["tags"]:
                     has_tags = True
             actors.add(ts.get("actor"))
+            obs_in = ts.pop("obs_input", None)    # в battles.js не тащим — только sidecar
             steps.append({"kind": ts.get("side"), "actor": ts.get("actor"),
                           "from": ts.get("cell_before"), "to": ts.get("cell_after"),
+                          # rich v3 (с 26.10): полный маршрут шага и клетка удара; в старых
+                          # дампов нет -> None, вьюер откатывается на прямую from->to
+                          "path": ts.get("path"), "attackCell": ts.get("attackCell"),
                           "attackTarget": atk.get("target"), "weapon": atk.get("weapon"),
                           "damage": float(ts.get("dealt", 0.0) or 0.0),
                           "legalize": ts.get("reason"), "board": board, "reward": rw,
                           "n": i})
+            if obs_in is not None and obs_dir and b_uid:
+                os.makedirs(obs_dir, exist_ok=True)
+                leaf = "%s_step%d.json" % (b_uid, int(ts.get("step", i)))
+                with open(os.path.join(obs_dir, leaf), "w", encoding="utf-8") as fo:
+                    json.dump(obs_in, fo, ensure_ascii=False)   # прямой UTF-8: без mojibake
+                steps[-1]["obsFile"] = "obs/" + leaf
         n_act = max(1, len(actors))
         grid, walls, field = arena_geometry(r.get("arena"), c_max, r_max)
         # arena.tokens -> экипировка на бойца (клик на карте показывает оружие/характеристики)
@@ -282,8 +318,13 @@ def parse_json_file(path):
                                                                r.get("opponent", "?")),
             "policy": r.get("candidate", run), "opponent": r.get("opponent", "?"),
             "outcome": r.get("outcome"),
+            "set": r.get("set") or file_set,
             "candSide": "foes" if r.get("candidate_is_foes") else "heroes",
             "rounds": int(r.get("rounds", 0)), "stepsDeclared": int(r.get("steps", len(steps))),
+            # метрики сторон из team_eval.fight_teams (r7): нанёс/получил/очки + стабильный uid.
+            "battleUid": r.get("battle_uid"),
+            "dealt": _fnum(r.get("cand_dealt")), "taken": _fnum(r.get("cand_taken")),
+            "points": _fnum(r.get("cand_points")),
             "hasRewardLines": has_rew, "hasTags": has_tags,
             "pair": name, "units": units, "steps": steps, "gear": gear,
             "grid": grid, "walls": walls, "field": field})
@@ -371,6 +412,115 @@ def drop_untagged_dupes(paths):
     return keep
 
 
+def _fnum(v):
+    """None/пусто -> None; число -> float (метрик нет в legacy-дампе)."""
+    if v is None or v == "":
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def aggregate_roles(battles):
+    """Сводка боевых метрик по роли кандидата: раздельно за героев и за врагов.
+
+    Группирует по (policy, candSide); считает нанёс/получил/очки (среднее по боям, где
+    метрики есть) и винрейт кандидата. Бои с battle_uid учитываются ОДИН раз (дедуп —
+    один и тот же бой мог попасть из двух дампов); legacy-бои без uid считаются как есть.
+    Бой без разбора сторон (dealt/taken оба None — старый дамп до r7) в сводку не берётся.
+    -> list[dict] для таблицы во вкладке «Статистика».
+    """
+    seen, buckets = set(), {}
+    for b in battles:
+        uid = b.get("battleUid")
+        if uid:
+            if uid in seen:
+                continue
+            seen.add(uid)
+        dealt, taken = b.get("dealt"), b.get("taken")
+        if dealt is None and taken is None:
+            continue
+        acc = buckets.setdefault((b.get("policy", "?"), b.get("candSide", "?")),
+                                 {"n": 0, "wins": 0, "dealt": 0.0, "taken": 0.0, "ws": 0})
+        acc["n"] += 1
+        if b.get("outcome") == "win":
+            acc["wins"] += 1
+        acc["ws"] += 1
+        acc["dealt"] += dealt or 0.0
+        acc["taken"] += taken or 0.0
+    rows = []
+    for (pol, role), acc in buckets.items():
+        n, ws = acc["n"], acc["ws"]
+        rows.append({"policy": pol, "role": role, "fights": n, "wins": acc["wins"],
+                     "win_rate": round(acc["wins"] / n, 4) if n else 0.0,
+                     "mean_dealt": round(acc["dealt"] / ws, 2) if ws else None,
+                     "mean_taken": round(acc["taken"] / ws, 2) if ws else None,
+                     "mean_points": round((acc["dealt"] - acc["taken"]) / ws, 2) if ws else None,
+                     "stat_fights": ws})
+    rows.sort(key=lambda r: (r["policy"], r["role"]))
+    return rows
+
+
+def extract_gate(glob_path=None):
+    """Винрейты гейта «до (BC) / после (BC+PPO)» из последнего stage3_imitate*.log.
+    -> data['gate'] для таблицы во вкладке «Статистика». Нет логов/блоков -> None.
+    Чистое чтение: берём самый свежий лог, внутри него — последний блок на стадию
+    (PPO-блок содержит '+PPO' в лейбле, BC-гейт — нет). Детерминировано по файлу."""
+    logs = sorted(glob.glob(glob_path or GATE_LOG_GLOB), key=os.path.getmtime)
+    if not logs:
+        return None
+    try:
+        text, _moj = read_text(logs[-1])
+    except OSError:
+        return None
+    blocks, order, pending = {}, [], []
+    for line in text.splitlines():
+        vm = VS_RE.search(line)
+        if vm:
+            opp, win, ci, loss, draw, verdict = vm.groups()
+            try:
+                pending.append({"opponent": opp, "win": float(win), "ci": float(ci),
+                                "loss": float(loss), "draw": float(draw),
+                                "verdict": verdict})
+            except ValueError:
+                pass
+            continue
+        gm = GATE_RE.search(line)
+        if gm and pending:
+            label = gm.group(1).strip()
+            blocks[label] = {"rows": pending, "verdict": gm.group(2)}
+            order.append(label)
+            pending = []
+    if not blocks:
+        return None
+    after_label = next((l for l in reversed(order) if "PPO" in l), None)
+    before_label = next((l for l in reversed(order) if "PPO" not in l), None)
+    after = blocks.get(after_label) if after_label else None
+    before = blocks.get(before_label) if before_label else None
+
+    def rmap(blk):
+        return {r["opponent"]: r for r in blk["rows"]} if blk else {}
+    bm, am = rmap(before), rmap(after)
+    base = (after or before or {}).get("rows", [])
+    opps = list(dict.fromkeys([r["opponent"] for r in base]))
+    rows = []
+    for opp in opps:
+        b, a = bm.get(opp), am.get(opp)
+        rows.append({"opponent": opp,
+                     "before_win": b["win"] if b else None,
+                     "before_ci": b["ci"] if b else None,
+                     "before_verdict": b["verdict"] if b else None,
+                     "after_win": a["win"] if a else None,
+                     "after_ci": a["ci"] if a else None,
+                     "after_verdict": a["verdict"] if a else None})
+    return {"log": os.path.basename(logs[-1]),
+            "before_label": before_label, "after_label": after_label,
+            "before_gate": before["verdict"] if before else None,
+            "after_gate": after["verdict"] if after else None,
+            "rows": rows}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("logs", nargs="*", help="файлы логов (по умолчанию — скан .ray)")
@@ -379,6 +529,7 @@ def main(argv=None):
                     help="парсить только логи с разбором наград")
     a = ap.parse_args(argv)
     paths = a.logs or drop_untagged_dupes(sorted(sum((glob.glob(g) for g in DEFAULT_GLOBS), [])))
+    obs_dir = os.path.join(a.out, "obs")          # sidecar-входы модели (дампер с --obs)
     battles, files = [], []
     tag_defaults = {}
     for p in paths:
@@ -386,7 +537,7 @@ def main(argv=None):
             print("пропущен (нет файла):", p)
             continue
         if p.endswith(".json"):                      # машиночитаемый дамп — без эвристик
-            bs = parse_json_file(p)
+            bs = parse_json_file(p, obs_dir=obs_dir)
         else:
             bs = parse_file(p, only_reward=a.only_reward)
         for bt in battles_iter_reward_tags(bs):
@@ -395,17 +546,28 @@ def main(argv=None):
         if bs:
             files.append(os.path.basename(p))
             battles.extend(bs)
+    for bt in battles:                              # legacy-логи/старые дампы без set -> учебные
+        bt.setdefault("set", "chaos")
+    gate = extract_gate()
     data = {"generated": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "files": files, "tagDefaults": tag_defaults, "battles": battles}
+            "files": files, "tagDefaults": tag_defaults, "gate": gate,
+            "roleStats": aggregate_roles(battles), "battles": battles}
     out_json = os.path.join(a.out, "battles.json")
     out_js = os.path.join(a.out, "battles.js")
     txt = json.dumps(data, ensure_ascii=False)
     open(out_json, "w", encoding="utf-8").write(txt)
     open(out_js, "w", encoding="utf-8").write("window.BATTLES_DATA=" + txt + ";\n")
     print("боёв: %d из %d файлов -> %s" % (len(battles), len(files), out_json))
+    n_win = sum(1 for b in battles if b.get("set") == "winrate")
+    print("  набор: chaos(учебные)=%d | winrate(канон)=%d" % (len(battles) - n_win, n_win))
     with_rw = sum(1 for b in battles if b["hasRewardLines"])
     with_tag = sum(1 for b in battles if b.get("hasTags"))
     print("с наградами по шагам: %d | с as-if тегами: %d" % (with_rw, with_tag))
+    n_obs = len(glob.glob(os.path.join(obs_dir, "*_step*.json"))) if os.path.isdir(obs_dir) else 0
+    print("sidecar obs (вход модели по клику): %d файлов -> %s" % (n_obs, obs_dir))
+    if gate:
+        print("гейт-таблица: %d строк (до=%s / после=%s) из %s"
+              % (len(gate["rows"]), gate.get("before_gate"), gate.get("after_gate"), gate["log"]))
     return 0
 
 

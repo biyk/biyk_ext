@@ -9,7 +9,7 @@
 #    сценах и случайных весах v3);
 #  • play.act, evaluate.fight и team_eval.ModelController используют ОДИНlaw (общий
 #    joint.decode: равные метки на одном состоянии);
-#  • v2-пути не затронуты (нет decoder/joint-полей, baseline не считается);
+#  • v2-пути декодируются тем же joint-декодером (decoder/joint-поля, baseline считается);
 #  • артефакты этапа 6 не перезаписаны, результаты этапа 7 живут в stage7_out.
 import math
 
@@ -186,20 +186,23 @@ def test_fight_teams_separates_baseline_from_policy():
     assert row["cand_baseline_outside_As"] <= row["cand_baseline_steps"]
 
 
-# --------------------------------------------------------------------------- 6. v2 не затронут
-def test_v2_paths_keep_old_semantics():
+# --------------------------------------------------------------------------- 6. v2 тоже joint
+def test_v2_paths_use_joint_decoder():
     payload = _melee_adjacent()
     model = backend.build(net.Config(hidden=8, head=6, seed=5), kind="pure")   # schema 2
     result = play.act(model, payload)
     assert result["schema"] == 2 and "cell" in result["y"]
-    assert "decoder" not in result and "joint" not in result    # v2-путь без joint-полей
+    assert result["decoder"] == "joint_argmax"                 # v2 serving идёт через joint-декодер
+    assert result["joint"]["violation"] is False               # защитный legalize — тождество
     e = polyenv.PolyFightEnv(rounds_cap=4, schema=2)
     obs = e.reset(payload)
     ctrl = team_eval.ModelController(model, schema=2)
     lab = ctrl.label(obs, e._ctx, e.slots)
-    assert ctrl.last_baseline is None                        # baseline v2 не считается
-    out = model.predict(obs)
-    assert lab == {k: int(out.get(k, -1)) for k in ctrl.keys}
+    assert joint.is_jointly_legal(lab, obs["legal"], spec.SCHEMA)   # выбор политики в A(s)
+    assert ctrl.last_baseline is not None                     # baseline v2 теперь считается
+    dec = joint.decode(model, obs, e._ctx, e.slots, spec.SCHEMA)
+    assert lab == dec["label"]                                # ModelController == play/evaluate
+    assert ctrl.last_baseline == joint.independent_baseline(dec["logp"], spec.SCHEMA)
 
 
 # --------------------------------------------------------------------------- 7. артефакты этапа 6 цел

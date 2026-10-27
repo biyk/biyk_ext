@@ -134,7 +134,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 raise ValueError("bad content-length")
             req = json.loads(self.rfile.read(n).decode("utf-8"))
             section, key, flag = req["section"], req["key"], bool(req["enabled"])
-            if section not in ("tags", "base") or not isinstance(key, str) or not key:
+            if section not in ("tags", "base", "distance_field") or not isinstance(key, str) or not key:
                 raise ValueError("bad section/key")
         except Exception as e:
             self._json({"ok": False, "err": "плохой запрос: %r" % (e,)}, 400)
@@ -142,13 +142,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         with _PLOCK:
             try:
                 data = json.load(open(POINTS, encoding="utf-8"))
-                sec = data.setdefault("tactics", {}).setdefault(section, {})
-                if key not in sec:
-                    self._json({"ok": False, "err": "нет ключа tactics.%s.%s в points.json" % (section, key)}, 404)
-                    return
-                entry = sec[key] if isinstance(sec[key], dict) else {"value": sec[key], "enabled": True}
-                entry["enabled"] = flag
-                sec[key] = entry
+                tac = data.setdefault("tactics", {})
+                if section == "distance_field":     # непрерывное поле: флаг лежит прямо в секции
+                    df = tac.setdefault("distance_field", {})
+                    if not isinstance(df, dict):
+                        self._json({"ok": False, "err": "tactics.distance_field не объект"}, 409)
+                        return
+                    df["enabled"] = flag
+                    sec, key = df, "enabled"
+                else:
+                    sec = tac.setdefault(section, {})
+                    if key not in sec:
+                        self._json({"ok": False, "err": "нет ключа tactics.%s.%s в points.json" % (section, key)}, 404)
+                        return
+                    entry = sec[key] if isinstance(sec[key], dict) else {"value": sec[key], "enabled": True}
+                    entry["enabled"] = flag
+                    sec[key] = entry
                 tmp = POINTS + ".tmp"
                 with open(tmp, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)

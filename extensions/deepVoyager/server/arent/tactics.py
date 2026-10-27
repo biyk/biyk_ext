@@ -49,6 +49,7 @@ class Penalty(str, Enum):
     hit_boss_with_adds = "hit_boss_with_adds"
     stack_close = "stack_close"
     reach_penalty = "reach_penalty"
+    ranged_grabbed = "ranged_grabbed"     # дальнобойник закончил ход в melee-охвате ближника (пассивно)
 
 
 #: ключ -> «знак в реестре»: bonus даёт +, penalty даёт −. Только эти строки понимает bonus_for.

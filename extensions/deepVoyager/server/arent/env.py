@@ -134,7 +134,8 @@ class FightEnv:
         died = bool(self.state.hero_dead)
         cleared = not self.state.foes
         if self.team is not None:            # v2: исход команды + плотные события + окно пата
-            base, outcome = self.team.step(prev_units, self.state.units, self.state.hero_id, value)
+            base, outcome = self.team.step(prev_units, self.state.units, self.state.hero_id,
+                                            value, at_cap=self.t >= self.cap)
             terminated = outcome is not None
         else:                                # legacy: одиночный герой (зачистка/смерть), без изменений
             outcome = None

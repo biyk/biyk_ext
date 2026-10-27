@@ -51,6 +51,13 @@ padding:1px 0}.kv:last-child{border-bottom:none}
 border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:var(--tx);
 box-shadow:0 6px 20px rgba(0,0,0,.55);display:none}
 #tagpop b,#unitpop b{color:var(--gold)}
+#obspop{position:fixed;z-index:60;width:min(760px,94vw);max-height:84vh;overflow:auto;
+left:50%;top:50%;transform:translate(-50%,-50%);background:#0d0f12;border:1px solid var(--acc);
+border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.45;color:var(--tx);
+box-shadow:0 10px 30px rgba(0,0,0,.7);display:none}
+#obspop b{color:var(--gold)}
+#obspop pre{margin:4px 0;white-space:pre-wrap;word-break:break-all;font:11px/1.4 consolas,monospace;
+background:#12161d;border:1px solid #262b33;border-radius:6px;padding:6px 8px;max-height:56vh;overflow:auto}
 #notice{padding:6px 12px;color:var(--gold)}
 </style>
 </head>
@@ -62,6 +69,7 @@ box-shadow:0 6px 20px rgba(0,0,0,.55);display:none}
   <label>Роль врага:<select id="fOpp"></select></label>
   <label>Соперник:<select id="fPol"></select></label>
   <label>Результат:<select id="fOut"></select></label>
+  <label class="dim" style="margin-left:10px" title="вкл — бои стандартного канон-сета для замера винрейта; выкл — обычные учебные бои на случайных картах/позициях"><input type="checkbox" id="fWin"> Винрейт</label>
 </header>
 <div id="notice"></div>
 <div class="panel" id="battlebar" style="margin:0 10px 8px">
@@ -114,10 +122,14 @@ box-shadow:0 6px 20px rgba(0,0,0,.55);display:none}
   <code>tactics_shaper.last_diag</code>.</p>
   <p><b>Теги</b> в блоке «As-if тактический» — кликабельны: клик по имени покажет попап,
   что это за награда или штраф и за что именно он начисляется (по детекторам tactics_detect).</p>
-  <p>Свежие данные — дампы <code>traces_all_*.json</code> (запуск <code>.ray/dump_traces.py</code>):
-  <b>все</b> бои актуальной модели, включая победы. Если у шагов там пустые
-  <code>tags</code> (шейпер писал дамп без счётчиков), панель наград показывает только
-  base/потенциал — as-if-теги появятся, когда дампер запустят с тактическими счётчиками.</p>
+  <p>Свежие данные — дампы <code>.ray/dump_traces.py</code>: <b>все</b> бои актуальной модели,
+  включая победы. Дампер пишет <b>два набора</b>: <code>traces_all_*.json</code> — учебные бои на
+  полностью случайных картах/позициях (<b>хаос</b>), и <code>traces_win_*.json</code> — бои на
+  СТАНДАРТНОМ канон-сете (фикс. открытое поле, структурированные позиции) для замера винрейта.
+  Галочка <b>«Винрейт»</b> в шапке переключает просмотр: включена — бои канон-сета, выключена —
+  обычные учебные бои. Статистика и каскад фильтров считаются по выбранному набору.
+  Если у шагов пустые <code>tags</code> (шейпер писал дамп без счётчиков), панель наград показывает
+  только base/потенциал — as-if-теги появятся, когда дампер запустят с тактическими счётчиками.</p>
 </div>
 <div class="tabbody" id="tab-tags" style="display:none"></div>
 <div class="tabbody" id="tab-tune" style="display:none"></div>
@@ -127,7 +139,7 @@ document.write('<script src="battles.js?ts='+Date.now()+'"><\/script>');</script
 "use strict";
 const ICON={ranged:"🏹",mobile_archer:"🏹",melee:"⚔",fast:"🗡",reach:"🔱",tank:"🛡"};
 const D=window.BATTLES_DATA;
-const S={bi:0,si:0,playing:0,tab:"stats",fmod:"",frole:"",fpol:"",fopp:"",fout:"",tune:{},tbase:{},toff:{}};
+const S={bi:0,si:0,playing:0,tab:"stats",fmod:"",frole:"",fpol:"",fopp:"",fout:"",winrate:false,tune:{},tbase:{},toff:{}};
 const STAGE_RU={train:"идёт обучение",battles:"идут бои",parse:"идёт парсинг боёв",done:"готово",error:"ошибка"};
 const RT={dirty:false,busy:false,timer:0,lastStatus:null};
 const $=id=>document.getElementById(id);
@@ -155,14 +167,17 @@ function initStep(b){
    фильтров выше по иерархии; невалидный выбор сбрасывается в «все» */
 function candRole(b){return (b.units[b.candSide==="heroes"?"A1":"F1"]||{}).cls||"?"}
 function oppRole(b){return (b.units[b.candSide==="heroes"?"F1":"A1"]||{}).cls||"?"}
-function matchF(b){return (!S.fmod||(b.policy||"?")===S.fmod)&&(!S.frole||candRole(b)===S.frole)&&(!S.fpol||b.opponent===S.fpol)&&(!S.fopp||oppRole(b)===S.fopp)&&(!S.fout||b.outcome===S.fout)}
+function setOf(b){return b.set||"chaos"}                    // "winrate" (канон) | "chaos" (учебные)
+function inSet(b){return setOf(b)===(S.winrate?"winrate":"chaos")}
+function setPool(){return D.battles.filter(inSet)}          // бои текущего набора (для каскада/счёта)
+function matchF(b){return inSet(b)&&(!S.fmod||(b.policy||"?")===S.fmod)&&(!S.frole||candRole(b)===S.frole)&&(!S.fpol||b.opponent===S.fpol)&&(!S.fopp||oppRole(b)===S.fopp)&&(!S.fout||b.outcome===S.fout)}
 function filteredIdx(){const a=[];D.battles.forEach((b,i)=>{if(matchF(b))a.push(i)});return a}
 function fillSel(sel,opts){sel.innerHTML="";for(const[v,t]of opts){const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o)}}
 function fillSelV(sel,val,opts){fillSel(sel,opts);          // вернуть val, если он ещё среди опций, иначе ""
   if(opts.some(o=>o[0]===val)){sel.value=val;return val}sel.value="";return ""}
 function refreshFilters(){
-  const mods=[...new Set(D.battles.map(b=>b.policy||"?"))].sort();
-  const p0=D.battles.filter(b=>!S.fmod||(b.policy||"?")===S.fmod);   // пул после выбора модели
+  const mods=[...new Set(setPool().map(b=>b.policy||"?"))].sort();
+  const p0=setPool().filter(b=>!S.fmod||(b.policy||"?")===S.fmod);   // пул после выбора модели
   const roles=[...new Set(p0.map(candRole))].sort();
   const p1=p0.filter(b=>!S.frole||candRole(b)===S.frole);             // пул после 1+2
   const opps=[...new Set(p1.map(oppRole))].sort();
@@ -178,6 +193,7 @@ function refreshFilters(){
 }
 function initFilters(){
   refreshFilters();
+  const fw=$("fWin");if(fw){fw.checked=S.winrate;fw.onchange=e=>{S.winrate=e.target.checked;refreshFilters();applyFilter();};}
   $("fMod").onchange=e=>{S.fmod=e.target.value;refreshFilters();applyFilter()};
   $("fRole").onchange=e=>{S.frole=e.target.value;refreshFilters();applyFilter()};
   $("fOpp").onchange=e=>{S.fopp=e.target.value;refreshFilters();applyFilter()};
@@ -186,16 +202,17 @@ function initFilters(){
 }
 function rebuildBattleSel(){
   const list=filteredIdx(),sel=$("battleSel");sel.innerHTML="";
+  const total=setPool().length;const setLbl=S.winrate?"винрейт-канон":"учебные (хаос)";
   if(!list.length){
     fillSel(sel,[["-1","— нет боёв под фильтр —"]]);
-    $("filtCount").textContent=`0 из ${D.battles.length}`;return list;
+    $("filtCount").textContent=`0 из ${total} · ${setLbl}`;return list;
   }
   if(!list.includes(S.bi))S.bi=list[0];
   list.forEach(i=>{const b=D.battles[i];const o=document.createElement("option");
-    o.value=i;o.textContent=`${b.id} · ${b.block} · наш: ${b.candSide==="heroes"?"герои 🔵":"враги 🔴"} · ${b.outcome}`;
+    o.value=i;o.textContent=`${b.id} · ${b.block} · наш: ${b.candSide==="heroes"?"герои 🔵":"враги 🔴"} · ${b.outcome}`+(b.battleUid?` · uid:${b.battleUid}`:"");
     sel.appendChild(o)});
   sel.value=S.bi;
-  $("filtCount").textContent=`${list.length} из ${D.battles.length}`;
+  $("filtCount").textContent=`${list.length} из ${total} · ${setLbl}`;
   return list;
 }
 function applyFilter(){S.si=0;rebuildBattleSel();render()}
@@ -205,7 +222,7 @@ function draw(){
   const b=D.battles[S.bi],st=b.steps[S.si],grid=b.grid||{w:12,h:8};
   const cs=Math.min((cv.width-20)/grid.w,(cv.height-20)/grid.h);
   const ox=(cv.width-cs*grid.w)/2,oy=(cv.height-cs*grid.h)/2;
-  VW.ox=ox;VW.oy=oy;VW.cs=cs;upop.style.display="none";   // трансформация для кликов; при смене шага попап закрываем
+  VW.ox=ox;VW.oy=oy;VW.cs=cs;upop.style.display="none";opop.style.display="none";   // трансформация для кликов; при смене шага попапы закрываем
   cx.clearRect(0,0,cv.width,cv.height);
   cx.strokeStyle="#242a33";cx.lineWidth=1;
   for(let i=0;i<=grid.w;i++){cx.beginPath();cx.moveTo(ox+i*cs,oy);cx.lineTo(ox+i*cs,oy+grid.h*cs);cx.stroke()}
@@ -217,17 +234,34 @@ function draw(){
     cx.lineCap="butt";cx.strokeStyle="#242a33";cx.lineWidth=1}
   const board=st&&st.board||{};
   const harm=isHarmful(st);
-  /* стрелка движения */
+  /* движение: пунктирная кривая по фактическим клеткам маршрута (path, rich v3);
+     в старых дампов path нет -> прежняя прямая from→to */
   if(st&&String(st.from)!=String(st.to)){
     cx.strokeStyle=st.kind==="cand"?"#fbbf24":"#94a3b8";cx.lineWidth=2;cx.setLineDash([5,4]);
-    arrow(X(st.from),Y(st.from),X(st.to),Y(st.to));cx.setLineDash([]);
+    const cells=(st.path&&st.path.length>1)?st.path:[st.from,st.to];
+    const pts=cells.map(c=>[X(c),Y(c)]);
+    cx.beginPath();cx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length-1;i++){
+      const mx=(pts[i][0]+pts[i+1][0])/2,my=(pts[i][1]+pts[i+1][1])/2;
+      cx.quadraticCurveTo(pts[i][0],pts[i][1],mx,my);   // скругление углов маршрута
+    }
+    cx.lineTo(pts[pts.length-1][0],pts[pts.length-1][1]);cx.stroke();
+    const a0=pts[pts.length-2],b0=pts[pts.length-1];    // наконечник по последней секунде
+    arrow(a0[0],a0[1],b0[0],b0[1]);
+    if(cells.length>2){cx.fillStyle=cx.strokeStyle;     // точки промежуточных клеток
+      for(let i=1;i<pts.length-1;i++){cx.beginPath();cx.arc(pts[i][0],pts[i][1],2,0,7);cx.fill()}}
+    cx.setLineDash([]);
   }
-  /* линии атак (по board-координатам этого шага) */
-  if(st&&st.attackTarget&&board[st.actor]&&board[st.attackTarget]){
+  /* линии атак: вектор ИЗ клетки удара (attackCell) в цель; без него — как раньше,
+     из позиции актёра на board (она же end-клетка: старый дамп или удар с места) */
+  if(st&&st.attackTarget&&board[st.attackTarget]&&(st.attackCell||board[st.actor])){
     cx.strokeStyle="#4ade80";cx.lineWidth=2;
-    const a=X(board[st.actor].cell),ay=Y(board[st.actor].cell),bx=X(board[st.attackTarget].cell),by=Y(board[st.attackTarget].cell);
+    const oc=st.attackCell||board[st.actor].cell;
+    const a=X(oc),ay=Y(oc),bx=X(board[st.attackTarget].cell),by=Y(board[st.attackTarget].cell);
     arrow(a,ay,bx,by);
-    cx.fillStyle="#4ade80";cx.font="11px sans-serif";
+    cx.fillStyle="#4ade80";
+    cx.beginPath();cx.arc(a,ay,cs*.14,0,7);cx.fill();   // маркер клетки удара на маршруте
+    cx.font="11px sans-serif";
     cx.fillText(`${st.weapon||""} −${st.damage}`, (a+bx)/2+6, (ay+by)/2-6);
   }
   /* юниты */
@@ -309,6 +343,39 @@ function showUnitPop(uid,x,y){
   upop.style.left=Math.max(4,Math.min(innerWidth-r.width-4,x+10))+"px";
   upop.style.top=Math.max(4,Math.min(innerHeight-r.height-4,y+12))+"px";
 }
+/* ---------- obs modal: JSON-наблюдение шага (sidecar от parse_traces.py, дампер с --obs) ---------- */
+const opop=document.createElement("div");opop.id="obspop";document.body.appendChild(opop);
+async function showObsModal(st){
+  opop.innerHTML=`<b>Вход модели · шаг ${st.n} · ${esc(st.actor)}</b>`
+    +`<div class="dim small">${esc(st.obsFile)} — то, что ушло в ctrl.label на этом шаге</div>`
+    +"<div class='dim'>загрузка…</div>";
+  opop.style.display="block";
+  let j;
+  try{const r=await fetch(st.obsFile,{cache:"no-store"});if(!r.ok)throw new Error("http "+r.status);j=await r.json()}
+  catch(e){opop.innerHTML+=`<div class="warn">не удалось прочитать ${esc(st.obsFile)}: ${esc(e.message||e)}</div>
+    <div class="dim small">sidecar-файлы отдаёт serve.py — страница должна быть открыта через http://127.0.0.1:8317/viewer.html</div>`;return}
+  const legal=(j&&"legal"in j)?j.legal:undefined, rest={};
+  for(const k in j)if(k!=="legal")rest[k]=j[k];
+  const lj=JSON.stringify(legal,null,1), pj=JSON.stringify(rest,null,1);
+  const nLegal=legal==null?0:(Array.isArray(legal)?legal.length:Object.keys(legal).length);
+  let h=`<b>Вход модели · шаг ${st.n} · ${esc(st.actor)}</b>`
+    +`<div class="dim small">${esc(st.obsFile)} — то, что ушло в ctrl.label на этом шаге</div>`
+    +`<div style="margin:4px 0"><button id="obsCopy" title="копировать весь JSON в буфер">📋 копировать</button></div>`
+    +`<pre>${esc(pj)}</pre>`
+    +(legal!==undefined?`<details id="obsLegalDet"><summary class="taglink">legal — маска A(s), ${nLegal} записей (развернуть)</summary><pre id="obsLegalPre"></pre></details>`:"");
+  opop.innerHTML=h;
+  const det=$("obsLegalDet");
+  if(det)det.addEventListener("toggle",e=>{        // лениво: большой массив в DOM только по требованию
+    const pre=$("obsLegalPre");
+    if(det.open&&!pre.textContent)pre.textContent=lj;
+    const sm=det.querySelector("summary");
+    if(sm)sm.textContent=`legal — маска A(s), ${nLegal} записей ${det.open?"(свернуть)":"(развернуть)"}`;
+  });
+  $("obsCopy").onclick=async e=>{e.stopPropagation();
+    try{await navigator.clipboard.writeText(JSON.stringify(j));e.target.textContent="✅ скопировано";}
+    catch(_){e.target.textContent="⛔ буфер недоступен";}
+  };
+}
 /* ---------- inspector ---------- */
 function prevBoard(b,i){for(let k=i-1;k>=0;k--)if(b.steps[k].board)return b.steps[k].board;return null}
 function renderInspector(){
@@ -319,7 +386,11 @@ function renderInspector(){
   else if(!b.hasTags)h+="<div class='dim small'>Базовые награды есть; as-if-теги пусты (дампер писал без тактических счётчиков).</div>";
   const meta=b.units[st.actor]||{};
   h+=`<h3>Шаг ${st.n} · раунд ${st.round+1} · актёр ${ICON[meta.cls]||""} ${st.actor} <span class="badge ${st.kind==="cand"?"bwin":""}">${st.kind}</span></h3>`;
-  h+=`<div class="kv"><span>движение</span><span>[${st.from}] → [${st.to}]</span></div>`;
+  if(st.obsFile)h+=`<div class="kv"><span>вход модели</span><span><a class="taglink" id="obsLink" href="#" title="JSON наблюдения этого шага (sidecar obs/<uid>_step<N>.json, дампер с --obs)">📦 наблюдение (что ушло в модель)</a></span></div>`;
+  else if(st.kind==="cand")h+=`<div class="kv"><span>вход модели</span><span class="dim">нет в дампе — перегоните дамп с --obs cand и 🔄</span></div>`;
+  h+=`<div class="kv"><span>движение</span><span>[${st.from}] → [${st.to}]`
+    +(st.path&&st.path.length>2?` · путь ${st.path.length-1} кл.`:"")
+    +(st.attackCell?` · удар с [${st.attackCell}]`:"")+`</span></div>`;
   if(st.attackTarget)h+=`<div class="kv"><span>атака</span><span>→ ${st.attackTarget} «${esc(st.weapon)}», снимает ${st.damage}</span></div>`;
   else h+=`<div class="kv"><span>атака</span><span class="neg">нет</span></div>`;
   const pb=prevBoard(b,st.n),deltas=[];
@@ -349,11 +420,21 @@ function renderInspector(){
     if(isHarmful(st))h+=`<div class="harmful">☠ ВРЕДНАЯ: без атаки, но as-if = ${fmt(rw.asif)}</div>`;
   }else h+="<div class='dim small'>Награда за этот шаг не записана в дампе (нет reward_breakdown).</div>";
   box.innerHTML=h;
+  const ol=$("obsLink");
+  if(ol)ol.onclick=e=>{e.preventDefault();e.stopPropagation();showObsModal(st)};
   function kv(k,v){return `<div class="kv"><span>${k}</span><span>${v}</span></div>`}
 }
 function renderTotals(){
   const b=D.battles[S.bi];
-  if(!b.hasRewardLines){$("totals").innerHTML="<div class='dim'>Наград нет — сводка недоступна.</div>";return}
+  /* итог боя по кандидату (нанёс/получил/очки + uid) — показываем и без пошаговых наград */
+  let sum="";
+  if(b.dealt!=null||b.taken!=null||b.battleUid){
+    sum+="<h3>Итог боя \u00b7 кандидат</h3>";
+    sum+=`<div class="kv"><span>нанёс / получил</span><span>${b.dealt!=null?b.dealt:"–"} / ${b.taken!=null?b.taken:"–"}</span></div>`;
+    sum+=`<div class="kv"><span>очки (нанёс−получил)</span><span class="${(b.points||0)>0?"pos":(b.points||0)<0?"neg":"dim"}">${b.points!=null?((b.points>=0?"+":"")+b.points):"–"}</span></div>`;
+    if(b.battleUid)sum+=`<div class="kv"><span>battle_uid</span><span class="dim">${esc(b.battleUid)}</span></div>`;
+  }
+  if(!b.hasRewardLines){$("totals").innerHTML=sum+"<div class='dim'>Наград по шагам нет — накопленная сводка недоступна.</div>";return}
   /* накопленное до текущего шага (init-шаг раунда 0 не учитывается) */
   const acc={},rounds={};let teamAcc={hero:0,foe:0};
   for(let i=0;i<=S.si;i++){
@@ -372,7 +453,7 @@ function renderTotals(){
   h+=`<div class="kv"><span>🔴 враги</span><span class="${cls(teamAcc.foe)}">${fmt(teamAcc.foe)}</span></div>`;
   h+="<h3>По раундам</h3><table><tr><th>р.</th><th class='num'>герои</th><th class='num'>враги</th></tr>";
   for(const r in rounds)h+=`<tr><td>${(+r)+1}</td><td class="num">${fmt(rounds[r].hero)}</td><td class="num">${fmt(rounds[r].foe)}</td></tr>`;
-  $("totals").innerHTML=h+"</table>";
+  $("totals").innerHTML=sum+h+"</table>";
 }
 /* ---------- timeline ---------- */
 function renderTimeline(){
@@ -414,12 +495,13 @@ function renderStats(){
   /* глобальная сводка: матрица блок × исход — цифры столбиками друг под другом,
      а не «слова слева, число у правого края» на всю ширину панели */
   const g={},seen={};
-  D.battles.forEach(x=>{(g[x.block]||(g[x.block]={}))[x.outcome]=(g[x.block][x.outcome]||0)+1;seen[x.outcome]=1});
+  setPool().forEach(x=>{(g[x.block]||(g[x.block]={}))[x.outcome]=(g[x.block][x.outcome]||0)+1;seen[x.outcome]=1});
   const ORD=["win","loss","draw","mutual","open"];
   const outs=ORD.filter(o=>seen[o]).concat(Object.keys(seen).filter(o=>!ORD.includes(o)).sort());
   const rows=Object.entries(g).map(([blk,r])=>[blk,r,Object.values(r).reduce((a,b)=>a+b,0)])
     .sort((a,b)=>b[2]-a[2]||a[0].localeCompare(b[0]));
-  h+="<h3>Все трейсы: боёв по блокам/исходам</h3><table style=\"width:auto;min-width:560px\"><tr><th>блок</th>"
+  const setHdr=S.winrate?"бои винрейта (канон)":"бои учебные (хаос)";
+  h+="<h3>Все трейсы — "+setHdr+": боёв по блокам/исходам</h3><table style=\"width:auto;min-width:560px\"><tr><th>блок</th>"
     +outs.map(o=>`<th class='num'>${o}</th>`).join("")+`<th class='num'>итого</th><th class='num'>win%</th></tr>`;
   for(const[blk,r,tot]of rows){
     const win=r["win"]||0;
@@ -428,6 +510,46 @@ function renderStats(){
       +`<td class="num"><b>${tot}</b></td><td class="num ${win*2>=tot?"pos":"neg"}">${Math.round(100*win/tot)}%</td></tr>`;
   }
   h+="</table>";
+  /* гейт обучения: винрейт «до (BC) / после (PPO)» — из stage3_imitate*.log (поле D.gate) */
+  if(D.gate&&D.gate.rows&&D.gate.rows.length){
+    const gp=x=>x==null?"—":Math.round(100*x)+"%";
+    const dl=(b,a)=>{if(b==null||a==null)return "<span class='dim'>—</span>";
+      const d=a-b;const t=d>0.005?"pos":d<-0.005?"neg":"dim";
+      return `<span class="${t}">${(d>=0?"+":"")+Math.round(100*d)} п.п.</span>`;};
+    h+="<h3>Гейт обучения: винрейт до (BC) и после (PPO)</h3>";
+    h+="<div class='dim small'>лог <code>"+esc(D.gate.log)+"</code>"
+      +(D.gate.before_label?" \u00b7 до: "+esc(D.gate.before_label)+" <b class='"+(D.gate.before_gate==="PASS"?"pos":"neg")+"'>"+esc(D.gate.before_gate||"\u2014")+"</b>":"")
+      +(D.gate.after_label?" \u00b7 после: "+esc(D.gate.after_label)+" <b class='"+(D.gate.after_gate==="PASS"?"pos":"neg")+"'>"+esc(D.gate.after_gate||"\u2014")+"</b>":"")+"</div>";
+    h+="<table style=\"width:auto;min-width:640px\"><tr><th>соперник</th>"
+      +"<th class='num'>до win</th><th class='num'>до bootCI</th><th class='num'>после win</th><th class='num'>после bootCI</th><th class='num'>\u0394</th><th>вердикт</th></tr>";
+    for(const r of D.gate.rows){
+      const av=r.after_verdict||r.before_verdict||"";
+      const acol=av==="PASS"?"pos":av==="FAIL"?"neg":"dim";
+      h+="<tr><td><b>"+esc(r.opponent)+"</b></td>"
+        +"<td class='num'>"+gp(r.before_win)+"</td><td class='num dim'>"+gp(r.before_ci)+"</td>"
+        +"<td class='num'>"+gp(r.after_win)+"</td><td class='num dim'>"+gp(r.after_ci)+"</td>"
+        +"<td class='num'>"+dl(r.before_win,r.after_win)+"</td>"
+        +"<td class='"+acol+"'>"+esc(av)+"</td></tr>";
+    }
+    h+="</table>";
+  }
+  /* сводка метрик по роли кандидата: нанёс / получил / очки раздельно за героев и за врагов (D.roleStats) */
+  if(D.roleStats&&D.roleStats.length){
+    const nf=x=>x==null?"—":(+x).toFixed(2);
+    const pc=x=>x==null?"<span class='dim'>—</span>":`<span class="${x>0?"pos":x<0?"neg":"dim"}">${(x>=0?"+":"")+x.toFixed(2)}</span>`;
+    const ROLE={heroes:"герои \ud83d\udd35",foes:"враги \ud83d\udd34"};
+    h+="<h3>Метрики по роли кандидата (нанёс / получил / очки за бой)</h3>";
+    h+="<div class='dim small'>Среднее по боям данной политики в данной посадке; «очки» = нанесённый урон минус полученный. Бои без разбора сторон (дамп до добавления метрик) в сводку не входят.</div>";
+    h+="<table style=\"width:auto;min-width:640px\"><tr><th>политика</th><th>роль</th><th class='num'>боёв</th><th class='num'>win%</th><th class='num'>нанёс</th><th class='num'>получил</th><th class='num'>очки</th></tr>";
+    for(const r of D.roleStats){
+      h+="<tr><td><b>"+esc(r.policy)+"</b></td><td>"+(ROLE[r.role]||esc(r.role))+"</td>"
+        +"<td class='num'>"+r.fights+"</td>"
+        +"<td class='num "+(r.win_rate*2>=1?"pos":"neg")+"'>"+Math.round(100*r.win_rate)+"%</td>"
+        +"<td class='num'>"+nf(r.mean_dealt)+"</td><td class='num'>"+nf(r.mean_taken)+"</td>"
+        +"<td class='num'>"+pc(r.mean_points)+"</td></tr>";
+    }
+    h+="</table>";
+  }
   $("tab-stats").innerHTML=h;
 }
 /* ---------- tag popups: описания тегов по детекторам tactics_detect.py ---------- */
@@ -436,14 +558,14 @@ const TAG_DESC={
  idle_turn:["штраф −","Чистый простой: ни атаки, ни сближения с ближайшим врагом за ход."],
  focus_wounded:["награда +","Атакован самый раненый из достижимых целей врагов (добивание, а не стреляние по полным)."],
  kill_shot:["награда +","Ожидаемый урон ≥ остатка HP цели — ход добивает."],
- priority_soft:["награда +","Целью выбран «мягкий» враг: дальнобойный или мобильный лучник."],
+ priority_soft:["награда +","При >=2 живых врагах целью выбран «мягкий» (раненый/малокровный) достижимый; с одним врагом не платится (не из чего выбирать)."],
  hit_boss_with_adds:["штраф −","Удар по боссу (tank), пока живые прислуги рядом достижимы — сначала миньоны."],
  kite_max_range:["награда +","Дальнобойник увеличил дистанцию до ближайших ближников и выстрелил (кайт)."],
  approach_milishnik_as_archer:["штраф −","Дальнобойник сблизился с ближним врагом — полез в «руки» вместо держания дистанции."],
  cover_shoot:["награда +","Выстрел из укрытия (на аренах без укрытий не срабатывает)."],
  shoot_from_open:["штраф −","Выстрел с открытой позиции без укрытия."],
- stand_off_shoot:["награда +","Дальнобойник выстрелил, оставшись вне зоны melee-рук врага — основная морковка Этапа 3."],
- avoid_reach:["награда +","Передвинулся так, что вышел из зоны поражения melee-врагов."],
+ stand_off_shoot:["награда +","Дальнобойник выстрелил с дистанции >=30 футов до ближайшего ближника (тот не доберёт на следующем ходу) — основная морковка Этапа 3."],
+ avoid_reach:["награда +","Только дальнобойник: милишник был <30 футов до хода, а после хода стал >30 футов; +0.01 за каждые 5 футов запаса сверх 30."],
  enter_reach:["штраф −","Оказался в «руках» врагов и получил урон."],
  reach_penalty:["штраф −","Двинулся в зону поражения ближних врагов (даже если ещё не били)."],
  break_ring:["награда +","Разорвал окружение: контактов с врагами было ≥2, стало ≤1."],
@@ -490,9 +612,17 @@ function renderTags(){
     +`<tr><th>тег</th><th>тип</th><th class="num">вес</th><th>вкл</th><th>за что начисляется</th></tr>`;
   for(const t of tags){
     const d=TAG_DESC[t];
-    h+=`<tr${TAG_OFF[t]?" style=\"opacity:.5\"":""}><td><b>${t}</b>${TAG_OFF[t]?" <span class='dim'>[выключен]</span>":""}</td><td class="${d[0].startsWith("награда")?"pos":d[0].startsWith("штраф")?"neg":"dim"}">${d[0]}</td>`
-      +`<td class="num ${(TUNE_DEF[t]??0)>=0?"pos":"neg"}">${(t in TUNE_DEF)?fmt(TUNE_DEF[t]):"—"}</td>`
-      +`<td>${(t in TAG_OFF)?`<input type="checkbox" data-en="tags.${t}"${TAG_OFF[t]?"":" checked"} title="пишет tactics.tags.${t}.enabled прямо в points.json">`:`<span class='dim'>—</span>`}</td>`
+    const off = (t==="field") ? !FIELD_DEF.enabled : !!TAG_OFF[t];
+    const chk = (t==="field")
+      ? `<input type="checkbox" data-en="distance_field.enabled"${FIELD_DEF.enabled?" checked":""} title="пишет tactics.distance_field.enabled прямо в points.json — реально выключает поле в обучении">`
+      : (t in TAG_OFF)
+        ? `<input type="checkbox" data-en="tags.${t}"${TAG_OFF[t]?"":" checked"} title="пишет tactics.tags.${t}.enabled прямо в points.json">`
+        : `<span class='dim'>—</span>`;
+    const wcell = (t==="field") ? `<span class='dim'>флаг</span>`
+      : `<span class="${(TUNE_DEF[t]??0)>=0?"pos":"neg"}">${(t in TUNE_DEF)?fmt(TUNE_DEF[t]):"—"}</span>`;
+    h+=`<tr${off?" style=\"opacity:.5\"":""}><td><b>${t}</b>${off?" <span class='dim'>[выключен]</span>":""}</td><td class="${d[0].startsWith("награда")?"pos":d[0].startsWith("штраф")?"neg":"dim"}">${d[0]}</td>`
+      +`<td class="num">${wcell}</td>`
+      +`<td>${chk}</td>`
       +`<td style="white-space:normal">${d[1]}</td></tr>`;
   }
   $("tab-tags").innerHTML=h+"</table>";
@@ -573,7 +703,7 @@ async function resumeRetrain(){                          // открыть по�
   }catch(_){}
 }
 /* ---------- таб «Тюнинг весов»: единое место управления (секция tactics points.json) ---------- */
-let TUNE_DEF={},TUNE_SRC="загрузка весов…",BASE_DEF=null,TAG_OFF={};
+let TUNE_DEF={},TUNE_SRC="загрузка весов…",BASE_DEF=null,TAG_OFF={},FIELD_DEF={enabled:true};
 async function loadTune(){
   try{                                 // serve.py отдаёт server/points.json read-only как /points.json
     const p=await (await fetch("/points.json")).json();
@@ -591,7 +721,8 @@ async function loadTune(){
       if(e&&e.desc){const t=TAG_DESC[k]?TAG_DESC[k][0]
           :(k in (tac.penalties||{})?"штраф −":"награда +");TAG_DESC[k]=[t,e.desc]}   // описание живёт в points.json
     }
-    TUNE_SRC="живые значения из server/points.json (секция tactics: base + weights/penalties + tags)";
+    const dfx=tac.distance_field||{};FIELD_DEF={enabled:dfx.enabled!==false};
+    TUNE_SRC="живые значения из server/points.json (секция tactics: base + weights/penalties + tags + distance_field)";
   }catch(_){                           // открыто без serve.py — дефолты из дампа battles.js
     for(const[k,v]of Object.entries(D.tagDefaults||{})){
       const d=TAG_DESC[k];TUNE_DEF[k]=(d&&d[0][0]==="ш")?-Math.abs(+v):Math.abs(+v);
@@ -606,11 +737,12 @@ function tuneChanged(){return Object.keys(S.tune).length+Object.keys(S.toff).len
 function tagEn(t){return S.toff[t]!==undefined?!!S.toff[t]:!TAG_OFF[t]}   // флаг points.json + правка со страницы
 function baseEff(k){const o=(BASE_DEF||BASE_FALLBACK)[k]||{value:0,enabled:true},e=S.tbase[k]||{};
   return {value:e.value!==undefined?+e.value:+o.value,enabled:e.enabled!==undefined?!!e.enabled:o.enabled!==false}}
-function asifTuned(st){                // новый as-if шага: каждый тег с текущим весом, вклад field не трогаем
+function asifTuned(st){                // новый as-if шага: каждый тег с текущим весом; field — если поле не выключено
   const rw=st&&st.reward;if(!rw||!rw.tags||!rw.tags.length)return null;
   let s=0;for(const t of rw.tags){
-    if(t.name!=="field"&&!tagEn(t.name))continue;      // выключенный тег не даёт вклада (enabled:false)
-    s+=(t.name==="field")?t.w:(tuneVal(t.name)??t.w)}
+    if(t.name==="field"){if(!FIELD_DEF.enabled)continue;s+=t.w;continue}   // флаг distance_field.enabled
+    if(!tagEn(t.name))continue;      // выключенный тег не даёт вклада (enabled:false)
+    s+=(tuneVal(t.name)??t.w)}
   return s;
 }
 function renderTune(){
@@ -736,6 +868,7 @@ document.addEventListener("click",e=>{
   if(a){e.preventDefault();showTagPop(a.dataset.tag,e.clientX,e.clientY);return}
   if(!e.target.closest("#tagpop"))pop.style.display="none";
   if(!e.target.closest("#unitpop"))upop.style.display="none";
+  if(!e.target.closest("#obspop")&&!e.target.closest("#obsLink"))opop.style.display="none";
 });
 /* ---------- tabs ---------- */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
@@ -750,7 +883,8 @@ function render(selKeep=true){
   const st0=b.steps[S.si];
   $("battleName").value=`${b.id} · ${b.block} · наш: ${b.candSide==="heroes"?"герои":"враги"}`+
     ` · ${b.outcome} · шаг ${S.si}/${b.steps.length-1}`+
-    (st0&&st0.kind!=="init"?` (раунд ${st0.round+1})`:"");
+    (st0&&st0.kind!=="init"?` (раунд ${st0.round+1})`:"")+
+    (b.battleUid?` · uid ${b.battleUid}`:"");
   const m=b.units[b.steps[S.si]?b.steps[S.si].actor:"A1"]||{};
   draw();renderTimeline();renderInspector();renderTotals();
   $("scrub").max=Math.max(0,b.steps.length-1);$("scrub").value=S.si;
@@ -819,6 +953,7 @@ if(!D||!D.battles||!D.battles.length){
   if(q.has("fpol"))S.fpol=q.get("fpol")||"";
   if(q.has("fopp"))S.fopp=q.get("fopp")||"";
   if(q.has("fout"))S.fout=q.get("fout")||"";
+  if(q.has("winrate"))S.winrate=(q.get("winrate")==="1"||q.get("winrate")==="true");
   /* раунд 0: виртуальный шаг со стартовой расстановкой перед первым ходом */
   D.battles.forEach(b=>{const s=initStep(b);if(s)b.steps.unshift(s)});
   initFilters();

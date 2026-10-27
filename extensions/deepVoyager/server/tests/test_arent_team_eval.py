@@ -12,7 +12,7 @@ import os
 import pytest
 
 from arent import dataset, team_eval
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 NOTHING_LABEL = {"cell": 0, "target": -1, "weapon": -1}
 ATTACK_LABEL = {"cell": 0, "target": 0, "weapon": 0}
@@ -26,6 +26,9 @@ class _Stub:
 
     def predict(self, sample):
         return dict(ATTACK_LABEL if self.attack else NOTHING_LABEL, value=0.0)
+
+    def head_logp(self, sample):
+        return stub_head_logp(ATTACK_LABEL if self.attack else NOTHING_LABEL)
 
 
 def _npc(nid, col, disp, hp, ini, speed=30):
@@ -89,10 +92,12 @@ def test_team_fight_reports_draw_on_stalemate():
     assert row["outcome"] == "draw" and row["terminated"] is True
 
 
-def test_team_fight_open_when_rounds_cap_hits_first():
+def test_team_fight_cap_is_judged_not_open():
+    # cap раньше пата: бой больше не «open» — он судится по очкам и становится терминалом.
+    # симметричная безуронная ничья (оба reach равны, урона нет) -> решается как draw.
     row = team_eval.team_fight(_Stub(attack=False), _scene_draw(),
                                rounds_cap=1, draw_window=99)   # усечение раньше пата
-    assert row["outcome"] == "open" and row["terminated"] is False
+    assert row["terminated"] is True and row["outcome"] == "draw"
 
 
 #--- 2. ротация стартового актёра (WP5) в eval-прогоне ----------------------------

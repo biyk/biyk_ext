@@ -25,6 +25,7 @@ def test_infer_adds_kite_for_archer_vs_melee():
     exp = tm.infer_strategies(params)
     assert "kite_max_range" in exp["enabled"]
     assert "approach_milishnik_as_archer" in exp["penalties"]
+    assert "ranged_grabbed" in exp["penalties"]
 
 
 def test_infer_adds_focus_fire_when_multi_ally():

@@ -33,12 +33,31 @@ def joint_logp(table: Dict[str, list], action: Action, ykey: Dict[str, str] = No
     return float(sum(table[group][int(action[yk[group]])] for group in GROUPS) - logZ)
 
 
+@torch.no_grad()
+def joint_logpi_of(policy: Any, sample: Dict[str, Any]) -> List[List[List[float]]]:
+    """Полное нормированное joint-распределение logπ по допустимому множеству sample.
+
+    Вложенный список [P,T,W] (недопустимые тройки = PAD). Нужен KL-якорю к замороженному
+    π_ref: то же правило нормировки, что у act/_eval (_dist + _joint_batch), поэтому_support
+    и шкала совпадают с текущей политикой и forward-KL считается на одном legal-множестве.
+    """
+    state, slots, masks = policy._batch([sample])
+    logits, _value = policy._pass(state, slots, masks)
+    head: Dict[str, torch.Tensor] = {}
+    for group in GROUPS:
+        _probs, logp = _dist(logits[group], masks[group])
+        head[group] = logp
+    legal = torch.tensor([sample["legal"]], dtype=torch.float32, device=policy.device)
+    logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+    return logpi[0].tolist()
+
+
 class PPOAgent:
     """Актёр+критик PPO над одной TorchPolicy: act сэмплит, update оптимизирует суррогат."""
 
     def __init__(self, policy: Any, clip_eps: float = 0.2, ent_coef: float = 0.01,
                  vf_coef: float = 0.5, ppo_epochs: int = 4, minibatch: int = 32,
-                 target_kl: float = 0.03):
+                 target_kl: float = 0.03, anchor_coef: float = 0.0):
         if not (hasattr(policy, "_batch") and hasattr(policy, "_pass")
                 and hasattr(policy, "optim")):
             raise RuntimeError("PPO требует torch-политику: kind=pure вне scope RL "
@@ -51,6 +70,7 @@ class PPOAgent:
         self.ppo_epochs = max(1, int(ppo_epochs))
         self.minibatch = max(1, int(minibatch))
         self.target_kl = target_kl
+        self.anchor_coef = max(0.0, float(anchor_coef))  # KL(π_θ‖π_ref) к BC-приору (0 = выкл.)
 
     # ------------------------------------------------------------------ сэмпл хода
     @torch.no_grad()
@@ -123,7 +143,7 @@ class PPOAgent:
         logp = logpi[ar, ip, it, iw]                                      # [B] нормированный logπ
         probs = logpi.exp() * legal
         ent = -(probs * (logpi * legal)).reshape(b, -1).sum(1)            # [B] энтропия joint
-        return logp, ent, value
+        return logp, ent, value, logpi, legal
 
     # ------------------------------------------------------------------ PPO-обновление
     def update(self, trajectories: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -144,6 +164,13 @@ class PPOAgent:
                            dtype=torch.float32, device=self.policy.device)
         ret = torch.tensor([float(t["ret"]) for t in trajectories],
                            dtype=torch.float32, device=self.policy.device)
+        # KL-якорь к замороженному BC-приору: ref-распределения собираются один раз в rollout
+        # (collect кладёт ref_logpi только при anchor_coef>0). Без них — чистый PPO (обратная
+        # совместимость): anchor_coef>0, но ref_logpi нет => тихо 0, а не падение.
+        ref_lp = None
+        if self.anchor_coef > 0.0 and all("ref_logpi" in t for t in trajectories):
+            ref_lp = torch.tensor([t["ref_logpi"] for t in trajectories],
+                                  dtype=torch.float32, device=self.policy.device)
         report: Dict[str, Any] = {}
         for _epoch in range(self.ppo_epochs):
             order = torch.randperm(n, device=self.policy.device)
@@ -152,7 +179,7 @@ class PPOAgent:
                 mb = order[start:start + self.minibatch]
                 mini = [samples[i] for i in mb]
                 mact = [actions[i] for i in mb]
-                new_logp, ent, value = self._eval(mini, mact)
+                new_logp, ent, value, logpi, legal = self._eval(mini, mact)
                 ratio = (new_logp - old_logp[mb]).exp()
                 surr1 = ratio * adv[mb]
                 surr2 = torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * adv[mb]
@@ -160,6 +187,16 @@ class PPOAgent:
                 value_loss = F.mse_loss(value, ret[mb])
                 entropy = ent.mean()
                 loss = policy_loss + self.vf_coef * value_loss - self.ent_coef * entropy
+                kl_anchor = 0.0
+                if ref_lp is not None:
+                    # forward reverse-KL(π_θ‖π_ref) на общем legal-множестве: штраф за массу
+                    # политики там, где приор ставит мало (удерживает весы у BC-позвола).
+                    theta = logpi * legal
+                    ref = ref_lp[mb] * legal
+                    p_theta = theta.exp() * legal
+                    diff = torch.where(legal > 0, theta - ref, torch.zeros_like(theta))
+                    kl_anchor = (p_theta * diff).reshape(len(mb), -1).sum(1).mean()
+                    loss = loss + self.anchor_coef * kl_anchor
                 self.policy.optim.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.policy.layers.parameters(), 0.5)
@@ -171,6 +208,7 @@ class PPOAgent:
                               "value_loss": round(float(value_loss.item()), 4),
                               "entropy": round(float(entropy.item()), 4),
                               "kl": round(approx_kl, 5),
+                              "anchor_kl": round(float(kl_anchor), 5) if ref_lp is not None else 0.0,
                               "clip_frac": round(float(((ratio - 1).abs() > self.clip_eps)
                                                        .float().mean().item()), 4)}
                 if abs(approx_kl) > self.target_kl:

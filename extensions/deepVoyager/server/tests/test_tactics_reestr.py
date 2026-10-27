@@ -21,7 +21,7 @@ PLAN_BONUS_KEYS = {
 PLAN_PENALTY_KEYS = {
     "spread_fire", "approach_milishnik_as_archer", "shoot_from_open", "enter_reach",
     "widen_contacts", "leave_choke", "idle_turn", "melee_at_low_hp",
-    "hit_boss_with_adds", "stack_close", "reach_penalty",
+    "hit_boss_with_adds", "stack_close", "reach_penalty", "ranged_grabbed",
 }
 
 

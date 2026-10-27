@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
-from arent.tactics import FocusFireAccumulator
+from arent.tactics import FocusFireAccumulator, Tag
 from arent.tactics_config import TacticsConfig
 from arent.tactics_counters import Counters
-from arent.tactics_detect import bonus_for, detect, distance_field_value
+from arent.tactics_detect import (avoid_reach_steps, bonus_for, detect, distance_field_value)
 from arent.team_reward import WIN
 
 
@@ -75,14 +75,30 @@ class TacticsShaper:
         weights = {**self.cfg.weights, **self.cfg.penalties}
         fired = sorted(detection.fired & allow)
         violated = sorted(detection.violated & allow)
-        contrib = {k: float(weights.get(k, 0.0)) for k in fired + violated}
+        # avoid_reach масштабируется запасом сверх 30 футов (вес × каждые 5 футов отдаления).
+        # Множитель идёт и в bonus, и в contrib/last_diag — чтобы трейс показывал честную
+        # величину за шаг (как у field), а не базовый вес.
+        scale = {}
+        if Tag.avoid_reach.value in detection.fired:
+            steps = avoid_reach_steps(ctx)
+            if steps:
+                scale[Tag.avoid_reach.value] = float(steps)
+        contrib = {k: float(weights.get(k, 0.0)) * float(scale.get(k, 1.0)) for k in fired + violated}
         lam = self.cfg.lam(self.iter, self.total)
-        bonus = bonus_for(detection, self.allowed, self.cfg.weights, self.cfg.penalties)
+        # §Неугасающее ядро: ключи cfg.hard идут мимо λ-затухания (полный вес доживает до конца
+        # обучения), НО остаются под ОБЩИМ потолком shaping (кап за бой). Без капа неугасающий
+        # штраф = runaway-минус и value-хед схлопывается (проверено на прогоне s3im4_gpu).
+        # hard и soft копят один budget S в пределах ±cap_total. Остальное — обычный λ·shaping.
+        hard_allow = self.allowed & self.cfg.hard
+        soft_allow = self.allowed - hard_allow
+        bonus_soft = bonus_for(detection, soft_allow, self.cfg.weights, self.cfg.penalties, scale)
+        bonus_hard = bonus_for(detection, hard_allow, self.cfg.weights, self.cfg.penalties, scale)
         # непрерывная дистанционная шкала дальнобойного (переразметка): не тег, а форма награды
-        # по r=дистанция/R_conf; подмешивается в total до cap. enabled=False -> 0 (без изменений).
+        # по r=дистанция/R_conf; подмешивается в soft (λ-гамуемый) до cap. enabled=False -> 0.
         field = distance_field_value(ctx, self.cfg.distance_field)
+        raw = lam * (bonus_soft + field) + bonus_hard
         self.last_diag = {"fired": fired, "violated": violated, "weights": contrib,
-                          "field": round(field, 6), "asif": round(lam * (bonus + field), 6)}
+                          "field": round(field, 6), "asif": round(raw, 6)}
         if self.record_only:
             return 0.0
-        return self._cap(lam * (bonus + field))
+        return self._cap(raw)

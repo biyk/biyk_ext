@@ -44,7 +44,9 @@ def test_stage3_pairs_are_valid_duels():
         a, b = p["side_a_classes"][0], p["side_b_classes"][0]
         assert a in STAGE3_CLASSES and b in STAGE3_CLASSES, f"{name}: чужой класс"
         assert p["n_allies"] == 1 and p["n_foes"] == 1
-        assert p["n_walls"] == 0 and p["layout"] == "random"   # Этап 3: открытое поле + random_start
+        assert p["layout"] == "random"                         # Этап 3: случайная расстановка (uniform)
+        assert p["n_walls"] == 0                              # Этап 3 без стен (стены — Этап 4)
+        assert p["wall_profile"] == "open"
         assert name.startswith("s3_")
 
 
@@ -85,13 +87,15 @@ def test_stage3_pool_covers_all_class_pairs():
     assert all((c, c) in ordered for c in STAGE3_CLASSES), "нет одноклассовых боёв"
 
 
-#--- 8. разнообразие геометрии: разные размеры поля и uniform-разброс старта ---
+#--- 8. разнообразие геометрии: хаос по осям КАРТЫ без стен (поле+uniform-старт) ---
 def test_stage3_pool_varies_field_and_placement():
     from arent import scenario_layout as sl
-    pool = scenarios.generate_stage3_pool(3, seed=404)
-    assert all(p["n_walls"] == 0 for _n, _r, p in pool)          # только открытые поля
-    assert all(p["layout"] == "random" for _n, _r, p in pool)    # случайная расстановка
-    assert all(p["deployment"] == "uniform" for _n, _r, p in pool)   # random_start -> uniform
+    pool = scenarios.generate_stage3_pool(6, seed=404)
+    assert all(p["layout"] == "random" for _n, _r, p in pool)          # случайная расстановка
+    assert all(p["deployment"] == "uniform" for _n, _r, p in pool)     # random_start -> uniform
+    # СТЕН НЕТ на Этапе 3 (открытая геометрия; стены/узости — Этап 4): профиль open, нулевые стены
+    assert all(p["wall_profile"] == "open" for _n, _r, p in pool)
+    assert all(p["n_walls"] == 0 for _n, _r, p in pool), "на Этапе 3 стены генерировать нельзя"
     # старты реально разбросаны по полю, а не прикованы к рамке: ряды A гуляют по глубине
     a_rows = [t["cell"][0] for _n, raw, _p in pool for t in raw["tokens"] if t["disposition"] == -1]
     assert max(a_rows) - min(a_rows) > 4, "A-юниты всё ещё на одной рамке"
@@ -106,3 +110,31 @@ def test_stage3_pool_varies_field_and_placement():
     for sd in (404, 900, 11):
         sizes |= {p["field_profile"] for _n, _r, p in scenarios.generate_stage3_pool(1, sd)}
     assert sizes <= {"small", "medium", "large"} and len(sizes) > 1
+
+
+#--- 9. КАНОН-сет винрейта: стандартный, структурированный, детерминированный ------
+def test_stage3_canon_is_standard_structured_and_deterministic():
+    import itertools
+    pool = scenarios.generate_stage3_canon(2, seed=2026)
+    assert pool, "канон-сет пуст"
+    for name, raw, p in pool:
+        assert name.startswith("s3w_"), f"{name}: канон-имя вне s3w_*"
+        assert p["layout"] == "structured", f"{name}: канон должен быть structured"
+        assert p["n_walls"] == 0, f"{name}: канон — открытое поле без стен"
+        assert p["wall_profile"] == "open" and p["field_profile"] == "medium"
+        assert p["n_allies"] == 1 and p["n_foes"] == 1
+    # покрывает полные 36 упорядоченных пар «все со всеми»
+    ordered = {(p["side_a_classes"][0], p["side_b_classes"][0]) for _n, _r, p in pool}
+    assert ordered == set(itertools.product(STAGE3_CLASSES, STAGE3_CLASSES))
+    # детерминизм: тот же (count, seed) -> идентичный набор (винрейт сравним между прогонами)
+    again = scenarios.generate_stage3_canon(2, seed=2026)
+    assert [x[0] for x in pool] == [x[0] for x in again]
+    assert [str(x[2]["field"]) for x in pool] == [str(x[2]["field"]) for x in again]
+    # бои валидны
+    for name, raw, _p in pool:
+        payload = arena.build_payload(raw, name)
+        ctx = BattleContext.from_payload(payload)
+        assert ctx.hostile_targets() and ctx.src.is_alive and payload.get("weapons")
+    # имена канона не пересекаются с учебным хаос-пулом
+    chaos = {n for n, _r, _p in scenarios.generate_stage3_pool(2, seed=2026)}
+    assert chaos and not (chaos & {n for n, _r, _p in pool})

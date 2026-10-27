@@ -7,7 +7,7 @@
 # win_rate свободен от конфаунда «победа за счёт первого хода». openings=False /
 # openers=None — прежнее поведение (исторические прогоны Этапа 1 воспроизводимы).
 from arent import team_eval
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 
 class _Stub:
@@ -20,6 +20,11 @@ class _Stub:
         lab = {"cell": 0, "target": 0, "weapon": 0} if self.attack else \
               {"cell": 0, "target": -1, "weapon": -1}
         return dict(lab, value=0.0)
+
+    def head_logp(self, sample):
+        lab = {"cell": 0, "target": 0, "weapon": 0} if self.attack else \
+              {"cell": 0, "target": -1, "weapon": -1}
+        return stub_head_logp(lab)
 
 
 def _duel():

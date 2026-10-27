@@ -97,7 +97,7 @@ class PolyFightEnv(FightEnv):
         cleared = not any(u.hostile_to_hero and u.is_alive for u in self.state.units.values())
         if self.team is not None:            # исход команды + плотные события (терминал — исход)
             base, outcome = self.team.step(prev_units, self.state.units, self.state.hero_id,
-                                           value, tick=wrapped)
+                                           value, tick=wrapped, at_cap=self.t >= self.cap)
             terminated = outcome is not None
         else:                                # legacy-бейзлайн: герой-якорь (зачистка/смерть)
             outcome = None

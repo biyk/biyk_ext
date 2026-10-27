@@ -28,18 +28,37 @@ sys.path.insert(0, SERVER)
 sys.path.insert(0, os.path.join(SERVER, ".ray"))                    # чтобы import dump_traces
 
 import dump_traces as base                                           # noqa: E402
-from arent import team_eval                                          # noqa: E402
+from arent import backend, net, team_eval                            # noqa: E402
 from arent.tactics_counters import Counters                          # noqa: E402
 
 
+def load_cpu(path: str, run_name: str):
+    """Чекпойнт -> ModelController на CPU (свой хелпер: base.load_cpu исчез из
+    .ray/dump_traces.py при переходе на ray-режим; чужой файл по изоляции не правим)."""
+    ck = json.load(open(path, encoding="utf-8"))
+    cfg = net.Config.from_dict(ck["config"])
+    model = backend.build(cfg, kind="torch", params=ck["params"], device="cpu")
+    mc = team_eval.ModelController(model, schema=cfg.schema)
+    mc.name = run_name
+    try:
+        model.name = run_name
+    except Exception:
+        pass
+    return mc
+
+
 def collect_rows_tagged(model, opponents: List[str], sources, rounds_cap: int,
-                        count_each_label: str = "") -> List[dict]:
-    """Как dump_traces.collect_rows, НО с counters=Counters() (record_only-теги в каждом шаге)."""
+                        count_each_label: str = "", obs_trace: str = "off") -> List[dict]:
+    """Как dump_traces.collect_rows, НО с counters=Counters() (record_only-теги в каждом шаге).
+
+    obs_trace="cand"/"all" дополнительно пишет obs_input — JSON-вход модели каждого шага
+    (парсер разложит их sidecar-файлами obs/ для ссылки во вьюере)."""
     rows: List[dict] = []
     for opp in opponents:
         counters = Counters()                                       # свой набор счётчиков на соперника
         got = team_eval.matchup_sources(model, opp, sources, rounds_cap=rounds_cap, draw_window=4,
                                         swap_sides=True, openings=True, rich_trace=True,
+                                        obs_trace=obs_trace,
                                         shape_stage="stage3", trace_limit=0, counters=counters)
         tagged = sum(1 for r in got for st in r["trace"]
                      if (st.get("reward_breakdown") or {}).get("tags"))
@@ -58,6 +77,8 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=133)
     ap.add_argument("--rounds-cap", type=int, default=8)
     ap.add_argument("--opponents", default="greedy,battlecast", help="csv of opponent names")
+    ap.add_argument("--obs", choices=["off", "cand", "all"], default="off",
+                    help="писать obs_input (вход модели шага): off|cand(только кандидат)|all")
     ap.add_argument("--out", default=None,
                     help="override output path (default .ray/traces_all_<run>_tagged.json)")
     a = ap.parse_args()
@@ -66,30 +87,32 @@ def main() -> None:
     run_name = a.run or os.path.basename(os.path.dirname(path))
     opponents = [s.strip() for s in a.opponents.split(",") if s.strip()]
 
-    model = base.load_cpu(path, run_name)
+    model = load_cpu(path, run_name)
     sources, arenas = base.build_sources(a.count_each, a.seed)   # dump_traces (14:10) возвращает и арены
-    rows = collect_rows_tagged(model, opponents, sources, a.rounds_cap)
+    rows = collect_rows_tagged(model, opponents, sources, a.rounds_cap, obs_trace=a.obs)
     for r in rows:                                    # как в dump_traces.py: вшить арену в каждый бой
         r["arena"] = arenas.get(r["name"])
     if a.max_battles and a.max_battles > 0:
         rows = rows[:a.max_battles]
 
     payload = {"run": run_name, "generated": dt.datetime.now().isoformat(timespec="seconds"),
-               "model": path, "counters": "record_only(as-if tags)", "rows": rows}
+               "model": path, "counters": "record_only(as-if tags)", "obs": a.obs, "rows": rows}
     out_path = a.out or os.path.join(SERVER, ".ray", "traces_all_%s_tagged.json" % run_name)
     with open(out_path, "w", encoding="utf-8") as f:                # прямой UTF-8: без mojibake
         json.dump(payload, f, ensure_ascii=False, indent=1, default=base._json_default)
 
     tally: dict = {}
-    tag_steps = tot_steps = 0
+    tag_steps = tot_steps = obs_steps = 0
     for r in rows:
         tally[r["outcome"]] = tally.get(r["outcome"], 0) + 1
         for st in r["trace"]:
             tot_steps += 1
             if (st.get("reward_breakdown") or {}).get("tags"):
                 tag_steps += 1
-    print("[done] %d боёв (%d шагов, %d с as-if-тегами) -> %s (%d байт) | исходы: %s"
-          % (len(rows), tot_steps, tag_steps, out_path, os.path.getsize(out_path), tally),
+            if "obs_input" in st:
+                obs_steps += 1
+    print("[done] %d боёв (%d шагов, %d с as-if-тегами, %d с obs_input) -> %s (%d байт) | исходы: %s"
+          % (len(rows), tot_steps, tag_steps, obs_steps, out_path, os.path.getsize(out_path), tally),
           flush=True)
     if not tag_steps:
         print("[warn] тегов НЕТ: проверь tactics.enabled_global в points.json и shape_stage.",

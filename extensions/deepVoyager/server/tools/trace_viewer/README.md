@@ -119,12 +119,41 @@ arent\.venv\Scripts\python.exe tools\trace_viewer\dump_traces_tagged.py s4_cover
 Под шапкой боя печатается штамп данных: когда перегенерирован `battles.js`, из каких
 файлов и предупреждение, если as-if-теги пусты — по нему видно, устарели данные или нет.
 
+## Просмотр входа модели (что ушло в модель на ходу)
+
+Любой бой строится из Наблюдения — JSON, который полис-ход получает перед выбором
+dействия (полифайт `team_eval.fight_teams`). В дампе можно записывать этот вход и
+смотреть его по клику в инспекторе шага:
+
+- Дамперы (`dump_traces.py` и `dump_traces_tagged.py`) принимают `--obs off|cand|all`
+  (по умолчанию off — дампы побитово прежние). `cand` — только ходы кандидата (разумный
+  размер); в шаг попадает `obs_input` — точная копия аргумента `ctrl.label` (включая
+  маску `legal`). Бои от этого не меняются (это доказано тестом `test_team_eval_obs.py`).
+- `parse_traces.py` вырезает `obs_input` из `battles.json/js` (файл не раздувается)
+  и пишет sidecar-файлы `obs/<uid>_step<N>.json`; в шаге остаётся ссылка `obsFile`.
+  Перед записью удаляет устаревшие sidecar той же битвы.
+- Вьюер: в инспекторе у заголовка шага появляется ссылка «📦 наблюдение (что ушло в
+  модель)» (для шагов кандидата; для оппонентских — подсказка, что надо перегнать дамп
+  с `--obs cand`). Клик открывает модалку с форматированным JSON, кнопкой 📋 и
+  сворачиваемой маской `legal` (тяжёлая, грузится по требованию). Работает только через
+  `serve.py` — sidecar'ы отдаются как статика с no-store.
+
+Команда полного цикла (дампы с ареной, тегами и наблюдением):
+```bat
+cd server
+set PYTHONPATH=%CD%
+.\ray\.venv\Scripts\python.exe .\ray\dump_traces.py s3im5_gpu --obs cand
+.\ray\.venv\Scripts\python.exe .\ray\dump_traces.py --local --obs cand
+```
+Размер: ~22 КБ на шаг кандидата; полный пул — десятки МБ в `obs/` (папка в .gitignore).
+
 ## Файлы
 
 - `parse_traces.py` — парсер (stdlib, без зависимостей)
 - `serve.py` — сервер статики + `/refresh` для кнопки 🔄, `/points.json` (чтение
   секции tactics для обоих табов) и POST `/points_enabled` (чекбоксы «вкл» пишут
   enabled в points.json) (stdlib)
-- `dump_traces_tagged.py` — дамп с as-if-тегами (обёртка над чужим `.ray/dump_traces.py`)
+- `dump_traces_tagged.py` — дамп с as-if-тегами (обёртка над `.ray/dump_traces.py`)
 - `viewer.html` — вьювер (self-contained, без CDN/интернета)
 - `battles.json` / `battles.js` — сгенерированные данные (не руками)
+- `obs/` — sidecar'ы входа модели (`<uid>_step<N>.json`, генерируются парсером, не руками)

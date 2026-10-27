@@ -54,7 +54,7 @@ def _mirror_of(a: Dict[str, Any], n: int) -> Dict[str, Any]:
 __all__ = ["ARCHETYPES", "HERO_ARSENALS", "STAGE2_DUEL_PROFILES", "STAGE3_PAIRS", "TACTICAL",
            "UNIT_CLASSES", "build", "build_valid", "generate", "generate_duels",
            "generate_mirror_duels", "generate_asym_duels", "generate_stage3_pool",
-           "write_arenas", "_bc"]
+           "generate_stage3_canon", "write_arenas", "_bc"]
 
 
 def _bc(payload: Dict[str, Any]):
@@ -214,12 +214,21 @@ STAGE2_DUEL_PROFILES: Dict[str, Dict[str, Any]] = {
 }
 _STAGE2_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open", "field_profile": "small"}
 
-# Этап 3 (учебный пул): поле ОТКРЫТОЕ (wall=open), но РАЗНООБРАЗНОГО размера (нет field_profile ->
-# pick_field по весам small/medium/large) и СЛУЧАЙНОЙ расстановкой (random_start=True: uniform по
-# всему полю + мин-дистанция между команды, place/DEPLOY_MIN_DIST). Бойцы не привыкают к одной
-# карте/точкам. Честность A/B держится тем, что ОБЕ стороны играют на ОДНОЙ и той же сгенерированной
-# сцене; случайность — между сценами, а не внутри пары (учитель и политика видят один сценарий).
+# Этап 3 — УЧЕБНЫЙ пул: хаос по осям КАРТЫ, но БЕЗ СТЕН (стены/узости — это Этап 4, здесь их
+# не генерим). Состав 6×6 («все со всеми») не трогаем.
+#   • размер поля случайный (нет field_profile -> pick_field по весам small/medium/large);
+#   • стен НЕТ (wall_profile="open"): открытая геометрия, тактика со стенами — отдельный Этап 4;
+#   • расстановка uniform (random_start=True: случайные клетки по всему полю + DEPLOY_MIN_DIST).
+# Бойцы не привыкают к размеру поля/точкам старта и учатся драться на открытой местности любой
+# площади. Честность A/B держится тем, что ОБЕ стороны играют на ОДНОЙ и той же сцене; случайность
+# — между сценами, не внутри пары.
 _STAGE3_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open"}
+
+# Этап 3 — КАНОН для замера винрейта: СТАНДАРТНЫЙ набор карт/позиций, НЕ хаотичный. Одна и та же
+# сетка от запуска к запуску => винрейт сравним между прогонами. Открытое поле фикс. профиля
+# (medium), структурированная расстановка (random_start=False: якоря без джиттера). see
+# generate_stage3_canon.
+_CANON_GEOM: Dict[str, Any] = {"n_side": 1, "wall_profile": "open", "field_profile": "medium"}
 
 # Полный перебор «каждый с каждым» Этапа 3: ВСЕ упорядоченные пары 6×6 (product = 36),
 # ВКЛЮЧАЯ одноклассовые (melee×melee, tank×tank, …) и обе ориентации крест-накрест. Модель
@@ -288,6 +297,24 @@ def generate_stage3_pool(count_each: int, seed: int, pairs: Optional[Sequence[Tu
     for idx, (x, y) in enumerate(pairs if pairs is not None else STAGE3_PAIRS):
         out += _asym_pool(x, y, count_each, seed + idx, "s3_%sv%s" % (x, y),
                           geom=_STAGE3_GEOM, random_start=True)
+    return out
+
+
+def generate_stage3_canon(count_each: int, seed: int,
+                          pairs: Optional[Sequence[Tuple[str, str]]] = None
+                          ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """КАНОН Этапа 3 для замера винрейта: СТАНДАРТНЫЙ (не хаотичный) набор карт/позиций.
+
+    Тот же полный перебор «каждый с каждым» (product 6×6), что и generate_stage3_pool, но
+    геометрия _CANON_GEOM + random_start=False: открытое поле фикс. профиля (medium) и
+    структурированная расстановка (якоря без джиттера). При одном (count_each, seed) набор
+    идентичен от запуска к запуску => винрейты разных моделей сравнимы на одной «линейке».
+    Имена s3w_* (w = winrate) не коллидируют с учебным пулом s3_*.
+    """
+    out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+    for idx, (x, y) in enumerate(pairs if pairs is not None else STAGE3_PAIRS):
+        out += _asym_pool(x, y, count_each, seed + idx, "s3w_%sv%s" % (x, y),
+                          geom=_CANON_GEOM, random_start=False)
     return out
 
 

@@ -62,17 +62,49 @@ def test_shipped_points_json_parses_and_uses_registry_keys():
 
 
 def test_shipped_distance_field_and_upweighted_ranged_carrots():
-    # §Переразметка: включена непрерывная дистанционная шкала + усилены морковки дальнего.
+    # §Текущие данные: непрерывная дистанционная шкала ВЫКЛЮЧЕНА (убрана как лишняя), но
+    # морковки дальнего боя усилены и остаются в наборе.
     cfg = from_file(os.path.join(SERVER, "points.json"))
-    assert cfg.distance_field.enabled is True
-    assert cfg.distance_field.amp == pytest.approx(0.15)
-    assert cfg.weights[Tag.stand_off_shoot.value] == pytest.approx(0.15)
+    assert cfg.distance_field.enabled is False
+    assert cfg.weights[Tag.stand_off_shoot.value] == pytest.approx(0.05)
     assert cfg.weights[Tag.kite_max_range.value] == pytest.approx(0.15)
 
 
 def test_from_file_missing_returns_disabled():
     cfg = from_file(os.path.join(SERVER, "does_not_exist_points.json"))
     assert cfg.enabled_global is False
+
+
+def test_shipped_shaping_disabled_in_favor_of_damage_reward():
+    # §Пивот наград v3: тактический shaping (теги/штрафы) ВЫКЛЮЧЕН — награда теперь чисто по
+    # величине урона (TeamReward base: damage_dealt/damage_taken + win/kill). Все tactic-теги
+    # сняты enabled:false, поэтому allowed() пуст на всех этапах; числа weights/penalties в
+    # реестре остались лишь как справка (в награду не текут).
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    assert cfg.penalties[Penalty.ranged_grabbed.value] == pytest.approx(-0.25)  # вес цел в реестре
+    assert Penalty.ranged_grabbed.value in cfg.disabled                          # но снят флагом
+    assert cfg.allowed("stage3") == set() and cfg.allowed("stage2") == set()
+
+
+def test_shipped_hard_block_parses_but_inactive():
+    # §Неугасающее ядро остаётся декларированным (на будущее, когда shaping вернут): hard-ключи
+    # валидны по реестру, но при enabled:false-тегах в allowed() не попадают (они в disabled).
+    cfg = from_file(os.path.join(SERVER, "points.json"))
+    assert cfg.hard == frozenset({"ranged_grabbed", "kite_max_range",
+                                  "stand_off_shoot", "avoid_reach"})
+    for k in cfg.hard:
+        assert k in cfg.disabled and k not in cfg.allowed("stage3")
+
+
+def test_parse_hard_unknown_key_raises():
+    with pytest.raises(ValueError):
+        parse({"weights": {}, "penalties": {}, "hard": ["not_a_tag"]})
+
+
+def test_parse_hard_defaults_empty():
+    # без блока hard -> ничего не exempt, обратная совместимость (весь shaping под λ/cap).
+    cfg = parse({"weights": {Tag.no_idle.value: 0.03}})
+    assert cfg.hard == frozenset()
 
 
 #--- единое место управления: базовые события (base) и флаг вкл/выкл тега ---- #
@@ -99,39 +131,42 @@ def test_tags_enabled_false_excludes_globally_from_allowed():
 
 def test_shipped_points_json_base_and_tags():
     cfg = from_file(os.path.join(SERVER, "points.json"))
-    assert cfg.base.get("win") == pytest.approx(5.0)        # base == прежним константам TeamReward
-    assert cfg.base.get("living_cost") == pytest.approx(-0.01)
-    assert cfg.base.get("kill") == pytest.approx(0.5)
-    # флагом enabled сейчас ничего глобально не выключено -> allowed() не изменился (без регрессий)
-    assert cfg.disabled == frozenset()
-    assert Tag.focus_wounded.value in cfg.allowed("stage3")
+    # §Новая база v3: победа абсолютна, убийство побочно, поражение/ничья = 0, урон по величине.
+    assert cfg.base.get("win") == pytest.approx(50.0)
+    assert cfg.base.get("kill") == pytest.approx(5.0)
+    assert cfg.base.get("loss") == pytest.approx(0.0)
+    assert cfg.base.get("damage_dealt") == pytest.approx(1.0)
+    assert cfg.base.get("damage_taken") == pytest.approx(0.9)
+    assert cfg.base.get("hit") == pytest.approx(0.0)            # устарело -> enabled:false -> 0
+    assert cfg.base.get("living_cost") == pytest.approx(0.0)    # устарело -> enabled:false -> 0
+    # shaping выключен: ВСЕ тактические теги сняты enabled:false -> allowed() пуст на всех этапах.
+    assert cfg.allowed("stage3") == set()
 
 
-def test_stage2_enables_kiting_and_reach_but_not_multitarget():
-    # §Этап 2: тактики = stage1 + kite_max_range (avoid_reach и так не гаснет на stage1);
-    # многоцели/рельеф (focus_fire, cover_shoot) остаются выключены до более поздних этапов.
+def test_stage_gating_logic_preserved_in_shipped_config():
+    # §Логика поэтапного отключения (per_stage_disable) сохранена в points.json. Сейчас весь
+    # shaping погашен флагом enabled:false на всех тегах -> allowed() пуст. Проверяем, что
+    # расписание этапов целое (при возврате shaping тег подчинится прежнему графику).
     cfg = from_file(os.path.join(SERVER, "points.json"))
-    s1 = cfg.allowed("stage1")
-    s2 = cfg.allowed("stage2")
-    assert Tag.kite_max_range.value not in s1        # на Этапе 1 кайт запрещён
-    assert Tag.kite_max_range.value in s2            # на Этапе 2 включился
-    assert Tag.avoid_reach.value in s2
-    assert Tag.cover_shoot.value not in s2 and Tag.focus_fire.value not in s2
-    assert Tag.focus_wounded.value in s2 and Tag.kill_shot.value in s2
+    assert cfg.allowed("stage2") == set() and cfg.allowed("stage3") == set()   # shipped: всё выкл.
+    assert Tag.kite_max_range.value in cfg.per_stage_disable.get("stage1", ())
+    assert Tag.cover_shoot.value in cfg.per_stage_disable.get("stage2", ())
+    assert Tag.priority_soft.value in cfg.per_stage_disable.get("stage2", ())
 
 
-def test_stage3_enables_priority_and_retreat():
-    # §Этап 3: к набору Этапа 2 добавляются priority_soft (выбор приоритетной цели) и
-    # retreat_low_hp (отход на низком HP) — нужды неравных дуэлей (танк/лучник). Всё, что
-    # разрешено на Этапе 2, остаётся; рельеф/мультицепь (cover_shoot, focus_fire) — позже.
-    cfg = from_file(os.path.join(SERVER, "points.json"))
-    s2 = cfg.allowed("stage2")
-    s3 = cfg.allowed("stage3")
-    assert Tag.priority_soft.value not in s2         # на Этапе 2 прицельный приоритет выключен
-    assert Tag.priority_soft.value in s3             # на Этапе 3 включился
-    assert Tag.retreat_low_hp.value not in s2        # на Этапе 2 отход выключен
-    assert Tag.retreat_low_hp.value in s3            # на Этапе 3 включился
-    assert Tag.kite_max_range.value in s3            # наследует Этап 2
-    assert Tag.stand_off_shoot.value in s3            # §Дисциплина дистанции: новая морковка активна
-    assert Penalty.shoot_from_open.value not in s3    # на аренде нет укрытий -> штраф был 100% шумом
+def test_stage_disable_schedule_holds_when_tags_reenabled():
+    # §Синтетика (не shipped-файл): если теги включить, прежнее расписание этапов работает —
+    # kite на stage2, priority/retreat на stage3, рельеф/мультицепь вне раннего набора.
+    tags = {t.value: {"enabled": True} for t in
+            (Tag.kite_max_range, Tag.avoid_reach, Tag.no_idle, Tag.cover_shoot,
+             Tag.focus_fire, Tag.priority_soft, Tag.retreat_low_hp)}
+    w = {t.value: 0.1 for t in (Tag.kite_max_range, Tag.avoid_reach, Tag.no_idle,
+                               Tag.cover_shoot, Tag.focus_fire, Tag.priority_soft,
+                               Tag.retreat_low_hp)}
+    base = from_file(os.path.join(SERVER, "points.json")).per_stage_disable
+    cfg = parse({"weights": w, "penalties": {}, "tags": tags, "per_stage_disable": base})
+    s1, s2, s3 = cfg.allowed("stage1"), cfg.allowed("stage2"), cfg.allowed("stage3")
+    assert Tag.kite_max_range.value not in s1 and Tag.kite_max_range.value in s2
+    assert Tag.priority_soft.value not in s2 and Tag.priority_soft.value in s3
+    assert Tag.retreat_low_hp.value in s3
     assert Tag.cover_shoot.value not in s3 and Tag.focus_fire.value not in s3

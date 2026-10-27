@@ -8,7 +8,7 @@
 import pytest
 
 from arent import team_eval
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 ATTACK_LABEL = {"cell": 0, "target": 0, "weapon": 0}
 NOTHING_LABEL = {"cell": 0, "target": -1, "weapon": -1}
@@ -22,6 +22,9 @@ class _Stub:
 
     def predict(self, sample):
         return dict(ATTACK_LABEL if self.attack else NOTHING_LABEL, value=0.0)
+
+    def head_logp(self, sample):
+        return stub_head_logp(ATTACK_LABEL if self.attack else NOTHING_LABEL)
 
 
 def _npc(nid, col, disp, hp, ini, speed=30):
@@ -155,3 +158,67 @@ def test_run_matchup_writes_separate_file(tmp_path, monkeypatch):
         on_disk = json.load(f)
     assert on_disk["candidate_id"].startswith("greedy")
     assert os.path.exists(out)
+
+
+#--- 9. постронняя статистика урона + uid боя (метрики вьюера) ----------------------
+def _scene_trade():
+    """Обоюдный размен: A1(30hp) дубасит F1(30hp, вооружён и стоит впритык к A2) —
+    обе стороны теряют HP, ни одна не вымирает за пару шагов."""
+    a1, a2 = _npc("A1", 0, -1, 30, 20), _npc("A2", 2, -1, 30, 5)
+    f1 = _npc("F1", 3, 1, 30, 15)
+    f1["weapons"] = [make_weapon("fsword", "меч", damage="1d6", sure_ft=5)]
+    payload = make_scene_payload(npcs=[a1, a2, f1],
+                                 weapons=[make_weapon("sword", damage="1d6+2")])
+    payload.update({"src": "A1", "token": "F1", "speed": 30})
+    return payload
+
+
+def test_fight_teams_reports_per_side_damage_stats():
+    """Кандидат-герои сносят F1(6)+F2(4) (F2 вооружён и успевает дать сдачи): урон
+    симметричен по сторонам — cand_dealt==opp_taken, cand_taken==opp_dealt."""
+    row = team_eval.fight_teams(_scene_win(), _Stub(), _Stub(), rounds_cap=8)
+    assert row["cand_dealt"] >= 10.0                       # 6+4 HP врагов снято под ноль
+    assert row["cand_dealt"] == row["opp_taken"]           # одна монета: снял == потерял другой
+    assert row["cand_taken"] == row["opp_dealt"]           # встречка (F2 бьёт в ответ)
+    assert row["cand_points"] == round(row["cand_dealt"] - row["cand_taken"], 2)
+
+
+def test_fight_teams_scores_both_sides_in_a_trade():
+    """Двусторонний размен: каждая сторона числит свой нанесённый И полученный урон."""
+    row = team_eval.fight_teams(_scene_trade(), _Stub(), _Stub(), rounds_cap=6)
+    assert row["cand_dealt"] > 0.0 and row["cand_taken"] > 0.0
+    assert row["opp_dealt"] > 0.0 and row["opp_taken"] > 0.0
+    # один и тот же физический урон с двух ракурсов: снял кандидату -> потеря кандидата
+    assert row["cand_dealt"] == row["opp_taken"] and row["cand_taken"] == row["opp_dealt"]
+
+
+def test_candidate_view_flips_damage_stats_with_sides():
+    a = team_eval.fight_teams(_scene_trade(), _Stub(), _Stub(), candidate_is_foes=False, rounds_cap=6)
+    b = team_eval.fight_teams(_scene_trade(), _Stub(), _Stub(), candidate_is_foes=True, rounds_cap=6)
+    assert a["cand_dealt"] == b["cand_taken"] and a["cand_taken"] == b["cand_dealt"]
+    assert a["cand_points"] == -b["cand_points"]           # смена стороны меняет знак очков
+
+
+def test_battle_uid_stable_and_unique_per_configuration():
+    """Один бой -> один uid (детерминированно); разные посадка/открывающий -> разные uid."""
+    e1 = team_eval.fight_teams(_scene_win(), _Stub(), _Stub(), rounds_cap=8,
+                               battle_tag="s#0#h")
+    e2 = team_eval.fight_teams(_scene_win(), _Stub(), _Stub(), rounds_cap=8,
+                               battle_tag="s#0#h")
+    flip = team_eval.fight_teams(_scene_win(), _Stub(), _Stub(), rounds_cap=8,
+                                 candidate_is_foes=True, battle_tag="s#0#h")
+    other = team_eval.fight_teams(_scene_win(), _Stub(), _Stub(), rounds_cap=8,
+                                  battle_tag="s#1#v")
+    assert e1["battle_uid"] == e2["battle_uid"]
+    uidset = {e1["battle_uid"], flip["battle_uid"], other["battle_uid"]}
+    assert len(uidset) == 3                                 # все бои различимы
+
+
+def test_matchup_rows_carry_uid_and_stats():
+    rows = team_eval.matchup_sources(_Stub(), _Stub(), [("w", _scene_win())], replays=1)
+    assert len(rows) == 2                                   # swap: hero-side и foe-side бой
+    assert {r["candidate_is_foes"] for r in rows} == {False, True}
+    assert rows[0]["battle_uid"] != rows[1]["battle_uid"]   # разные посадки -> разные uid
+    for r in rows:
+        assert r["cand_dealt"] >= 0.0 and "cand_points" in r
+

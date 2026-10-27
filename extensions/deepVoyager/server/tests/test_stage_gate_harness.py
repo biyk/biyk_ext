@@ -7,7 +7,7 @@
 import os
 
 from arent import stage_gate, team_eval
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 ATTACK_LABEL = {"cell": 0, "target": 0, "weapon": 0}
 
@@ -19,6 +19,9 @@ class _Stub:
 
     def predict(self, sample):
         return dict(ATTACK_LABEL, value=0.0)
+
+    def head_logp(self, sample):
+        return stub_head_logp(ATTACK_LABEL)
 
 
 def _row(outcome, cand_foes=False, name="s1"):

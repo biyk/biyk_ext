@@ -41,6 +41,8 @@ def infer_strategies(params: Dict[str, Any]) -> Dict[str, List[str]]:
     if (RANGED_CLASSES & ours) and (MELEE_CLASSES & foes):
         enabled.add("kite_max_range")
         penalties.add("approach_milishnik_as_archer")
+        # «взяли в руки»: дальнобойник закончил ход в melee-охвате -> держать дистанцию/отходить
+        penalties.add("ranged_grabbed")
     # враг с досягаемостью (reach=10ft) -> не входить в его зону
     if "reach" in foes:
         enabled.add("avoid_reach")

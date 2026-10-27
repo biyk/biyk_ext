@@ -24,7 +24,7 @@ from arent.tactics_counters import Counters
 from arent.tactics_map import allowed_set
 from arent.tactics_shaper import TacticsShaper
 from arent.team_reward import TeamReward, configured_team
-from arent.torch_rl import PPOAgent, joint_logp
+from arent.torch_rl import PPOAgent, joint_logp, joint_logpi_of
 
 Row = Dict[str, Any]
 
@@ -59,6 +59,16 @@ class RlConfig:
     val_frac: float = 0.2              # из остатка — под отбор чекпойнта (не под награду)
     variants_per_src: int = 0          # вариантов стартовых состояний на train-сцену (разнообразие rollout)
     schema: int = spec.SCHEMA          # версия задачи среды/политики: 2 = клетка, 3 = move-plan
+    # --- починка фитнеса (дуэль против микса учителей) ---
+    # opponents: имена замороженных соперников из реестра (team_eval.build_controller:
+    #   "random"/"greedy"/"battlecast"). Пусто -> прежний self-play (обе стороны политикой).
+    #   Непусто -> асимметричный rollout: политика ведёт свою (hero) команду, вражескую сторону
+    #   ходит замороженный оппонент (round-robin по списку); шаги оппонента НЕ попадают в
+    #   градиент, их награда сворачивается в следующий ход политики (корректный GAE наdecision MDP).
+    opponents: Tuple[str, ...] = ()
+    anchor_coef: float = 0.0           # KL(π_θ‖π_ref) к замороженному BC-приору в лоссе update (0 = выкл.)
+    duel_opponents: Tuple[str, ...] = ()  # микс для ЧЕСТНОГО отбора best (duel win-rate); пусто -> survival/clear
+    duel_replays: int = 1              # повторов на (сцену, оппонента) в duel-eval отбора
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -70,15 +80,24 @@ class RlConfig:
 
 
 def gae(rewards: List[float], values: List[float], next_values: List[float],
-        alive: List[int], gamma: float, lam: float) -> Tuple[List[float], List[float]]:
+        alive: List[int], gamma: float, lam: float,
+        gs: Optional[List[float]] = None,
+        lams: Optional[List[float]] = None) -> Tuple[List[float], List[float]]:
     """GAE(λ) по плоскому буферу. next_values[t] уже содержит бутстрап: V(s') для усечения,
     V(s_{t+1}) для продолжения, 0 для истинного терминала. alive[t]=0 на границе эпизода —
-    цепочка обрывается, не «протекая» в следующий бой."""
+    цепочка обрывается, не «протекая» в следующий бой.
+
+    gs/lams — per-step эффективные множители для macro-переходов переменной длины
+    (асимметричный rollout: между решениями политики лежат шаги оппонента). gs[t]=γ^{L_t},
+    lams[t]=λ^{L_t}; delta = R + gs·V' − V, trace = gs·lam·alive·adv'. По умолчанию (None) —
+    прежний одношаговый GAE (γ, λ константы): обратная совместимость с self-play."""
     adv = [0.0] * len(rewards)
     last = 0.0
     for t in range(len(rewards) - 1, -1, -1):
-        delta = rewards[t] + gamma * next_values[t] - values[t]
-        last = delta + gamma * lam * alive[t] * last
+        g_t = gamma if gs is None else gs[t]
+        l_t = lam if lams is None else lams[t]
+        delta = rewards[t] + g_t * next_values[t] - values[t]
+        last = delta + g_t * l_t * alive[t] * last
         adv[t] = last
     returns = [adv[t] + values[t] for t in range(len(rewards))]
     return adv, returns
@@ -135,7 +154,8 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
             diag: Optional[List[Row]] = None, *, counters: Optional[Counters] = None,
             shape: Optional[TacticsConfig] = None, stage: Optional[str] = None,
             expected: Optional[Dict[str, Any]] = None,
-            anneal: Tuple[int, int] = (0, 1)) -> List[Row]:
+            anneal: Tuple[int, int] = (0, 1),
+            ref_policy: Optional[Any] = None) -> List[Row]:
     """rollout_steps шагов round-robin по сценам; исполненное действие и его logπ в буфере.
 
     Шаг — ход текущего актёра по инициативе (обе стороны одной политикой: self-play),
@@ -144,7 +164,14 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
     Тактический shaping — только здесь (train): передан `shape` (включённый TacticsConfig) ->
     к среде пристёгнут TacticsShaper, λ задаётся anneal=(it,total), arena-gate — по `expected`.
     По умолчанию shape=None: shaping выключен, reward == чистый исход (среж для eval-путей).
+
+    cfg.opponents непусто -> асимметричный rollout против замороженного микса учителей
+    (collect_asymmetric): политика ведёт свою команду, врага — оппонент; только ходы политики
+    в градиент, шаги оппонента сворачиваются в macro-переходы GAE.
     """
+    if cfg.opponents:
+        return collect_asymmetric(agent, scenarios, cfg, rng, phi=phi, diag=diag,
+                                  anneal=anneal, ref_policy=ref_policy)
     environment = _make_env(cfg, _team_reward(cfg), phi)
     if shape is not None and shape.enabled_global:
         environment.set_shaper(TacticsShaper(shape, shape.allowed(stage),
@@ -196,3 +223,114 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
     adv = normalize(adv)
     return [{"sample": samples[i], "action": actions[i], "logp": logps[i],
              "adv": adv[i], "ret": ret[i]} for i in range(len(samples))]
+
+
+def collect_asymmetric(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]],
+                       cfg: RlConfig, rng: random.Random, *, phi: Optional[Any] = None,
+                       diag: Optional[List[Row]] = None, anneal: Tuple[int, int] = (0, 1),
+                       ref_policy: Optional[Any] = None) -> List[Row]:
+    """Асимметричный rollout: политика ведёт свою (hero) команду, вражескую сторону ходит
+    замороженный оппонент из cfg.opponents (round-robin по эпизодам).
+
+    В градиент идут только решения политики. Между двумя решениями политики лежат нуль или
+    больше шагов оппонента (инициатива чередуется): они НЕ действия политики, а динамика
+    среды. Каждый макро-переход (решение -> следующее решение) получает свёрнутую награду
+    R = Σ γ^k·r_k и эффективные множители γ^{L}, λ^{L} (L — число средовых шагов макро-
+    перехода), которые gae() проигрывает как multi-step GAE (корректно для options).
+    Награда — чистый командный исход + потенциальный φ-shaping (V_ref); тактический shaper
+    сюда НАМЕРЕННО не пристёгивается: дуэль-фитнес не должен фармить proxy-эвристики
+    (именно это и ломало гейт в self-play+shape).
+    """
+    from arent import team_eval                     # лениво: нет цикла импортов
+    environment = _make_env(cfg, _team_reward(cfg), phi)
+    if environment.shaper is not None:              # на всякий: в этом режиме шейпера нет
+        environment.set_shaper(None)
+    controllers = [team_eval.build_controller(nm, cfg.schema) for nm in cfg.opponents]
+    if not controllers:
+        raise RuntimeError("collect_asymmetric: cfg.opponents пуст (используйте collect)")
+    order = list(range(len(scenarios)))
+    rng.shuffle(order)
+    episodes: Dict[int, int] = {}
+    anchor_on = agent.anchor_coef > 0.0 and ref_policy is not None
+    gamma, lam = cfg.gamma, cfg.gae_lambda
+    samples, actions, logps, values, rewards, next_values, alive, gs, lams = \
+        ([] for _ in range(9))
+    ref_logpis: Optional[List[Any]] = [] if anchor_on else None
+
+    def _begin(slot: int):
+        """Новый бой с ротацией старта; оппонент — round-robin по номеру эпизода сцены."""
+        k = episodes.get(slot, 0)
+        episodes[slot] = k + 1
+        opp = controllers[k % len(controllers)]
+        return environment.reset(scenarios[slot][1], start_index=k), opp
+
+    def _at_opponent() -> bool:
+        actor = environment.actor
+        return (actor is not None
+                and environment.state.units[actor].hostile_to_hero)
+
+    budget = cfg.rollout_steps * (2 * cfg.rounds_cap + 8) + 128
+    pointer, env_steps = 0, 0
+    obs, opp = _begin(order[0])
+    while len(samples) < cfg.rollout_steps and env_steps < budget:
+        # пропустить открывающие ходы оппонента (награда ДО первого решения политики —
+        # общ baseline, в буфер не кладём);
+        while obs is not None and _at_opponent():
+            chosen = opp.label(obs, environment._ctx, environment.slots)
+            obs, _r, term, trunc, _i = environment.step(chosen)
+            env_steps += 1
+            if term or trunc or obs is None:
+                break
+        if obs is None or environment.actor is None or _at_opponent():
+            pointer = (pointer + 1) % len(scenarios)      # бой закончился на ходу врага
+            obs, opp = _begin(order[pointer])
+            continue
+        # --- решение политики ---
+        decision_obs = obs
+        proposal = agent.act(decision_obs)
+        nxt, r, term, trunc, info = environment.step(proposal["action"])
+        env_steps += 1
+        action = info["action"]
+        logp = joint_logp(proposal["logp_table"], action, agent.ykey, proposal["logZ"])
+        R, L, cur = r, 1, nxt
+        # ответы оппонента до следующего решения политики (или конца боя):
+        while cur is not None and _at_opponent():
+            chosen = opp.label(cur, environment._ctx, environment.slots)
+            cur, r2, term2, trunc2, _i2 = environment.step(chosen)
+            env_steps += 1
+            R += (gamma ** L) * r2
+            L += 1
+            term, trunc = term or term2, trunc or trunc2
+            if term or trunc or cur is None:
+                break
+        if term:
+            nv, cont = 0.0, 0
+        elif trunc or cur is None:
+            nv, cont = (agent.value_of(cur) if cur is not None else 0.0), 0
+        else:
+            nv, cont = agent.value_of(cur), 1
+        samples.append(decision_obs); actions.append(action); logps.append(logp)
+        values.append(proposal["value"]); rewards.append(round(R, 6))
+        next_values.append(nv); alive.append(cont)
+        gs.append(gamma ** L); lams.append(lam ** L)
+        if anchor_on:
+            ref_logpis.append(joint_logpi_of(ref_policy, decision_obs))
+        if diag is not None:
+            diag.append({"phi": info["phi"], "phi_next": info["phi_next"], "reward": round(R, 6),
+                         "value": proposal["value"], "next_value": round(nv, 6),
+                         "terminated": bool(term), "truncated": bool(trunc), "macro_len": L})
+        if cont == 0:
+            pointer = (pointer + 1) % len(scenarios)
+            obs, opp = _begin(order[pointer])
+        else:
+            obs = cur
+    adv, ret = gae(rewards, values, next_values, alive, gamma, lam, gs, lams)
+    adv = normalize(adv)
+    out: List[Row] = []
+    for i in range(len(samples)):
+        row: Row = {"sample": samples[i], "action": actions[i], "logp": logps[i],
+                    "adv": adv[i], "ret": ret[i]}
+        if anchor_on:
+            row["ref_logpi"] = ref_logpis[i]
+        out.append(row)
+    return out

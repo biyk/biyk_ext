@@ -79,13 +79,16 @@ def _round(model: Any, state: Simulation, schema: int) -> Tuple[Simulation, floa
         stat["joint_violation"] = int(bool(reason) or dict(label) != dict(dec["label"]))
         return moved, Scorer().score(ctx, actions) + penalty, stat
     slots = slots_mod.build(ctx, obs)
-    out = model.predict(encode.observation(ctx, obs, slots))
+    sample = encode.observation(ctx, obs, slots)
+    out = model.predict(sample)                    # диагностический baseline (независимый argmax)
     raw = {Y_KEY[group]: out[Y_KEY[group]] for group in GROUPS}
-    label, reason = legalize_mod.legalize(raw, schema, slots, ctx)
+    dec = joint_mod.decode(model, sample, slots, ctx, schema)   # выбор политики: joint-argmax
+    label, reason = legalize_mod.legalize(dec["label"], schema, slots, ctx)
     actions = slots_mod.decode(slots, label)
     prev_hp = _foe_hp(state)
     moved, value = state.advance(actions)
     stat = _attack_stat(raw, label, reason, slots, _dealt(prev_hp, moved))
+    stat["joint_violation"] = int(bool(reason) or dict(label) != dict(dec["label"]))
     return moved, value, stat
 
 

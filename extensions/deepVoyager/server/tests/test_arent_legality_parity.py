@@ -5,7 +5,7 @@
 # обязана давать ОДИНАКОВЫЙ результат в среде обучения (FightEnv/PolyFightEnv), командной
 # оценке (team_eval.fight_teams), отдаче (play.act) и одиночной метрике (evaluate.fight).
 # Никакого обучения/генерации здесь нет — только прогоны фиксированных заглушек.
-from arent import evaluate, legalize, play, polyenv, slots as slots_mod, slots_v3, spec
+from arent import evaluate, joint, legalize, play, polyenv, slots as slots_mod, slots_v3, spec
 from arent import team_eval
 from arent.env import FightEnv
 from arent.observe import observe
@@ -13,7 +13,7 @@ from planner.action import ACTION_USE
 from planner.context import BattleContext
 from planner.geometry import cell_distance
 from planner.sim import Simulation
-from conftest import make_npc, make_scene_payload, make_wall, make_weapon
+from conftest import make_npc, make_scene_payload, make_wall, make_weapon, stub_head_logp
 
 NONE = legalize.NONE_INDEX
 ILLEGAL = {"cell": 0, "target": 0, "weapon": 0}          # «стоим, целимся, бьём» — может быть нелегально
@@ -31,6 +31,9 @@ class _Stub:
         for k in ("cell", "target", "weapon"):
             out[k + "Prob"] = 1.0
         return out
+
+    def head_logp(self, sample):
+        return stub_head_logp(self.label)
 
 
 def _melee_far():
@@ -146,24 +149,29 @@ def test_v2_env_still_legalizes_as_before():
 
 #--- 6. одинаковые входные данные дают согласованный итог в обучении/оценке/play ----
 def test_same_input_consistent_across_training_play_eval():
+    """Единый joint-закон (serve==train): все три serving-пути на одной заглушке дают
+    совместную метку из A(s), а недопустимость независимого argmax остаётся отдельной
+    диагностикой (baseline), не действием политики (Этап 7)."""
     payload = _melee_far()
     ctx, _o, slots = _slots(payload)
-    shared, _r = legalize.legalize(ILLEGAL, spec.SCHEMA, slots, ctx)
+    mask = joint.legal_mask(slots, ctx, spec.SCHEMA)
+    assert not joint.is_jointly_legal(ILLEGAL, mask, spec.SCHEMA)      # атака с места несовместна
 
-    # play: недопустимое предложение сети исправлено, атака не исполнена
+    # play: политика (joint) берёт тройку ИЗ A(s); baseline-argmax недопустим, атака не исполнена
     res = play.act(_Stub(), payload)
-    assert res["y"] == shared                                          # ровно тот же итог
+    assert joint.is_jointly_legal(res["y"], mask, spec.SCHEMA)         # выбор политики легален
     assert res["legalize"]["illegal_proposal"] and not res["legalize"]["executed"]
 
-    # evaluate (одиночный контур): недопустимая атака не исполняется, а исполненная — с уроном
+    # evaluate (одиночный контур): baseline-предложение вне A(s) засчитано, атак всхолую нет
     row = evaluate.fight(_Stub(), payload, rounds=3)
     assert row["illegal_proposals"] >= 1
-    assert row["zero_damage_attacks"] == 0                             # ни одной атаки всхолую
+    assert row["zero_damage_attacks"] == 0
 
-    # team-eval: кандидат с той же заглушкой не проводит ни одной атаки с нулевым уроном
+    # team-eval: joint-выбор кандидата не выходит за A(s); независимый baseline — отдельный счётчик
     tr = team_eval.fight_teams(payload, _Stub(), _Stub({"cell": 0, "target": -1, "weapon": -1}),
                                rounds_cap=2)
-    assert tr["illegal_proposals"] >= 1
+    assert tr["cand_policy_outside_As"] == 0
+    assert tr["cand_baseline_outside_As"] >= 1
     assert tr["attacks_zero_damage"] == 0
 
 

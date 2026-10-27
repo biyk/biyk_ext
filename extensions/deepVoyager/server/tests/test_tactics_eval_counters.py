@@ -10,7 +10,7 @@ from arent import tactics_config, team_eval
 from arent.tactics import Penalty, Tag
 from arent.tactics_config import TacticsConfig
 from arent.tactics_counters import Counters
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 ATTACK_LABEL = {"cell": 0, "target": 0, "weapon": 0}
 
@@ -22,6 +22,9 @@ class _Stub:
 
     def predict(self, sample):
         return dict(ATTACK_LABEL, value=0.0)
+
+    def head_logp(self, sample):
+        return stub_head_logp(ATTACK_LABEL)
 
 
 def _npc(nid, col, disp, hp, ini, speed=30):

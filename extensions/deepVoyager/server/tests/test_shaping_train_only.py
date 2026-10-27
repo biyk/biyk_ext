@@ -6,6 +6,7 @@
 import pytest
 
 from arent.env import FightEnv
+from arent.tactics import Penalty, StepCtx, Tag, UnitView
 from arent.tactics_config import parse
 from arent.tactics_counters import Counters
 from arent.tactics_shaper import TacticsShaper
@@ -70,3 +71,47 @@ def test_arena_gate_blocks_unexpected_bonus():
                      .get("idle_turn", {}).get("violated", 0))
     assert fired_or_viol >= 1                        # детектор увидел anti-паттерн...
     assert shaper.S == pytest.approx(0.0)            # ...но гейт арены не дал наказать
+
+
+# ------------------------------------------- §Неугасающее ядро: hard мимо λ-затухания и потолка
+def _grabbed_archer_ctx():
+    archer = UnitView(id="me", cell=(0, 0), hp=10, hp_max=10, alive=True,
+                      ranged=True, role="ranged")
+    foe = UnitView(id="F1", cell=(0, 1), hp=10, hp_max=10, alive=True, ranged=False)
+    return StepCtx(actor=archer, cell_after=(0, 0), foes=(foe,), attacked=True,
+                   target_id="F1", in_reach_after=True, strike_range=8.0)
+
+
+HARD_CFG = parse({"weights": {Tag.kite_max_range.value: 0.15},
+                  "penalties": {Penalty.ranged_grabbed.value: -0.5},
+                  "hard": [Penalty.ranged_grabbed.value]})
+
+
+def test_hard_penalty_survives_lambda_decay_to_zero():
+    # λ=0 (конец обучения): обычный shaping погас, НО hard-штраф остаётся полным.
+    shaper = TacticsShaper(HARD_CFG, HARD_CFG.allowed(), Counters(), record_only=False)
+    shaper.anneal(100, 100)                          # decay_linear(100,100)=0 -> λ=0
+    assert HARD_CFG.lam(100, 100) == pytest.approx(0.0)
+    assert shaper.addend(_grabbed_archer_ctx()) == pytest.approx(-0.5)
+
+
+def test_hard_penalty_is_capped_not_runaway():
+    # §Лечение обвала value (A): hard вне λ, НО под ОБЩИМ потолком. 30 grabbed-шагов при λ=0
+    # дают штраф, ограниченный cap_total, а не уходящий в −∞ (иначе value-хед схлопывается).
+    shaper = TacticsShaper(HARD_CFG, HARD_CFG.allowed(), Counters(), record_only=False)
+    shaper.anneal(100, 100)                          # λ=0: hard всё равно наказывает
+    cap = shaper.cap_total                           # 0.3·|WIN| = 1.5
+    first = shaper.addend(_grabbed_archer_ctx())
+    assert first == pytest.approx(-0.5)              # полный вес (не погас вместе с λ)
+    total = first
+    for _ in range(30):
+        total += shaper.addend(_grabbed_archer_ctx())
+    assert abs(shaper.S) <= cap + 1e-9               # накопление под потолком
+    assert total == pytest.approx(-cap)              # насыщение на −cap_total, дальше 0
+
+
+def test_hard_exempt_still_respects_arena_gate():
+    # Если hard-тег снят с allowed арены — он не наказывается и как hard (hard ⊂ allowed).
+    shaper = TacticsShaper(HARD_CFG, set(), Counters(), record_only=False)
+    shaper.anneal(0, 1)
+    assert shaper.addend(_grabbed_archer_ctx()) == pytest.approx(0.0)

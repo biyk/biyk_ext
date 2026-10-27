@@ -14,7 +14,7 @@ import os
 import pytest
 
 from arent import backend, dataset, evaluate
-from conftest import make_npc, make_scene_payload, make_weapon
+from conftest import make_npc, make_scene_payload, make_weapon, stub_head_logp
 
 ATTACK = {"cell": 0, "target": 0, "weapon": 0}
 
@@ -24,6 +24,9 @@ class StubPolicy:
 
     def predict(self, sample):
         return dict(ATTACK)
+
+    def head_logp(self, sample):
+        return stub_head_logp(ATTACK)
 
 
 def _scene():

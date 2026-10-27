@@ -20,6 +20,9 @@ TOL = 0.6                 # допуск «вплотную»: соседняя/
 STACK_DIST = 1.0 + TOL    # «стоят впритык» — дистанция меньше этого
 LOW_HP = 0.30             # порог «низкий HP» для retreat/melee_at_low_hp
 SOFT_ROLES = frozenset({"ranged", "mobile_archer"})
+FEET_PER_CELL = 5.0           # D&D-сетка: 1 клетка = 5 футов
+STAND_OFF_FT = 30.0           # «милишник не доберётся на следующем ходу» = 30 футов
+STAND_OFF_CELLS = STAND_OFF_FT / FEET_PER_CELL    # 6.0 клеток
 
 
 @dataclass(frozen=True)
@@ -69,15 +72,25 @@ def _no_idle(c: StepCtx):
     # из-за чего политика получала + за беготню без выстрела (богатый трейс: десятки «не
     # атакует, но +no_idle»). Теперь бонус — только за ход, нанесший атаку: морковка ведёт к
     # добиванию, а не к имитации активности. idle_turn ниже всё ещё штрафует чистый простой.
-    return (True, bool(c.attacked))
+    # §Подпустил = смерть (переделотка наград): морковка «не простаивал» платится ТОЛЬКО вне
+    # melee-охвата. Дальнобойнику, простреливающемуся вплотную к ближнему врагу, активность не
+    # награждается — иначе «grab-and-shoot» (подошёл, отодвинулся на клетку, выстрелил) перевешивает
+    # штраф за то, что подпустил к себе. Для ближников гейт не действует: удар в упор для них нормален.
+    return (True, bool(c.attacked) and not (c.actor.ranged and c.in_reach_after))
 
 
 def _idle_turn(c: StepCtx):
     foes = _alive(c.foes)
     if not foes:
         return (False, False)
-    approached = c.moved and _nearest_dist(c.cell_after, foes) < _nearest_dist(c.actor.cell, foes) - 1e-9
-    return (True, not c.attacked and not approached)
+    d_before = _nearest_dist(c.actor.cell, foes)
+    d_after = _nearest_dist(c.cell_after, foes)
+    approached = c.moved and d_after < d_before - 1e-9
+    # §Не карать побег: честный отход (увеличил дистанцию без выстрела) — ПРАВИЛЬНОЕ поведение
+    # кайтера, раньше ловило −idle_turn и политика предпочитала «стой и стреляй» вместо бегства.
+    # Штраф остаётся только на настоящем простою: ни атаки, ни сближения, ни отхода.
+    fled = c.moved and d_after > d_before + 1e-9
+    return (True, not c.attacked and not approached and not fled)
 
 
 def _focus_wounded(c: StepCtx):
@@ -97,6 +110,11 @@ def _kill_shot(c: StepCtx):
 
 
 def _priority_soft(c: StepCtx):
+    # «Выбор приоритетной (мягкой) цели» имеет смысл только когда врагов НЕСКОЛЬКО: при
+    # единственном враге атаковать его мягкую версию — не решение, а единственная опция,
+    # награда была бы пустой. Поэтому гейт по числу живых врагов >= 2.
+    if len(_alive(c.foes)) < 2:
+        return (False, False)
     reach = _reachable(c)
     tgt = _target(c)
     softs = tuple(f for f in reach if _is_soft(f))
@@ -123,7 +141,7 @@ def _kite_max_range(c: StepCtx):
     after = _nearest_dist(c.cell_after, measurers)
     # §Дисциплина дистанции: засчитываем кайт за ЛЮБОЕ увеличение дистанции + выстрел.
     # Прежний порог (>= speed/2) был недостижим на тесной аренде: 334 applicable, 0 fired.
-    return (True, c.attacked and after > before + 1e-9)
+    return (True, c.attacked and after > before + 1e-9 and not c.in_reach_after)
 
 
 def _approach_as_archer(c: StepCtx):
@@ -140,11 +158,17 @@ def _cover_shoot(c: StepCtx):
 
 
 def _stand_off_shoot(c: StepCtx):
-    # §Дисциплина дистанции: дальнобойный стреляет, оставаясь вне melee-зоны врага. Это
-    # основная морковка для неравных дуэлей Этапа 3 (укрытий на арене нет -> cover_shoot мёртв).
+    # §Дисциплина дистанции (правило 30 футов): дальнобойный стреляет с такой дистанции, что
+    # ближайший ближник НЕ доберётся до него на следующем ходу (>=30 футов = 6 клеток). Прежний
+    # критерий «просто вне melee-зоны» (~1-2 клетки) выдавал морковку за стояние вплотную к
+    # врагу — это неверно: милишник доставал актёра в ответ. Укрытий на арене нет -> cover_shoot
+    # мёртв, и stand_off остаётся основной морковкой Этапа 3, но теперь строго по дистанции.
     if not (c.actor.ranged and c.attacked):
         return (False, False)
-    return (True, not c.in_reach_after)
+    threats = _melee_threats(c)
+    if not threats:                               # ближников нет: былое «вне melee-зоны»
+        return (True, not c.in_reach_after)
+    return (True, _nearest_dist(c.cell_after, threats) >= STAND_OFF_CELLS)
 
 
 def _shoot_from_open(c: StepCtx):
@@ -154,10 +178,31 @@ def _shoot_from_open(c: StepCtx):
 
 
 def _avoid_reach(c: StepCtx):
+    # §Дисциплина дистанции (30 футов, только дальнобойник vs милишник): милишник ДЕРЖАЛ
+    # дальнобойного в <30 футов до хода, и тот отошёл так, что стал >30 футов после хода —
+    # вышел из зоны догона и удара. Величина награды масштабируется запасом сверх 30 футов
+    # (см. avoid_reach_steps): каждые 5 футов запаса = один шаг веса.
     threats = _melee_threats(c)
-    if not c.moved or not threats:
+    if not c.actor.ranged or not c.moved or not threats:
         return (False, False)
-    return (True, not c.in_reach_after)
+    before = _nearest_dist(c.actor.cell, threats)
+    if before >= STAND_OFF_CELLS:                 # и так был вне 30 футов -> «избегать» не от чего
+        return (False, False)
+    after = _nearest_dist(c.cell_after, threats)
+    return (True, after > STAND_OFF_CELLS)
+
+
+def avoid_reach_steps(c: StepCtx) -> int:
+    """Число 5-футовых шагов запаса сверх 30 футов: множитель веса avoid_reach.
+
+    floor((дистанция_после − 30 футов) / 5 футов) в клетках (1 клетка = 5 футов). 0, если
+    avoid_reach не сработал или вышел ровно за 30 (<35 футов запаса). Только источник числа --
+    та же геометрия, что и у детектора, поэтому детектор и масштаб не разъедутся."""
+    ok, matched = _avoid_reach(c)
+    if not (ok and matched):
+        return 0
+    after = _nearest_dist(c.cell_after, _melee_threats(c))
+    return max(0, int(after - STAND_OFF_CELLS))
 
 
 def _enter_reach(c: StepCtx):
@@ -170,6 +215,18 @@ def _enter_reach(c: StepCtx):
 def _reach_penalty(c: StepCtx):
     threats = _melee_threats(c)
     if not c.moved or not threats:
+        return (False, False)
+    return (True, c.in_reach_after)
+
+
+def _ranged_grabbed(c: StepCtx):
+    # §Штраф «взяли в руки»: дальнобойник закончил СВОЙ ход в melee-охвате хоть одного ближника.
+    # Ловит пассивный случай, который пропускают соседи: reach_penalty требует c.moved (сам зашёл),
+    # enter_reach требует took_damage (уже отбили). Здесь наказывается само состояние «меня достанут
+    # в ближнем бою» — мотив дальнобойнику держать дистанцию/отходить, а не подставлять себя.
+    # Ролевой гейт (actor.ranged) не трогает танков/милишников: для них ближний бой нормален.
+    threats = _melee_threats(c)
+    if not c.actor.ranged or not threats:
         return (False, False)
     return (True, c.in_reach_after)
 
@@ -261,6 +318,7 @@ DETECTORS: Dict[str, Callable[[StepCtx], Tuple[bool, bool]]] = {
     Tag.stand_off_shoot.value: _stand_off_shoot,
     Tag.avoid_reach.value: _avoid_reach, Penalty.enter_reach.value: _enter_reach,
     Penalty.reach_penalty.value: _reach_penalty,
+    Penalty.ranged_grabbed.value: _ranged_grabbed,
     Tag.break_ring.value: _break_ring, Penalty.widen_contacts.value: _widen_contacts,
     Tag.hold_choke.value: _hold_choke, Penalty.leave_choke.value: _leave_choke,
     Tag.anti_pincer.value: _anti_pincer,
@@ -283,11 +341,13 @@ def detect(ctx: StepCtx) -> Detection:
 
 
 def bonus_for(detection: Detection, allowed: Optional[set], weights: Dict[str, float],
-              penalties: Dict[str, float]) -> float:
-    """Тактический shaping-член шага: Σ весов сработавших бонусов + штрафов, только по allowed.
+              penalties: Dict[str, float], scale: Optional[Dict[str, float]] = None) -> float:
+    """Тактический shaping-член шага: Σ (вес × множитель) сработавших бонусов + штрафов, по allowed.
 
     allowed=None — разрешены все ключи реестра; иначе (set[str]) — arena/stage-гейт §1.4. Неизвестный
     ключ в весах — KeyError, а не молчаливый ноль (§2.3): опечатка в weights не должна «исчезать».
+    scale — необязательные множители «за дистанцию» (напр. avoid_reach: вес × каждые 5 футов
+    запаса). Ключа нет -> множитель 1.0 (прежний плоский тег). Множитель действует лишь на бонусы.
     """
     for key in weights:
         if key not in BONUS_KEYS:
@@ -296,9 +356,10 @@ def bonus_for(detection: Detection, allowed: Optional[set], weights: Dict[str, f
         if key not in PENALTY_KEYS:
             raise KeyError(f"tactics.penalties: ключ {key!r} вне реестра Penalty")
     allow = set(ALL_KEYS) if allowed is None else set(allowed)
+    mult = scale or {}
     total = 0.0
     for key in detection.fired & allow:
-        total += float(weights.get(key, 0.0))
+        total += float(weights.get(key, 0.0)) * float(mult.get(key, 1.0))
     for key in detection.violated & allow:
         total += float(penalties.get(key, 0.0))
     return round(total, 6)

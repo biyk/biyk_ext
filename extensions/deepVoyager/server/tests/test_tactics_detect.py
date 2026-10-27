@@ -6,7 +6,7 @@
 import pytest
 
 from arent.tactics import Penalty, StepCtx, Tag, UnitView
-from arent.tactics_detect import bonus_for, detect
+from arent.tactics_detect import avoid_reach_steps, bonus_for, detect
 
 # допуск: расстояние «вплотную» = соседняя клетка с диагональным допуском движка
 TOL = 0.6
@@ -143,12 +143,28 @@ def test_shoot_from_open_penalized():
 
 
 # --------------------------------------------------------------------------- stand_off_shoot
-def test_stand_off_shoot_fires_when_ranged_attacks_from_out_of_reach():
-    # §Дисциплина дистанции: главный бонус для дальнобойного — стрелять, оставаясь вне
-    # melee-зоны врага. На Этапе 3 укрытий нет, поэтому именно stand_off (а не cover_shoot)
-    # должен вести политику; раньше такой морковки не существовало вовсе.
+def test_stand_off_shoot_fires_at_30ft_plus():
+    # §Дисциплина дистанции (правило 30 футов): награда — только когда ближайший милишник
+    # стоит >=30 футов (6 клеток) после хода, т.е. не доберёт на следующем ходу.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 7))                          # 7 клеток = 35 футов > 30
+    c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1", strike_range=8.0)
+    assert Tag.stand_off_shoot.value in fired_keys(c)
+
+
+def test_stand_off_shoot_not_fire_within_30ft():
+    # 25 футов (5 клеток): милишник достанет в ответ -> морковка НЕ выдаётся (было — неверно).
     archer = melee_actor((0, 0), ranged=True, role="ranged")
     foe = unit("F1", (0, 5))
+    c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1",
+            in_reach_after=False, strike_range=8.0)
+    assert Tag.stand_off_shoot.value not in fired_keys(c)
+
+
+def test_stand_off_shoot_fires_vs_ranged_only_opponent():
+    # Ближников нет: сохраняется былое «вне melee-зоны» (in_reach_after=False -> fired).
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 5), ranged=True, role="ranged")
     c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1",
             in_reach_after=False, strike_range=8.0)
     assert Tag.stand_off_shoot.value in fired_keys(c)
@@ -178,10 +194,113 @@ def test_enter_reach_penalized_when_damaged():
     assert Penalty.enter_reach.value in violated_keys(c)
 
 
-def test_avoid_reach_fires_when_stayed_out():
-    spear = unit("F1", (0, 4), reach=2.0)
-    c = ctx(foes=(spear,), moved=True, cell_after=(0, 3), in_reach_after=False)
+# ------------------------------------------------------ ranged_grabbed (штраф «взяли в руки»)
+def test_ranged_grabbed_penalized_when_stood_in_melee_reach():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=archer, foes=(foe,), cell_after=(0, 0), moved=False, in_reach_after=True)
+    assert Penalty.ranged_grabbed.value in violated_keys(c)
+
+
+def test_ranged_grabbed_penalized_even_without_move_or_damage():
+    # пассивный случай (стоит на месте, урона ещё не было): reach_penalty/enter_reach молчат,
+    # этот штраф ловит состояние «меня достанут».
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=archer, foes=(foe,), cell_after=(0, 0), moved=False,
+            took_damage=False, in_reach_after=True)
+    assert Penalty.ranged_grabbed.value in violated_keys(c)
+
+
+def test_ranged_grabbed_not_fire_when_kept_distance():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 8))
+    c = ctx(actor=archer, foes=(foe,), cell_after=(0, -6), moved=True, in_reach_after=False)
+    assert Penalty.ranged_grabbed.value not in violated_keys(c)
+
+
+def test_ranged_grabbed_not_applicable_for_melee_actor():
+    melee = melee_actor((0, 0))                       # ranged=False: ближний бой нормален
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=melee, foes=(foe,), in_reach_after=True)
+    assert Penalty.ranged_grabbed.value not in detect(c).applicable
+
+
+def test_ranged_grabbed_not_applicable_without_melee_threat():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 3), ranged=True, role="ranged")     # только дальник -> melee-угроз нет
+    c = ctx(actor=archer, foes=(foe,), in_reach_after=True)
+    assert Penalty.ranged_grabbed.value not in detect(c).applicable
+
+
+# --------------------------------------------- §Подпустил = смерть: морковки не платятся в охвате
+def test_kite_max_range_not_fire_when_still_grabbed():
+    # Отошёл на клетку + выстрелил, НО всё ещё в melee-охвате: настоящего разрыва нет ->
+    # kite-морковка НЕ платится (grab-and-shoot не кормим).
+    archer = melee_actor((0, 0), ranged=True, role="ranged", speed=6)
+    melee_foe = unit("F1", (0, 4), speed=6)
+    c = ctx(actor=archer, foes=(melee_foe,), cell_after=(0, -1), moved=True,
+            attacked=True, target_id="F1", in_reach_after=True, strike_range=8.0)
+    assert Tag.kite_max_range.value not in fired_keys(c)
+
+
+def test_no_idle_not_fire_for_ranged_while_grabbed():
+    # Дальнобойник стреляет, стоя вплотную к ближнему: активность-морковка не платится.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=archer, foes=(foe,), attacked=True, target_id="F1",
+            in_reach_after=True, strike_range=8.0)
+    assert Tag.no_idle.value not in fired_keys(c)
+
+
+def test_no_idle_still_fires_for_melee_in_reach():
+    # Ролевой гейт: для ближника удар в упор нормален -> no_idle платится как раньше.
+    melee = melee_actor((0, 0))
+    foe = unit("F1", (0, 1))
+    c = ctx(actor=melee, foes=(foe,), attacked=True, target_id="F1",
+            in_reach_after=True, strike_range=1.5)
+    assert Tag.no_idle.value in fired_keys(c)
+
+
+def test_idle_turn_not_fire_on_retreat_without_shot():
+    # §Не карать побег: increased дистанцию, не выстрелил — честный отход кайтера,
+    # не должен штрафоватья idle_turn.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 2))
+    c = ctx(actor=archer, foes=(foe,), moved=True, cell_after=(0, -4), attacked=False,
+            in_reach_after=False, strike_range=8.0)
+    assert Penalty.idle_turn.value not in violated_keys(c)
+
+
+def test_avoid_reach_fires_when_ranged_steps_out_of_30ft():
+    # §Дисциплина дистанции (30 футов, только дальнобойник): милишник держал в <30 футов до
+    # хода, после хода стал >30 футов — avoid_reach сработал; масштаб = запас сверх 30 / 5 футов.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 2))                             # 10 футов до хода (<30)
+    c = ctx(actor=archer, foes=(foe,), moved=True, cell_after=(0, -6))  # 8 клеток = 40 футов после
     assert Tag.avoid_reach.value in fired_keys(c)
+    assert avoid_reach_steps(c) == 2                     # 40-30=10 футов = 2 шага по 5
+
+
+def test_avoid_reach_not_applicable_for_melee_actor():
+    melee = melee_actor((0, 0))                          # ranged=False
+    foe = unit("F1", (0, 2))
+    c = ctx(actor=melee, foes=(foe,), moved=True, cell_after=(0, -6))
+    assert Tag.avoid_reach.value not in detect(c).applicable
+
+
+def test_avoid_reach_not_applicable_when_kept_distance():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 8))                             # 40 футов до хода: отходить не от чего
+    c = ctx(actor=archer, foes=(foe,), moved=True, cell_after=(0, -6))
+    assert Tag.avoid_reach.value not in detect(c).applicable
+
+
+def test_avoid_reach_not_fire_when_still_within_30ft():
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 2))                             # 10 футов до
+    c = ctx(actor=archer, foes=(foe,), moved=True, cell_after=(0, -4))  # ровно 30 футов после -> не >30
+    assert Tag.avoid_reach.value not in fired_keys(c)
 
 
 # --------------------------------------------------------------------------- focus_fire / spread_fire
@@ -208,6 +327,16 @@ def test_priority_soft_hits_archer_not_tank():
     c = ctx(foes=(tank, archer), attacked=True, target_id="F2", strike_range=2.0,
             target_hp_before=8)
     assert Tag.priority_soft.value in fired_keys(c)
+
+
+def test_priority_soft_not_applicable_with_single_enemy():
+    # §Несколько врагов: с единственным мягким врагом «приоритет» не из чего выбирать —
+    # награда не начисляется (и тег даже неприменим), иначе платим за тривиальный ход.
+    archer = unit("F1", (0, 1), role="ranged", ranged=True, hp=8, hp_max=8)
+    c = ctx(foes=(archer,), attacked=True, target_id="F1", strike_range=2.0,
+            target_hp_before=8)
+    assert Tag.priority_soft.value not in fired_keys(c)
+    assert Tag.priority_soft.value not in detect(c).applicable
 
 
 def test_hit_boss_with_adds_penalized():
@@ -288,3 +417,17 @@ def test_bonus_for_rejects_unknown_key():
                    target_id="F1", strike_range=1.5))
     with pytest.raises(KeyError):
         bonus_for(d, allowed=None, weights={"not_a_real_tag": 1.0}, penalties={})
+
+
+def test_bonus_for_applies_distance_scale_multiplier():
+    # scale умножает вес бонуса (avoid_reach: вес × каждые 5 футов запаса); без scale — прежний вклад.
+    archer = melee_actor((0, 0), ranged=True, role="ranged")
+    foe = unit("F1", (0, 2))
+    c = ctx(actor=archer, foes=(foe,), moved=True, cell_after=(0, -6))
+    d = detect(c)
+    assert Tag.avoid_reach.value in d.fired
+    w = {Tag.avoid_reach.value: 0.01}
+    allowed = {Tag.avoid_reach.value}
+    assert bonus_for(d, allowed=allowed, weights=w, penalties={}) == pytest.approx(0.01)
+    assert bonus_for(d, allowed=allowed, weights=w, penalties={},
+                     scale={Tag.avoid_reach.value: 2.0}) == pytest.approx(0.02)

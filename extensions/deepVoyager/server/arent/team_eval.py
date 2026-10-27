@@ -6,6 +6,7 @@
 # (win/loss/draw/mutual, WP4), эпизоды стартуют с разных актёров (start_index, WP5).
 # Прогон детерминирован (среда считает ожиданием, predict — argmax), поэтому до/после
 # сравнение на замороженном независимом наборе ho_/ho2_ честно для одних и тех же весов.
+import hashlib
 import os
 import random
 from statistics import mean
@@ -17,6 +18,8 @@ from arent import slots as slots_mod, slots_v3
 from arent.tactics_counters import Counters
 from arent.tactics_shaper import TacticsShaper
 from arent.team_reward import configured_team
+from planner.geometry import apply_moves
+from planner.initiative import side_of
 
 Row = Dict[str, Any]
 
@@ -138,7 +141,7 @@ def env_version(schema: int) -> Row:
 
 
 class ModelController:
-    """Политика весов: схема 3 — общий joint-декодер (тот же, что play/evaluate), схема 2 — argmax.
+    """Политика весов: ОБЕ схемы идут через общий joint-декодер (тот же, что play/evaluate).
 
     last_baseline — диагностический независимый argmax голов (старый serving до Этапа 7):
     им меряют «недопустимость независимого предсказания», не смешивая с действиями политики.
@@ -159,15 +162,12 @@ class ModelController:
         return "%s@schema%d" % (self.name, self.schema)
 
     def label(self, obs: Dict[str, Any], ctx: Any, slots: Any) -> Dict[str, int]:
-        if self.schema == spec3.SCHEMA:
-            # выбор политики — максимум совместной вероятности по A(s); среда приложила
-            # obs['legal'], поэтому маска та же, что породила наблюдение (serve==train)
-            dec = joint_mod.decode(self.model, obs, slots, ctx, self.schema)
-            self.last_baseline = joint_mod.independent_baseline(dec["logp"], self.schema)
-            return dec["label"]
-        out = self.model.predict(obs)
-        self.last_baseline = None
-        return {k: int(out.get(k, -1)) for k in self.keys}
+        # выбор политики — максимум совместной вероятности по A(s) для ОБЕИХ схем: среда
+        # приложила obs['legal'], маска та же, что породила наблюдение (serve==train).
+        # независимый argmax голов остаётся лишь диагностическим baseline.
+        dec = joint_mod.decode(self.model, obs, slots, ctx, self.schema)
+        self.last_baseline = joint_mod.independent_baseline(dec["logp"], self.schema)
+        return dec["label"]
 
 
 class TeacherController:
@@ -293,7 +293,9 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 start_index: int = 0, schema: Optional[int] = None,
                 trace_limit: int = 0, counters: Optional[Counters] = None,
                 opens: Optional[bool] = None, rich_trace: bool = False,
-                shape_stage: Optional[str] = None) -> Row:
+                obs_trace: str = "off",
+                shape_stage: Optional[str] = None,
+                battle_tag: Optional[str] = None) -> Row:
     """Командный бой двух политик через PolyFightEnv; итог — с точки зрения кандидата.
 
     Каждый живой актёр обеих сторон по инициативе ходит контроллером СВОЕЙ команды; ход
@@ -311,6 +313,11 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
     True добавляет в каждый шаг читаемые поля (cell_before/cell_after/attack/board), чтобы
     проигранный бой можно было разобрать «глазками»: кто куда сходил, кого/чем ударил,
     сколько снял и где кто стоял. Дорого, поэтому только для точечной диагностики.
+
+    obs_trace: "off" (по умолчанию) | "cand" | "all" — пишет в шаг obs_input, ТОТ самый
+    dict наблюдения, что уходит в ctrl.label (включая legal-маску A(s)): вход модели для
+    разбора во вьюере. "cand" — только шаги кандидата, "all" — каждый шаг. Требует
+    rich_trace (иначе шаг не расширяется). На ход боя не влияет: наблюдение лишь читается.
     """
     candidate = build_controller(candidate, schema)
     opponent = build_controller(opponent, candidate.schema)
@@ -327,6 +334,9 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                                                  record_only=True))
     obs = environment.reset(payload, start_index=start_index)
     start_actor = environment.actor
+    # сторона каждого юнита (от якоря hero_id payload): 1=враги героя, 0=команда героя, None=нейтр.
+    unit_sides = {uid: side_of(u, environment.state.hero_id)
+                  for uid, u in environment.state.units.items()}
     steps, total, outcome, info = 0, 0.0, "open", {}
     illegal = zero_dmg = cand_steps = opp_steps = 0
     # РАЗДЕЛЬНЫЕ счётчики (не смешиваем, Этап 7 часть 2): недопустимое предложение,
@@ -339,6 +349,11 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
     # Диагностический независимый argmax голов (старый декодер): доля его предложений вне A(s)
     # и число вызовов/фактических правок защитного legalize по кандидату.
     ci_base = ci_base_outside = ci_legalize_calls = ci_outside = 0
+    # урон ПО СТОРОНАМ (для метрик «урон/выживаемость по ролям»): считаем ПОТЕРИ ЖЕРТВ,
+    # а не действия — у каждой потери два лица: «получила сторона жертвы» И «нанесла
+    # противоположная». Итог: hero_lost/foe_lost, разворот под кандидата через candidate_is_foes.
+    losses: Dict[str, float] = {}
+    cand_dealt = cand_taken = opp_dealt = opp_taken = 0.0
     trace: List[Row] = []
     while obs is not None:
         actor = environment.actor
@@ -356,11 +371,20 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
             rt_targets = [t.get("id") for t in environment.slots.targets]
             rt_weapons = [(w.get("name") or w.get("id")) for w in environment.slots.weapons]
             rt_cell_before = list(environment.state.units[actor].cell)
+            rt_plans = getattr(environment.slots, "plans", [])   # v3 dirs; в v2 слоты без планов
+            rt_obs = dict(obs) if isinstance(obs, dict) else None   # вход ctrl.label «как есть»
         obs, reward, terminated, truncated, info = environment.step(chosen)
         executed = info["action"]
         reason = info.get("legalize_reason")
         dealt = round(sum(max(0.0, before[uid] - environment.state.units[uid].hp)
                           for uid in before if uid in environment.state.units), 4)
+        # потери жертв этого шага (overkill отсечён): копим в общий журнал losses
+        after = environment.state.units
+        for uid, hp0 in before.items():
+            u1 = after.get(uid)
+            hp1 = 0.0 if u1 is None else min(hp0, max(0.0, u1.hp))
+            if hp0 - hp1 > 0.0:
+                losses[uid] = losses.get(uid, 0.0) + (hp0 - hp1)
         proposed_attack = (0 <= int(chosen.get("target", -1)) < nt
                            and 0 <= int(chosen.get("weapon", -1)) < nw)
         executed_attack = (0 <= int(executed.get("target", -1)) < nt
@@ -404,6 +428,19 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 wi = int(executed.get("weapon", -1))
                 rec["cell_before"] = rt_cell_before
                 rec["cell_after"] = list(environment.state.units[actor].cell)
+                # полный маршрут шага и клетка удара: разворачиваем executed-план (после
+                # legalize) по dirs_in+dirs_out; удар v3 наносится из attack_cell, не из end.
+                pi = int(executed.get("plan", -1))
+                if 0 <= pi < len(rt_plans):
+                    p = rt_plans[pi]
+                    c, cells = tuple(rt_cell_before), [list(rt_cell_before)]
+                    for d in list(p["dirs_in"]) + list(p["dirs_out"]):
+                        c = apply_moves(c, [d])
+                        cells.append(list(c))
+                    rec["path"] = cells                   # посещённые клетки шага
+                    rec["attackCell"] = (list(apply_moves(tuple(rt_cell_before),
+                                                          p["dirs_in"]))
+                                         if executed_attack else None)
                 rec["attack"] = (None if not executed_attack else
                                  {"target": (rt_targets[ti] if 0 <= ti < len(rt_targets) else None),
                                   "weapon": (rt_weapons[wi] if 0 <= wi < len(rt_weapons) else None)})
@@ -412,6 +449,9 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                                 for uid, u in environment.state.units.items()]
                 rec["reward"] = round(float(reward), 4)         # награда шага (base+потенц+тактич)
                 rec["reward_breakdown"] = info.get("reward_breakdown")
+                if rt_obs is not None and (obs_trace == "all"
+                                           or (obs_trace == "cand" and is_candidate)):
+                    rec["obs_input"] = rt_obs               # JSON-вход модели этого шага
             trace.append(rec)
         steps += 1
         total += reward
@@ -424,6 +464,19 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                             if u.is_alive and bool(u.hostile_to_hero) == foe)
     cand_alive = alive(candidate_is_foes)
     opp_alive = alive(not candidate_is_foes)
+    # разворот потерь в пару «нанёс/получил» для каждой стороны (одна монета две стороны)
+    hero_lost = sum(rem for uid, rem in losses.items() if unit_sides.get(uid) == 0)
+    foe_lost = sum(rem for uid, rem in losses.items() if unit_sides.get(uid) == 1)
+    if candidate_is_foes:
+        cand_dealt, cand_taken = hero_lost, foe_lost     # кандидат — враги героя
+        opp_dealt, opp_taken = foe_lost, hero_lost
+    else:
+        cand_dealt, cand_taken = foe_lost, hero_lost
+        opp_dealt, opp_taken = hero_lost, foe_lost
+    # стабильный uid боя: имена сторон + сцена/повтор (battle_tag) + посадка + открывающий.
+    uid_src = "|".join([battle_tag or "", candidate.describe(), opponent.describe(),
+                        str(int(bool(candidate_is_foes))), str(bool(opens)), str(start_index)])
+    battle_uid = hashlib.md5(uid_src.encode("utf-8")).hexdigest()[:10]
     end_reason = ("terminated:%s" % outcome if info.get("terminated")
                   else ("truncated:rounds_cap" if info.get("truncated") else "open"))
     return {"outcome": _flip_outcome(outcome, candidate_is_foes), "raw_outcome": outcome,
@@ -436,6 +489,10 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
             "terminated": bool(info.get("terminated", False)),
             "truncated": bool(info.get("truncated", False)), "end_reason": end_reason,
             "rounds": int(info.get("rounds", 0)), "steps": steps,
+            "battle_uid": battle_uid,
+            "cand_dealt": round(cand_dealt, 2), "cand_taken": round(cand_taken, 2),
+            "cand_points": round(cand_dealt - cand_taken, 2),
+            "opp_dealt": round(opp_dealt, 2), "opp_taken": round(opp_taken, 2),
             "candidate_steps": cand_steps, "opponent_steps": opp_steps,
             "reward": round(total, 4), "candidate_alive": cand_alive, "opponent_alive": opp_alive,
             "illegal_steps": illegal, "zero_damage_steps": zero_dmg,
@@ -453,6 +510,7 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                     swap_sides: bool = True, trace_limit: int = 0,
                     counters: Optional[Counters] = None,
                     openings: bool = False, rich_trace: bool = False,
+                    obs_trace: str = "off",
                     shape_stage: Optional[str] = None) -> List[Row]:
     """Каждая сцена x replays x обе расстановки сторон x (опц.) очередность первого хода.
 
@@ -471,7 +529,9 @@ def matchup_sources(candidate: Any, opponent: Any, sources: List[Tuple[str, Dict
                     row = fight_teams(payload, candidate, opponent, cand_foes, rounds_cap,
                                       draw_window, start_index=rep, schema=candidate.schema,
                                       trace_limit=trace_limit, counters=counters, opens=op,
-                                      rich_trace=rich_trace, shape_stage=shape_stage)
+                                      rich_trace=rich_trace, obs_trace=obs_trace,
+                                      shape_stage=shape_stage,
+                                      battle_tag="%s#%d#%s" % (name, rep, "v" if op else "h"))
                     rows.append(dict(row, name=name, replay=rep))
     return rows
 
@@ -506,17 +566,18 @@ def _mp_init(candidate: str, opponent: str, kind: str, run_name: Optional[str]) 
 def _mp_task(task: Tuple[Any, ...]) -> List[Row]:
     """Воркер: одна сцена -> её развёртка (swap x openings) тем же matchup_sources (та же логика)."""
     (name, payload, rounds_cap, draw_window, swap_sides, openings, trace_limit,
-     rich_trace, shape_stage, with_counters) = task
+     rich_trace, shape_stage, with_counters, obs_trace) = task
     return matchup_sources(_MP_CAND, _MP_OPP, [(name, payload)], rounds_cap=rounds_cap,
                            draw_window=draw_window, swap_sides=swap_sides, openings=openings,
                            trace_limit=trace_limit, rich_trace=rich_trace,
-                           shape_stage=shape_stage,
+                           obs_trace=obs_trace, shape_stage=shape_stage,
                            counters=Counters() if with_counters else None)
 
 
 def matchup_parallel(candidate: str, opponent: str, sources: List[Tuple[str, Dict[str, Any]]],
                      rounds_cap: int = 8, draw_window: int = 4, swap_sides: bool = True,
                      openings: bool = False, trace_limit: int = 0, rich_trace: bool = False,
+                     obs_trace: str = "off",
                      shape_stage: Optional[str] = None, workers: Optional[int] = None,
                      kind: str = "auto", run_name: Optional[str] = None,
                      with_counters: bool = True) -> List[Row]:
@@ -535,7 +596,7 @@ def matchup_parallel(candidate: str, opponent: str, sources: List[Tuple[str, Dic
     nw = workers if workers else max(1, min(os.cpu_count() or 1, len(sources)))
     nw = max(1, min(int(nw), len(sources)))
     tasks = [(nm, payload, rounds_cap, draw_window, swap_sides, openings, trace_limit,
-              rich_trace, shape_stage, with_counters) for nm, payload in sources]
+              rich_trace, shape_stage, with_counters, obs_trace) for nm, payload in sources]
     rows: List[Row] = []
     if nw == 1:                                         # один воркер — без оверхеда пула
         _mp_init(candidate, opponent, kind, run_name)

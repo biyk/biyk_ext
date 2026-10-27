@@ -338,7 +338,12 @@ function showUnitPop(uid,x,y){
     for(const w of g.weapons)h+=`<tr><td>${esc(w.name)}</td><td>${esc(w.damage)}</td><td class="num">+${w.attackBonus!=null?w.attackBonus:"–"}</td><td class="num">${w.sureFt!=null?w.sureFt:"–"}</td><td class="num">${w.doubtFt!=null?w.doubtFt:"–"}</td></tr>`;
     h+="</table>";
   }else if(!g.name)h+=`<div class="dim">Нет данных арены (дамп писан без arena — обнови дамп/🔄)</div>`;
+  /* кнопка «состав хода» — вход модели текущего шага (тот же sidecar, что и ссылка в инспекторе) */
+  if(st&&st.obsFile)h+=`<div style="margin-top:6px"><button id="popObsBtn" title="JSON наблюдения, ушедшего в модель на шаге ${st.n} (актёр ${st.actor})">📦 состав хода (что ушло в модель)</button>`
+    +(st.actor!==uid?` <span class="dim small">вход актёра ${esc(st.actor)} этого шага</span>`:"")+`</div>`;
+  else if(st&&st.kind==="cand")h+=`<div class="dim small" style="margin-top:6px">состава хода нет в дампе — перегоните дамп с --obs cand и 🔄</div>`;
   upop.innerHTML=h;upop.style.display="block";
+  const ob=$("popObsBtn");if(ob)ob.onclick=e=>{e.stopPropagation();showObsModal(st)};
   const r=upop.getBoundingClientRect();
   upop.style.left=Math.max(4,Math.min(innerWidth-r.width-4,x+10))+"px";
   upop.style.top=Math.max(4,Math.min(innerHeight-r.height-4,y+12))+"px";
@@ -868,7 +873,7 @@ document.addEventListener("click",e=>{
   if(a){e.preventDefault();showTagPop(a.dataset.tag,e.clientX,e.clientY);return}
   if(!e.target.closest("#tagpop"))pop.style.display="none";
   if(!e.target.closest("#unitpop"))upop.style.display="none";
-  if(!e.target.closest("#obspop")&&!e.target.closest("#obsLink"))opop.style.display="none";
+  if(!e.target.closest("#obspop")&&!e.target.closest("#obsLink")&&!e.target.closest("#popObsBtn"))opop.style.display="none";
 });
 /* ---------- tabs ---------- */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{

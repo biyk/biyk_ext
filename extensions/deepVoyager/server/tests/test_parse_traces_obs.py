@@ -90,3 +90,4 @@ def test_viewer_wires_obs_link():
     assert "st.obsFile" in html                       # ссылка в инспекторе шага
     assert "showObsModal" in html                     # модалка читает sidecar через fetch
     assert "obsLink" in html                          # привязка клика после innerHTML
+    assert "popObsBtn" in html                        # кнопка «состав хода» в попапе бойца

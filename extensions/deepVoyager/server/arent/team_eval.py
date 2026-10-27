@@ -373,6 +373,7 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
             rt_cell_before = list(environment.state.units[actor].cell)
             rt_plans = getattr(environment.slots, "plans", [])   # v3 dirs; в v2 слоты без планов
             rt_obs = dict(obs) if isinstance(obs, dict) else None   # вход ctrl.label «как есть»
+            rt_raw = getattr(environment, "raw_obs", None)          # сырой читаемый observe()
         obs, reward, terminated, truncated, info = environment.step(chosen)
         executed = info["action"]
         reason = info.get("legalize_reason")
@@ -452,6 +453,7 @@ def fight_teams(payload: Dict[str, Any], candidate: Any, opponent: Any,
                 if rt_obs is not None and (obs_trace == "all"
                                            or (obs_trace == "cand" and is_candidate)):
                     rec["obs_input"] = rt_obs               # JSON-вход модели этого шага
+                    rec["obs_raw"] = rt_raw                 # сырой читаемый JSON наблюдения
             trace.append(rec)
         steps += 1
         total += reward

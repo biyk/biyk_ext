@@ -2,10 +2,11 @@
 #
 # Вьюер по клику показывает JSON, который реально ушёл в политику на шаге. Инварианты
 # дампера (team_eval.fight_teams):
-#   obs_trace="off" (по умолчанию) — в шагах НЕТ obs_input, дампы бит-в-бит прежние;
-#   obs_trace="cand" — obs_input только на шагах side=="cand";
-#   obs_trace="all" — obs_input на каждом шаге;
-#   obs_input JSON-сериализуем и содержит legal-маску (то, что видит модель);
+#   obs_trace="off" (по умолчанию) — в шагах НЕТ obs_input/obs_raw, дампы бит-в-бит прежние;
+#   obs_trace="cand" — obs_input/obs_raw только на шагах side=="cand";
+#   obs_trace="all"  — obs_input/obs_raw на каждом шаге;
+#   obs_input (кодированный вход ctrl.label, с legal) JSON-сериализуем; obs_raw — СЫРОЙ
+#   читаемый JSON наблюдения (observe(): me/enemies/allies/weapons/grid) тоже сериализуем;
 #   запись наблюдения НЕ влияет на бой: строки совпадают побитово с off- прогоном.
 import json
 
@@ -38,6 +39,7 @@ def _fight(obs_trace=None):
 def test_obs_off_by_default():
     for t in _fight()["trace"]:
         assert "obs_input" not in t
+        assert "obs_raw" not in t
 
 
 def test_obs_cand_only_candidate_steps():
@@ -45,14 +47,14 @@ def test_obs_cand_only_candidate_steps():
     assert any(t["side"] == "cand" for t in trace), "без хода кандидата тест ничего не проверяет"
     for t in trace:
         if t["side"] == "cand":
-            assert "obs_input" in t
+            assert "obs_input" in t and "obs_raw" in t
         else:
-            assert "obs_input" not in t
+            assert "obs_input" not in t and "obs_raw" not in t
 
 
 def test_obs_all_marks_every_step():
     trace = _fight("all")["trace"]
-    assert trace and all("obs_input" in t for t in trace)
+    assert trace and all("obs_input" in t and "obs_raw" in t for t in trace)
 
 
 def test_obs_input_is_json_and_has_legal():
@@ -64,9 +66,23 @@ def test_obs_input_is_json_and_has_legal():
         json.dumps(oi)                      # сериализуемость без default= — как в sidecar
 
 
+def test_obs_raw_is_readable_json():
+    seen = 0
+    for t in _fight("cand")["trace"]:
+        if "obs_raw" not in t:
+            continue
+        seen += 1
+        raw = t["obs_raw"]
+        assert raw is not None and {"me", "enemies", "grid"} <= set(raw), \
+            "obs_raw — сырое читаемое наблюдение observe(): me/enemies/grid"
+        json.dumps(raw)                     # сериализуемость для sidecar без default=
+    assert seen, "без шага кандидата тест ничего не проверяет"
+
+
 def test_obs_trace_does_not_change_the_fight():
     off = _fight()                                          # obs_trace по умолчанию off
     cand = _fight("cand")
     for t in cand["trace"]:
         t.pop("obs_input", None)
+        t.pop("obs_raw", None)
     assert cand == off, "запись наблюдения не должна влиять на ход боя и метрики"

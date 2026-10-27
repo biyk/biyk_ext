@@ -1,10 +1,11 @@
-# tests/test_parse_traces_obs.py — парсер выкладывает obs_input sidecar-файлами obs/.
+# tests/test_parse_traces_obs.py — парсер выкладывает вход модели sidecar-файлами obs/.
 #
-# Дамп с obs_input (team_eval obs_trace="cand"/"all") -> parse_json_file:
-#   каждый шаг ИМЕЮЩИЙ obs_input получает файл obs/<battle_uid>_step<N>.json (UTF-8);
-#   в step вьюера — поле obsFile (путь с «/»), а САМ obs_input в battles НЕ попадает
-#   (не раздувать battles.js); какой шаг получает obs_input решает дампер (cand/all);
-#   дамп без obs_input — ни файлов, ни поля (обратная совместимость со старыми дампами);
+# Дамп с obs_input/obs_raw (team_eval obs_trace="cand"/"all") -> parse_json_file:
+#   каждый шаг ИМЕЮЩИЙ хотя бы одно из них получает файл obs/<battle_uid>_step<N>.json
+#   вида {"raw": сырой читаемый JSON | null, "input": кодированный вход | null} (UTF-8);
+#   в step вьюера — поле obsFile (путь с «/»), а сами obs_* в battles НЕ попадают
+#   (не раздувать battles.js); какой шаг получает obs_ решает дампер (cand/all);
+#   дамп без obs_* — ни файлов, ни поля (обратная совместимость со старыми дампами);
 #   перед записью боя его старые sidecar-файлы obs/<uid>_step*.json удаляются
 #   (защита от stale-шагов перегенерированного дампа).
 import json
@@ -32,7 +33,9 @@ def _dump(with_obs):
               "board": [["A1", "A", 1, 30.0, [0, 1]], ["F1", "F", 1, 30.0, [0, 4]]]}
     if with_obs:
         ts_cand["obs_input"] = {"legal": [[0, 0, 0]], "cells": [1.0, 0.0], "actor": "A1"}
-        # шаг соперника без obs_input — как при obs_trace="cand" (дампер сам фильтровал)
+        ts_cand["obs_raw"] = {"schema": 2, "src": "A1",
+                              "me": {"id": "A1", "hp": 30}, "enemies": [], "grid": ["@"]}
+        # шаг соперника без obs_* — как при obs_trace="cand" (дампер сам фильтровал)
     return {"run": "t", "set": "chaos", "obs": "cand",
             "rows": [{"name": "s3_duel#0#h", "battle_uid": "abc123def0",
                       "candidate": "c", "opponent": "o",
@@ -55,9 +58,26 @@ def test_sidecar_written_and_not_embedded(tmp_path):
     f = obs_dir / "abc123def0_step0.json"
     assert f.exists()
     got = json.loads(f.read_text(encoding="utf-8"))
-    assert got == {"legal": [[0, 0, 0]], "cells": [1.0, 0.0], "actor": "A1"}
+    assert got == {"raw": {"schema": 2, "src": "A1",
+                           "me": {"id": "A1", "hp": 30}, "enemies": [], "grid": ["@"]},
+                   "input": {"legal": [[0, 0, 0]], "cells": [1.0, 0.0], "actor": "A1"}}
     blob = json.dumps(battles)                        # в battles.js obs НЕ тащим
-    assert "obs_input" not in blob and "[1.0, 0.0]" not in blob
+    assert "obs_input" not in blob and "obs_raw" not in blob and "[1.0, 0.0]" not in blob
+
+
+def test_raw_only_step_still_gets_sidecar(tmp_path):
+    """Дамп, где записан только сырой obs_raw (без кодированного) — ссылку всё равно кликать."""
+    m = _load_parser()
+    obs_dir = tmp_path / "obs"
+    src = _write_dump(tmp_path, True)
+    d = json.loads(open(src, encoding="utf-8").read())
+    d["rows"][0]["trace"][0].pop("obs_input")
+    p2 = tmp_path / "traces_all_rawonly.json"
+    p2.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    battles = m.parse_json_file(str(p2), obs_dir=str(obs_dir))
+    assert battles[0]["steps"][0]["obsFile"] == "obs/abc123def0_step0.json"
+    got = json.loads((obs_dir / "abc123def0_step0.json").read_text(encoding="utf-8"))
+    assert got["input"] is None and got["raw"]["me"]["id"] == "A1"
 
 
 def test_legacy_dump_no_obs_no_sidecar(tmp_path):
@@ -65,7 +85,7 @@ def test_legacy_dump_no_obs_no_sidecar(tmp_path):
     obs_dir = tmp_path / "obs"
     battles = m.parse_json_file(_write_dump(tmp_path, False), obs_dir=str(obs_dir))
     for st in battles[0]["steps"]:
-        assert "obsFile" not in st and "obs_input" not in st
+        assert "obsFile" not in st and "obs_input" not in st and "obs_raw" not in st
 
 
 def test_stale_sidecars_of_same_battle_are_dropped(tmp_path):
@@ -91,3 +111,4 @@ def test_viewer_wires_obs_link():
     assert "showObsModal" in html                     # модалка читает sidecar через fetch
     assert "obsLink" in html                          # привязка клика после innerHTML
     assert "popObsBtn" in html                        # кнопка «состав хода» в попапе бойца
+    assert '"raw" in j' in html                       # модалка понимает формат {raw,input}

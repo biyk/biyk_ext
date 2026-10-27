@@ -29,6 +29,7 @@ class PolyFightEnv(FightEnv):
                  team: Optional[TeamReward] = None, schema: int = spec.SCHEMA):
         super().__init__(rounds_cap, clear_bonus, death_penalty, gamma, phi, team, schema)
         self.actor: Optional[str] = None       # кто ходит сейчас (любая сторона)
+        self.raw_obs: Optional[Dict[str, Any]] = None   # последнее наблюдение до кодирования
 
     def reset(self, payload: Dict[str, Any], start_index: int = 0) -> Dict[str, Any]:
         """Новый бой: курсор на start_index-м живом по инициативе (WP5 — ротация старта),
@@ -49,6 +50,8 @@ class PolyFightEnv(FightEnv):
         ctx = self.state.context_for(self.actor)
         obs = observe(ctx, self.state.initiative_order, self.actor)
         self._ctx = ctx
+        self.raw_obs = obs                         # СЫРОЙ читаемый JSON наблюдения (для дампа:
+        #   team_eval obs_trace пишет его в шаг как obs_raw; сам бой не трогает)
         if self.schema == spec3.SCHEMA:
             self.slots = slots_v3.build(ctx, obs)
             sample = encode_v3.observation(ctx, obs, self.slots)

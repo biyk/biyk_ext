@@ -122,30 +122,33 @@ arent\.venv\Scripts\python.exe tools\trace_viewer\dump_traces_tagged.py s4_cover
 ## Просмотр входа модели (что ушло в модель на ходу)
 
 Любой бой строится из Наблюдения — JSON, который полис-ход получает перед выбором
-dействия (полифайт `team_eval.fight_teams`). В дампе можно записывать этот вход и
+действия (полифайт `team_eval.fight_teams`). В дампе можно записывать этот вход и
 смотреть его по клику в инспекторе шага:
 
 - Дамперы (`dump_traces.py` и `dump_traces_tagged.py`) принимают `--obs off|cand|all`
   (по умолчанию off — дампы побитово прежние). `cand` — только ходы кандидата (разумный
-  размер); в шаг попадает `obs_input` — точная копия аргумента `ctrl.label` (включая
-  маску `legal`). Бои от этого не меняются (это доказано тестом `test_team_eval_obs.py`).
-- `parse_traces.py` вырезает `obs_input` из `battles.json/js` (файл не раздувается)
-  и пишет sidecar-файлы `obs/<uid>_step<N>.json`; в шаге остаётся ссылка `obsFile`.
-  Перед записью удаляет устаревшие sidecar той же битвы.
+  размер); в шаг попадают ДВА слоя наблюдения: `obs_raw` — СЫРОЙ читаемый JSON
+  (`observe()`: me/enemies/allies/weapons/grid/инициатива) и `obs_input` — кодированный
+  вход `ctrl.label` (вектор state + маска `legal`). Бои от этого не меняются (это
+  доказано тестом `test_team_eval_obs.py`).
+- `parse_traces.py` вырезает оба поля из `battles.json/js` (файл не раздувается)
+  и пишет sidecar-файлы `obs/<uid>_step<N>.json` вида `{"raw":…, "input":…}`;
+  в шаге остаётся ссылка `obsFile`. Перед записью удаляет устаревшие sidecar той же битвы.
 - Вьюер: в инспекторе у заголовка шага появляется ссылка «📦 наблюдение (что ушло в
   модель)», такая же кнопка «📦 состав хода» — внизу попапа бойца при клике по нему на
   карте (показывает вход актёра текущего шага; на клике по чужому бойцу — с пометкой,
   чей именно вход). Для оппонентских шагов — подсказка, что надо перегнать дамп
-  с `--obs cand`. Клик открывает модалку с форматированным JSON, кнопкой 📋 и
-  сворачиваемой маской `legal` (тяжёлая, грузится по требованию). Работает только через
-  `serve.py` — sidecar'ы отдаются как статика с no-store.
+  с `--obs cand`. Клик открывает модалку: по умолчанию — **сырой читаемый JSON**
+  (`obs_raw`), а кодированный `input` (state/slots) и маска `legal` — под спойлерами
+  (legal тяжёлая, грузится по требованию); кнопка 📋 копирует весь JSON. Работает только
+  через `serve.py` — sidecar'ы отдаются как статика с no-store.
 
 Команда полного цикла (дампы с ареной, тегами и наблюдением):
 ```bat
 cd server
 set PYTHONPATH=%CD%
-.\ray\.venv\Scripts\python.exe .\ray\dump_traces.py s3im5_gpu --obs cand
-.\ray\.venv\Scripts\python.exe .\ray\dump_traces.py --local --obs cand
+.\.ray\.venv\Scripts\python.exe .\.ray\dump_traces.py s3im5_gpu --obs cand
+.\.ray\.venv\Scripts\python.exe .\.ray\dump_traces.py --local --obs cand
 ```
 Размер: ~22 КБ на шаг кандидата; полный пул — десятки МБ в `obs/` (папка в .gitignore).
 
@@ -158,4 +161,5 @@ set PYTHONPATH=%CD%
 - `dump_traces_tagged.py` — дамп с as-if-тегами (обёртка над `.ray/dump_traces.py`)
 - `viewer.html` — вьювер (self-contained, без CDN/интернета)
 - `battles.json` / `battles.js` — сгенерированные данные (не руками)
-- `obs/` — sidecar'ы входа модели (`<uid>_step<N>.json`, генерируются парсером, не руками)
+- `obs/` — sidecar'ы входа модели `{"raw","input"}` (`<uid>_step<N>.json`, генерируются
+  парсером, не руками)

@@ -248,9 +248,10 @@ def parse_json_file(path, obs_dir=None):
     иначе из top-level d['set'], иначе по имени файла (traces_win_* -> winrate). Legacy-бои
     из логов и старые дампы без поля -> "chaos" (галочка вьюера по умолчанию их и показывает).
 
-    obs_dir: если задан — каждый шаг дампа с obs_input (team_eval obs_trace=cand|all)
-    выгружается sidecar-файлом obs/<battle_uid>_step<N>.json, а в battle.js остаётся лишь
-    ссылка st["obsFile"]. Сами obs_input из rows ВЫРЕЗАЮТСЯ — иначе battles.js раздуется.
+    obs_dir: если задан — каждый шаг дампа с obs_input/obs_raw (team_eval
+    obs_trace=cand|all) выгружается sidecar-файлом obs/<battle_uid>_step<N>.json вида
+    {"raw": сырой читаемый JSON наблюдения, "input": кодированный вход ctrl.label}.
+    Сами obs_* из rows ВЫРЕЗАЮТСЯ — иначе battles.js раздуется.
     Перед записью боя его прежние sidecar-файлы удаляются (защита от stale-шагов)."""
     d = json.load(open(path, encoding="utf-8"))
     run = d.get("run", "?")
@@ -286,6 +287,7 @@ def parse_json_file(path, obs_dir=None):
                     has_tags = True
             actors.add(ts.get("actor"))
             obs_in = ts.pop("obs_input", None)    # в battles.js не тащим — только sidecar
+            obs_raw = ts.pop("obs_raw", None)     # сырой читаемый observe() того же шага
             steps.append({"kind": ts.get("side"), "actor": ts.get("actor"),
                           "from": ts.get("cell_before"), "to": ts.get("cell_after"),
                           # rich v3 (с 26.10): полный маршрут шага и клетка удара; в старых
@@ -295,11 +297,12 @@ def parse_json_file(path, obs_dir=None):
                           "damage": float(ts.get("dealt", 0.0) or 0.0),
                           "legalize": ts.get("reason"), "board": board, "reward": rw,
                           "n": i})
-            if obs_in is not None and obs_dir and b_uid:
+            if (obs_in is not None or obs_raw is not None) and obs_dir and b_uid:
                 os.makedirs(obs_dir, exist_ok=True)
                 leaf = "%s_step%d.json" % (b_uid, int(ts.get("step", i)))
                 with open(os.path.join(obs_dir, leaf), "w", encoding="utf-8") as fo:
-                    json.dump(obs_in, fo, ensure_ascii=False)   # прямой UTF-8: без mojibake
+                    json.dump({"raw": obs_raw, "input": obs_in}, fo,
+                              ensure_ascii=False)             # прямой UTF-8: без mojibake
                 steps[-1]["obsFile"] = "obs/" + leaf
         n_act = max(1, len(actors))
         grid, walls, field = arena_geometry(r.get("arena"), c_max, r_max)

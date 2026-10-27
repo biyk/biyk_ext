@@ -351,22 +351,26 @@ function showUnitPop(uid,x,y){
 /* ---------- obs modal: JSON-наблюдение шага (sidecar от parse_traces.py, дампер с --obs) ---------- */
 const opop=document.createElement("div");opop.id="obspop";document.body.appendChild(opop);
 async function showObsModal(st){
-  opop.innerHTML=`<b>Вход модели · шаг ${st.n} · ${esc(st.actor)}</b>`
-    +`<div class="dim small">${esc(st.obsFile)} — то, что ушло в ctrl.label на этом шаге</div>`
-    +"<div class='dim'>загрузка…</div>";
+  opop.innerHTML=`<b>Состав хода · шаг ${st.n} · ${esc(st.actor)}</b>`
+    +`<div class="dim small">${esc(st.obsFile)} — загрузка…</div>`;
   opop.style.display="block";
   let j;
   try{const r=await fetch(st.obsFile,{cache:"no-store"});if(!r.ok)throw new Error("http "+r.status);j=await r.json()}
   catch(e){opop.innerHTML+=`<div class="warn">не удалось прочитать ${esc(st.obsFile)}: ${esc(e.message||e)}</div>
     <div class="dim small">sidecar-файлы отдаёт serve.py — страница должна быть открыта через http://127.0.0.1:8317/viewer.html</div>`;return}
-  const legal=(j&&"legal"in j)?j.legal:undefined, rest={};
-  for(const k in j)if(k!=="legal")rest[k]=j[k];
+  /* новый sidecar {raw,input}; старый формат (весь файл = кодированный вход) — обратно совместим */
+  const shaped=!!j&&("raw" in j||"input" in j);
+  const raw=(shaped&&j.raw!=null)?j.raw:undefined, inp=shaped?j.input:j;   // raw:null — дамп без сырого слоя
+  const legal=(inp&&"legal" in inp)?inp.legal:undefined, rest={};
+  for(const k in (inp||{}))if(k!=="legal")rest[k]=inp[k];
   const lj=JSON.stringify(legal,null,1), pj=JSON.stringify(rest,null,1);
+  const rj=(raw==null)?"":JSON.stringify(raw,null,1);
   const nLegal=legal==null?0:(Array.isArray(legal)?legal.length:Object.keys(legal).length);
-  let h=`<b>Вход модели · шаг ${st.n} · ${esc(st.actor)}</b>`
-    +`<div class="dim small">${esc(st.obsFile)} — то, что ушло в ctrl.label на этом шаге</div>`
+  let h=`<b>Состав хода · шаг ${st.n} · ${esc(st.actor)}</b>`
+    +`<div class="dim small">${esc(st.obsFile)} — ${raw!==undefined?"сырое наблюдение (до кодирования); кодированный вход и legal — ниже под спойлерами":"то, что ушло в ctrl.label на этом шаге (сырой obs_raw в этом дампе нет — перегоните с тем же --obs)"}</div>`
     +`<div style="margin:4px 0"><button id="obsCopy" title="копировать весь JSON в буфер">📋 копировать</button></div>`
-    +`<pre>${esc(pj)}</pre>`
+    +(raw!==undefined?`<pre>${esc(rj)}</pre>`:(pj&&pj!=="{}"?`<pre>${esc(pj)}</pre>`:"<div class='dim'>пусто</div>"))
+    +(raw!==undefined&&pj&&pj!=="{}"?`<details><summary class="taglink">input — кодированный вход модели (state/slots)</summary><pre>${esc(pj)}</pre></details>`:"")
     +(legal!==undefined?`<details id="obsLegalDet"><summary class="taglink">legal — маска A(s), ${nLegal} записей (развернуть)</summary><pre id="obsLegalPre"></pre></details>`:"");
   opop.innerHTML=h;
   const det=$("obsLegalDet");

@@ -54,7 +54,8 @@ def _mirror_of(a: Dict[str, Any], n: int) -> Dict[str, Any]:
 __all__ = ["ARCHETYPES", "HERO_ARSENALS", "STAGE2_DUEL_PROFILES", "STAGE3_PAIRS", "TACTICAL",
            "UNIT_CLASSES", "build", "build_valid", "generate", "generate_duels",
            "generate_mirror_duels", "generate_asym_duels", "generate_stage3_pool",
-           "generate_stage3_canon", "write_arenas", "_bc"]
+           "generate_stage3_canon", "generate_stage41_canon", "generate_stage41_pool",
+           "write_arenas", "_bc"]
 
 
 def _bc(payload: Dict[str, Any]):
@@ -67,7 +68,8 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
           foe_classes: Optional[Sequence[str]] = None, arsenals: Optional[Sequence[str]] = None,
           foe_arsenals: Optional[Sequence[str]] = None, n_side: Optional[int] = None,
           wall_profile: Optional[str] = None, field_profile: Optional[str] = None,
-          mirror: bool = False) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+          mirror: bool = False, n_allies: Optional[int] = None, n_foes: Optional[int] = None,
+          ally_classes: Optional[Sequence[str]] = None) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
     """(имя, arena-raw, params) — один независимый сценарий из детерминированного семени.
 
     random_start: True — зоны+джиттер всем; False — каноническая геометрия; None — по
@@ -90,6 +92,13 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
         field_profile, rows, cols = sl.pick_field(rng)
     wall_profile = wall_profile or sl.pick_wall_profile(rng)
     n_side = n_side or mirror_size(rng)                 # зеркальный состав: n на n
+    # Этап 4.1: развязка сторон. n_allies/n_foes по отдельности (по умолчанию = n_side,
+    # обратная совместимость). ally_classes — пул классов союзника (2-го+ бойца стороны);
+    # если задан, союзник рисуется случайно из него (оружие по профилю класса), иначе — из
+    # классов своей стороны (как раньше). mirror живёт только при равных сторонах.
+    n_a = n_allies or n_side
+    n_b = n_foes or n_side
+    ally_pool = list(ally_classes) if ally_classes else None
 
     our_classes = list(classes) if classes else list(CLASS_NAMES)
     if foe_classes:                       # асимметрия этапа 2: сторона B может быть другого класса
@@ -109,26 +118,40 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
 
     foe_arsenal_pool = foe_arsenals or arsenals
 
-    side_a = [make_unit(rng.choice(our_classes), rng, i + 1, -1, "A", pick_arsenal(arsenals))
-              for i in range(n_side)]
-    if mirror:                         # настоящее зеркало: B = копия A (равные силы и оружие)
+    def _ally_unit(num: int, disposition: int, prefix: str, base_classes: Sequence[str],
+                   base_arsenals: Optional[Sequence[str]]):
+        # Союзник (второй+ боец стороны): если ally_pool задан — класс случайно из него,
+        # оружие по профилю STAGE2_DUEL_PROFILES этого класса (иначе pick_arsenal); если нет —
+        # прежний юнит из базовых классов стороны (полная обратная совместимость, rng-поток тот же).
+        if not ally_pool:
+            return make_unit(rng.choice(base_classes), rng, num, disposition, prefix,
+                             pick_arsenal(base_arsenals))
+        al_cls = rng.choice(ally_pool)
+        pool = STAGE2_DUEL_PROFILES.get(al_cls, {}).get("arsenals")
+        al_ars = rng.choice(list(pool)) if pool else pick_arsenal(None)
+        return make_unit(al_cls, rng, num, disposition, prefix, al_ars)
+
+    do_mirror = mirror and n_a == n_b        # настоящее зеркало только при равных сторонах
+    side_a = [make_unit(rng.choice(our_classes), rng, 1, -1, "A", pick_arsenal(arsenals))]
+    side_a += [_ally_unit(i + 1, -1, "A", our_classes, arsenals) for i in range(1, n_a)]
+    if do_mirror:                         # B = копия A (равные силы и оружие)
         side_b = [_mirror_of(a, i + 1) for i, a in enumerate(side_a)]
     else:
-        side_b = [make_unit(rng.choice(foe_classes), rng, i + 1, 1, "F", pick_arsenal(foe_arsenal_pool))
-                  for i in range(n_side)]
+        side_b = [make_unit(rng.choice(foe_classes), rng, 1, 1, "F", pick_arsenal(foe_arsenal_pool))]
+        side_b += [_ally_unit(i + 1, 1, "F", foe_classes, foe_arsenal_pool) for i in range(1, n_b)]
 
     mode = spec["deploy"] if not do_random else rng.choice(sl.DEPLOYMENTS)
     jitter = 2 if do_random else 0
     formation = sl.FORMATIONS[spec["formation"]]
     a_cells, b_cells, used_mode = sl.place(
-        rng, rows, cols, n_side, formation, n_side, formation, mode, jitter)
+        rng, rows, cols, n_a, formation, n_b, formation, mode, jitter)
 
     tokens: List[Dict[str, Any]] = []
     for unit, cell in zip(side_a + side_b, list(a_cells) + list(b_cells)):
         tokens.append(_token(unit, cell))
 
     raw = {
-        "comment": f"gen arch={arch} side_a={n_side} side_b={n_side} field={field_profile} "
+        "comment": f"gen arch={arch} side_a={n_a} side_b={n_b} field={field_profile} "
                    f"walls={wall_profile} deploy={used_mode} "
                    f"layout={'random' if do_random else 'structured'}",
         "scene": {"width": cols * sl.GRID, "height": rows * sl.GRID, "gridSize": sl.GRID},
@@ -144,8 +167,8 @@ def build(seq: int, seed: int, random_start: Optional[bool] = None, *,
         # has_choke уточняется в build_valid (нужен ctx); здесь честный placeholder по профилю стен.
         "has_choke": wall_profile in ("corridor", "ring", "maze_lite"),
         "deployment": used_mode, "layout": "random" if do_random else "structured",
-        # n_allies/n_foes сохранены как имена-стажы (split/тесты), но теперь sides равны
-        "n_allies": n_side, "n_foes": n_side,
+        # n_allies/n_foes — фактические размеры сторон (Этап 4.1 развязывает их).
+        "n_allies": n_a, "n_foes": n_b,
         "side_a_classes": [u["_class"] for u in side_a], "side_b_classes": [u["_class"] for u in side_b],
         "side_a_arsenals": [u["arsenal"] for u in side_a], "side_b_arsenals": [u["arsenal"] for u in side_b],
         "side_a_stats": [stats(u) for u in side_a], "side_b_stats": [stats(u) for u in side_b],
@@ -315,6 +338,61 @@ def generate_stage3_canon(count_each: int, seed: int,
     for idx, (x, y) in enumerate(pairs if pairs is not None else STAGE3_PAIRS):
         out += _asym_pool(x, y, count_each, seed + idx, "s3w_%sv%s" % (x, y),
                           geom=_CANON_GEOM, random_start=False)
+    return out
+
+
+# --- Этап 4.1: командные бои с союзником ----------------------------------------
+# Союзник — второй боец стороны, класс рисуется случайно из всех 6 (STAGE3_CLASSES), оружие
+# по профилю его класса (STAGE2_DUEL_PROFILES). Базовый (1-й) боец пары остаётся классом
+# matchup'а -> кость «все со всеми 6×6» сохранена. Схема 4 не растёт: MAX_TEAM=6 покрывает 2+2.
+#   • КАНОН (гейты) — СИММЕТРИЧНЫЕ 2v2: обе стороны по 2 => cand_alive==opp_alive на старте,
+#     swap_sides играет ровно равные стороны, вин-рейт считается честно и просто.
+#   • УЧЕБНЫЙ пул — микс 2v2 + СЛУЧАЙНЫЕ 1v2 (обе ориентации: 1vs2 и 2vs1): модель учится
+#     и выживать в численном меньшинстве, и прессинговать в большинстве. 1v2 в гейт НЕ входят.
+_ALLY_CLASSES: Tuple[str, ...] = _STAGE3_CLASSES
+
+
+def generate_stage41_canon(count_each: int, seed: int,
+                           pairs: Optional[Sequence[Tuple[str, str]]] = None
+                           ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """Гейт-канон 4.1: симметричные 2v2 (базовая пара + случайный союзник каждой стороне).
+
+    Тот же полный перебор 6×6 по БАЗОВЫМ классам, что и generate_stage3_canon, но на стороне
+    по 2 бойца (n_allies=n_foes=2, ally_classes=_STAGE3_CLASSES). Геометрия _CANON_GEOM +
+    random_start=False (открытое medium-поле, структурированная расстановка) => винрейты
+    разных моделей сравнимы на одной «линейке». Имена s41w_* не коллидируют с s3w_*/s41_*.
+    """
+    ge = {**_CANON_GEOM, "n_allies": 2, "n_foes": 2, "ally_classes": _ALLY_CLASSES}
+    out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+    for idx, (x, y) in enumerate(pairs if pairs is not None else STAGE3_PAIRS):
+        out += _asym_pool(x, y, count_each, seed + idx, "s41w_%sv%s" % (x, y),
+                          geom=ge, random_start=False)
+    return out
+
+
+def generate_stage41_pool(count_each: int, seed: int,
+                          pairs: Optional[Sequence[Tuple[str, str]]] = None
+                          ) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """Учебный пул 4.1: микс симметричных 2v2 + случайных 1v2 (обе ориентации) — без гейта.
+
+    2v2 (s41_*): тот же перебор 6×6, но по 2 бойца на сторону, союзник случайно из 6.
+    1v2 (s41u_*): численное неравенство — (1 vs 2) и (2 vs 1), чтобы модель училась и
+    выживать в меньшинстве, и прессинговать в большинстве. Геометрия _STAGE3_GEOM +
+    random_start=True (открытое поле разного размера, случайная расстановка) — как учебный
+    пул Этапа 3. Сид сдвигается на номер пары, детерминированно. Имена не коллидируют.
+    """
+    prs = pairs if pairs is not None else STAGE3_PAIRS
+    ge22 = {**_STAGE3_GEOM, "n_allies": 2, "n_foes": 2, "ally_classes": _ALLY_CLASSES}
+    ge12 = {**_STAGE3_GEOM, "n_allies": 1, "n_foes": 2, "ally_classes": _ALLY_CLASSES}
+    ge21 = {**_STAGE3_GEOM, "n_allies": 2, "n_foes": 1, "ally_classes": _ALLY_CLASSES}
+    out: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+    for idx, (x, y) in enumerate(prs):
+        out += _asym_pool(x, y, count_each, seed + idx, "s41_%sv%s" % (x, y),
+                          geom=ge22, random_start=True)
+        out += _asym_pool(x, y, count_each, seed + idx, "s41u_%sv%s_1v2" % (x, y),
+                          geom=ge12, random_start=True)
+        out += _asym_pool(x, y, count_each, seed + idx, "s41u_%sv%s_2v1" % (x, y),
+                          geom=ge21, random_start=True)
     return out
 
 

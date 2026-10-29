@@ -178,8 +178,9 @@ class Simulation:
             units[aimed] = replace(foe, hp=foe.hp - damage)
         return self._clone(units)
 
-    def apply_actor_seq(self, actor_id: str, actions: List[Action]) -> "Simulation":
-        """SCHEMA=3 (F-B): действия исполняются СТРОГО по порядку.
+    def apply_actor_seq(self, actor_id: str, actions: List[Action],
+                        reactions: bool = False) -> "Simulation":
+        """SCHEMA=3/4 (F-B): действия исполняются СТРОГО по порядку.
 
         В отличие от apply_actor (все перемещения сворачиваются в конечную клетку, и удар
         считается из неё), здесь MOVE сдвигает текущую клетку, а USE резолвится из клетки,
@@ -188,6 +189,11 @@ class Simulation:
         вернуться»: удар проверяется по позиции атаки, а не по финальной позиции.
         Урон — ожиданием (как apply_actor); доступность удара (дистанция + линия видимости из
         позиции удара) задаёт единое правило planner/los.striking_distance (F-C).
+
+        reactions=True (SCHEMA=4) включает Экономику действий: каждое движение актёра, выводящее
+        его из melee-зоны живого врага с неподрашённой реакцией, провоцирует атаку по возможности
+        (Ao — урон ожиданием, реакция врага списывается), а USE списывает действие актёра и блокируется,
+        когда действий не осталось. Для reactions=False (v2/v3) поведение бит-в-бит прежнее.
         """
         t = tuning()
         actor = self.units[actor_id]
@@ -198,11 +204,21 @@ class Simulation:
             if a.action == ACTION_MOVE:
                 d = a.conf.get("direction")
                 if d in DIR_VECTORS:
+                    prev_cell = cell
                     cell = apply_moves(cell, [d])
                     units[actor_id] = replace(units[actor_id], cell=cell)
+                    if reactions:
+                        units = self._apply_opportunities(units, actor_id, prev_cell, cell, t)
+                        if not units[actor_id].is_alive:
+                            break          # актёр умер от Ao посреди своего хода — действия нет
             elif a.action == ACTION_TARGET:
                 aimed = a.conf.get("id")
             elif a.action == ACTION_USE:
+                if reactions:
+                    cur = units[actor_id]
+                    if cur.action < 1:
+                        continue           # действий не осталось (SCHEMA=4) — атака заблокирована
+                    units[actor_id] = replace(cur, action=cur.action - 1)
                 weapon = self.context_for(actor_id).weapon(a.conf.get("itemId", ""))
                 foe = units.get(aimed or "")
                 reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
@@ -211,6 +227,42 @@ class Simulation:
                     continue        # удар из ТЕКУЩЕЙ клетки: дистанция/LOS/свой — урона нет
                 damage = (weapon.expected_damage if weapon else t.unknown_damage_avg) * t.hit_chance
                 units[aimed] = replace(foe, hp=foe.hp - damage)
+        return self._clone(units)
+
+    def _apply_opportunities(self, units: Dict[str, Unit], actor_id: str,
+                             prev_cell: Cell, new_cell: Cell, t) -> Dict[str, Unit]:
+        """SCHEMA=4: атах по возможности (Ao) на ШАГЕ актёра prev_cell -> new_cell.
+
+        Живой враг актёра с неподрашённой реакцией (reaction>=1) бьёт, если prev_cell была в его
+        melee-зоне (striking_distance из H в prev_cell), а new_cell — вне её: актёр «отрывается».
+        Урон — ожиданием (damage_avg*chance), реакция H списывается (не более одного Ao за реакцию).
+        Возвращает обновлённый словарь юнитов (hp актёра, reaction врагов)."""
+        actor = units[actor_id]
+        for hid in sorted(units):
+            if hid == actor_id:
+                continue
+            h = units[hid]
+            if not h.is_alive or h.reaction < 1 or not are_hostile(actor, h, self.hero_id):
+                continue
+            was_in = striking_distance(self.base, h.cell, prev_cell, h.reach_cells, self.sight)
+            now_out = not striking_distance(self.base, h.cell, new_cell, h.reach_cells, self.sight)
+            if not (was_in and now_out):
+                continue
+            cur = units[actor_id]
+            units[actor_id] = replace(cur, hp=cur.hp - h.damage_avg * h.chance)
+            units[hid] = replace(h, reaction=0)
+            if not units[actor_id].is_alive:
+                break
+        return units
+
+    def reset_actor_turn(self, actor_id: str) -> "Simulation":
+        """SCHEMA=4: начало хода актёра — откатить ему экномику действий (D&D: реакция тоже
+        возвращается на своём ходу). Новый Simulation с action=bonus=reaction=1 у actor_id.
+        Вызывается polyenv перед наблюдением/ходом текущего актёра; мёртвый/не ходящий не тратит."""
+        unit = self.units.get(actor_id)
+        if unit is None:
+            return self
+        units = {**self.units, actor_id: replace(unit, action=1, bonus=1, reaction=1)}
         return self._clone(units)
 
     def _approach(self, unit: Unit, hero_cell: Cell) -> Unit:

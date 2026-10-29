@@ -14,6 +14,18 @@ from arent import spec
 
 SCHEMA = 3
 
+# Схемы с головой move-plan (тройка plan-атаки x цель x оружие): v3 и v4. v4 отличается от v3
+# ТОЛЬКО составом/шириной признаков (spec4), семантика действия/разбор троек/меню — общие. Ветки
+# «move-plan vs клетка» везде используют uses_moveplan(schema), а не `== spec3.SCHEMA`, чтобы v4
+# шёл по тому же пути decode/legal_mask/attackable_v3. Схемы-константы импортируются числами
+# (spec4 импортирует spec3 -> обратный импорт был бы циклом).
+MOVEPLAN_SCHEMAS = (3, 4)
+
+
+def uses_moveplan(schema) -> bool:
+    """True для схем с move-plan головой (3 и 4); False для клетка-действия (2)."""
+    return int(schema) in MOVEPLAN_SCHEMAS
+
 # ЯВНАЯ ВЕРСИЯ ПРИЗНАКОВ головы move-plan (ЭТАП 6, часть 1.2).
 # SCHEMA=3 задаёт СЕМАНТИКУ действия (move-plan: attack_cell,end_cell), а не состав
 # признаков клетки, поэтому смена признаков (убран slotIndex: 22 -> 21 на ЭТАПЕ 5) НЕ

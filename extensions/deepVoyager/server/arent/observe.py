@@ -148,8 +148,14 @@ def weapon_entry(weapon, enemies: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def observe(ctx: BattleContext, initiative: Optional[Tuple[str, ...]] = None,
-            actor: Optional[str] = None) -> Dict[str, Any]:
-    """Снимок боя глазами src-токена: hero / slots / enemies / allies / others / grid."""
+            actor: Optional[str] = None,
+            resources: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Снимок боя глазами src-токена: hero / slots / enemies / allies / others / grid.
+
+    resources (SCHEMA=4): карта uid -> юнит/ресурсы хода (action/bonus/reaction). Проставляет
+    me.*Remaining актёру и reactionRemaining каждому врагу. По умолчанию (нет карты) — всё
+    доступно (1): обратная совместимость для teacher/serving без симa и для v2/v3 (поля лишние).
+    """
     t = tuning()
     raws = _raw_npcs(ctx)
     me = ctx.src
@@ -189,15 +195,44 @@ def observe(ctx: BattleContext, initiative: Optional[Tuple[str, ...]] = None,
         "grid": _grid(ctx, me_cell, [(tok, "E") for tok in hostiles]
                       + [(tok, "A") for tok in allies] + [(tok, "T") for tok in others]),
     }
-    _stamp_features(result, ctx, me_cell, enemies, ally_rows, initiative, actor)
+    _stamp_features(result, ctx, me_cell, enemies, ally_rows, initiative, actor, resources)
     return result
+
+
+def _res_get(resources: Optional[Dict[str, Any]], uid: str, key: str, default: float = 1.0) -> float:
+    """Значение ресурса хода из карты: dict- или объект-юнит (attr); нет карты/ключа -> default.
+
+    default=1 (всё доступно) сохраняет поведение v2/v3 и teacher/serving без симуляции.
+    """
+    if not resources:
+        return float(default)
+    entry = resources.get(uid)
+    if entry is None:
+        return float(default)
+    if isinstance(entry, dict):
+        value = entry.get(key, default)
+    else:
+        value = getattr(entry, key, default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
 
 
 def _stamp_features(result: Dict[str, Any], ctx: BattleContext, me_cell: Cell,
                     enemies: List[Dict[str, Any]], ally_rows: List[Dict[str, Any]],
-                    initiative: Optional[Tuple[str, ...]], actor: Optional[str]) -> None:
-    """Дополняет наблюдение признаками v2: террейн (всегда) и инициативу (когда задан порядок)."""
+                    initiative: Optional[Tuple[str, ...]], actor: Optional[str],
+                    resources: Optional[Dict[str, Any]] = None) -> None:
+    """Дополняет наблюдение признаками v2/v4: ресурсы/активация (v4), террейн, инициатива."""
     me = result["me"]
+    # SCHEMA=4 экономика действий: сколько ресурсов хода осталось у актёра (0/1). Без карты -> 1
+    # (всё доступно): v2/v3 эти поля не читают, teacher/serving без сима не ломаются.
+    cur = actor or ctx.src_id
+    me["actionRemaining"] = _res_get(resources, cur, "action")
+    me["bonusRemaining"] = _res_get(resources, cur, "bonus")
+    me["reactionRemaining"] = _res_get(resources, cur, "reaction")
+    for e in enemies:
+        e["reactionRemaining"] = _res_get(resources, e["id"], "reaction")
     live = [e for e in enemies if e["alive"]]
     me["hasLosToNearestEnemy"] = 1.0 if any(e["los"] for e in live) else 0.0
     me["wallsInView"] = _walls_in_view(ctx, me_cell)

@@ -192,7 +192,7 @@ class TeacherController:
 
     def label(self, obs: Dict[str, Any], ctx: Any, slots: Any) -> Dict[str, int]:
         actions = self.teacher.plan(ctx)
-        if self.schema == spec3.SCHEMA:
+        if spec3.uses_moveplan(self.schema):     # v3/v4: пространство действий = move-plan
             slots_v3.ensure_plan(slots, ctx, actions)
             lab = slots_v3.label_of(ctx, slots, actions)
             return lab or {"plan": 0, "target": spec.NONE_SLOT, "weapon": spec.NONE_SLOT}

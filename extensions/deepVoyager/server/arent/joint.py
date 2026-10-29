@@ -42,7 +42,7 @@ POLICY_SEMANTICS = 2
 
 
 def _pos_key(schema: int) -> str:
-    return "plan" if int(schema) == spec3.SCHEMA else "cell"
+    return "plan" if spec3.uses_moveplan(schema) else "cell"
 
 
 def group_totals(schema: int) -> Dict[str, int]:
@@ -63,10 +63,10 @@ def legal_mask(slots: Any, ctx: Any, schema: int) -> List[List[List[int]]]:
     totals = group_totals(schema)
     p_n, t_n, w_n = totals["cells"], totals["targets"], totals["weapons"]
     mask = [[[0] * w_n for _ in range(t_n)] for _ in range(p_n)]
-    n_pos = len(slots.plans if schema == spec3.SCHEMA else slots.cells)
+    n_pos = len(slots.plans if spec3.uses_moveplan(schema) else slots.cells)
     targets = slots.targets
     weapons = slots.weapons
-    check = (slots_v3.attackable_v3 if schema == spec3.SCHEMA else slots_mod.attackable)
+    check = (slots_v3.attackable_v3 if spec3.uses_moveplan(schema) else slots_mod.attackable)
     for p in range(min(n_pos, p_n)):
         mask[p][NONE_TARGET][NONE_WEAPON] = 1        # ровно один вариант «без атаки» на позицию
         for t in range(min(len(targets), t_n)):

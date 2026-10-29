@@ -20,26 +20,69 @@ import random
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from arent import backend, dataset, manifest, net, paths, provenance, spec, splitting
+from arent import backend, dataset, manifest, net, paths, provenance, spec, spec4, splitting
 from arent.scores import batches, by_source, epoch_loss, metrics
 
 Row = Dict[str, Any]
 
 
+def _pad_columns(matrix: List[List[float]], new_cols: int) -> List[List[float]]:
+    """Копия матрицы с РАШИРЕНИЕМ числа колонок нулями: старые колонки — точный префикс.
+
+    Это ядро partial-transfer: новые признаки v4 добавлены В КОНЕЦ каждого блока (хвост state,
+    хвост cell/weapon-слота), поэтому вес старых колонок остаётся на своём месте, а новые
+    обнуляются (нейтральный вклад) и доучиваются. Сужение невозможно (ошибка формы)."""
+    if not matrix:
+        return matrix
+    old = len(matrix[0])
+    if old == new_cols:
+        return [row[:] for row in matrix]
+    if old > new_cols:
+        raise RuntimeError(f"partial-transfer: старых колонок {old} > новых {new_cols} — сужение невозможно")
+    pad = [0.0] * (new_cols - old)
+    return [row[:] + pad for row in matrix]
+
+
+def _transfer_3_to_4(old_params: Dict[str, Any], old_dims: Dict[str, int],
+                     new_dims: Dict[str, int], head: int) -> Dict[str, Any]:
+    """Partial-transfer весов v3(или v2) -> v4: copy[:, :old] + zeros[:, old:] по хвостовым колонкам.
+
+    Растут ТОЛЬКО: trunk1 (state -> +resource-хвост), headW["cells"] (+provokesAo/aoRisk),
+    headW["weapons"] (+isAction/isBonus/isReaction). Всё остальное (b1, trunk2/b2, headB/U/UB,
+    headW["targets"], valueW/valueB) побитово совпадает по форме и копируется как есть.
+    Новые нулевые колонки = нейтральный вклад — стандартная инициализация приращенных фич."""
+    out = copy.deepcopy(old_params)
+    out["trunk1"] = _pad_columns(old_params["trunk1"], new_dims["state"])
+    feat_key = {"cells": "cell_feat", "targets": "target_feat", "weapons": "weapon_feat"}
+    for group, key in feat_key.items():
+        out["headW"][group] = _pad_columns(old_params["headW"][group], head + new_dims[key])
+    return out
+
+
 def _warm_params(cfg: net.Config, warm: str):
-    """Весы из чекпойнта для дообучения: имя прогона в runs/ или путь к model.json."""
+    """Весы из чекпойнта для дообучения: имя прогона в runs/ или путь к model.json.
+
+    та же схема -> веса побитово. Чекпойнт v3(или v2) в cfg.schema=4 -> partial-transfer
+    (копируем общие колонки, обнуляем хвост ресурсов/Ao-фич), если hidden/head совпадают."""
     path = warm if os.path.exists(warm) else paths.checkpoint(warm)
     if not path:
         raise RuntimeError(f"Чекпойнта нет: {warm} — имя прогона в runs/ или путь к model.json")
     checkpoint = net.load(path)
     saved = net.Config.from_dict(checkpoint.get("config") or {})
-    if getattr(saved, "schema", 2) != getattr(cfg, "schema", spec.SCHEMA):
-        raise RuntimeError(f"Чекпойнт {path}: схема {getattr(saved, 'schema', 2)}, просим "
-                           f"{getattr(cfg, 'schema', spec.SCHEMA)} — веса другой схемы несовместимы")
     if (saved.hidden, saved.head) != (cfg.hidden, cfg.head):
         raise RuntimeError(f"Чекпойнт {path}: hidden={saved.hidden}/head={saved.head}, "
                            f"просим {cfg.hidden}/{cfg.head} — веса другой формы")
-    return checkpoint["params"], path
+    saved_schema = getattr(saved, "schema", 2)
+    want_schema = getattr(cfg, "schema", spec.SCHEMA)
+    if saved_schema == want_schema:
+        return checkpoint["params"], path, None
+    if want_schema == spec4.SCHEMA and saved_schema in (2, 3):
+        old_dims = checkpoint.get("dims") or net.dims_for(saved_schema)
+        new_dims = net.dims_for(want_schema)
+        transferred = _transfer_3_to_4(checkpoint["params"], old_dims, new_dims, cfg.head)
+        return transferred, path, saved_schema
+    raise RuntimeError(f"Чекпойнт {path}: схема {saved_schema}, просим {want_schema} — веса другой "
+                       f"схемы несовместимы (partial-transfer есть только v2/v3 -> v4)")
 
 
 def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,
@@ -64,9 +107,14 @@ def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,
     epochs = epochs or cfg.epochs
     batch = batch or cfg.batch
     params, warm_from = (None, None)
+    warm_from_schema = None
     if warm:
-        params, warm_from = _warm_params(cfg, warm)
-        say(f"довыучивание от {warm_from} (веса прежние, оптимизатор новый)")
+        params, warm_from, warm_from_schema = _warm_params(cfg, warm)
+        if warm_from_schema is not None:
+            say(f"довыучивание от {warm_from} (partial-transfer v{warm_from_schema}->v{cfg.schema}: "
+                f"общие колонки перенесены, хвост ресурсов/Ao обнулён)")
+        else:
+            say(f"довыучивание от {warm_from} (веса прежние, оптимизатор новый)")
     dataset_file = None
     if samples is None:
         source = dataset_name or dataset.latest_samples()
@@ -135,7 +183,7 @@ def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,
     result = _finish(name, model, cfg, history, best, best_params, seconds, len(samples), say,
                      warm_from, metric, val_source, split_report)
     manifest.build_and_write(name, cfg, dataset_file, split_report, val_source, warm_from,
-                             result["summary"])
+                             result["summary"], from_schema=warm_from_schema)
     return result
 
 

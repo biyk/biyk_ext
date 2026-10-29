@@ -13,7 +13,8 @@ import random
 import zlib
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from arent import encode, encode_v3, paths, provenance, slots as slots_mod, slots_v3, spec, spec3
+from arent import encode, encode_v3, encode_v4, paths, provenance, slots as slots_mod, slots_v3, \
+    spec, spec3, spec4
 from arent.observe import observe
 from arent.states import variants
 from arent.teacher import pinned
@@ -189,10 +190,37 @@ def sample_from_labeled_v3(name: str, labeled, meta: Dict[str, Any],
     DAgger-агрегации (teacher.label_ctx(ctx) на посещённом состоянии). Оба входа обязаны давать
     идентичный пример, иначе политика училась бы на разметке разного качества.
     """
+    return _sample_from_labeled_moveplan(name, labeled, meta, initiative, spec3.SCHEMA)
+
+
+def sample_from_labeled_v4(name: str, labeled, meta: Dict[str, Any],
+                           initiative: Optional[Tuple[str, ...]] = None,
+                           resources: Optional[Dict[str, Any]] = None
+                           ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 4: тот же move-plan core, но энкодер encode_v4 и живые ресурсы актёров.
+
+    resources (карта uid->Unit из Simulation/PolyFightEnv) прокидывается в observe, чтобы хвост
+    state (action/bonus/reaction) и Ao-признаки отражали реальное состояние экномики на посещённом
+    политикой ходу (DAgger). При resources=None (стартовые сцены) — всё доступно по умолчанию.
+    """
+    return _sample_from_labeled_moveplan(name, labeled, meta, initiative, spec4.SCHEMA, resources)
+
+
+def _sample_from_labeled_moveplan(name: str, labeled, meta: Dict[str, Any],
+                                  initiative: Optional[Tuple[str, ...]],
+                                  schema: int,
+                                  resources: Optional[Dict[str, Any]] = None
+                                  ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Общее ядро move-plan-разметки (схемы 3 и 4): Labeled -> пример BC.
+
+    Схема 4 = схема 3 по пространству действий (те же slots_v3/roundtrip), отличается только
+    энкодер (encode_v4: хвост ресурсов + Ao-фичи) и прокидка ресурсов в observe. Держим один
+    core, чтобы v3 и v4 размечали идентично на общих колонках (гейт побитового префикса).
+    """
     ctx = labeled.ctx
     if not ctx.weapons or not ctx.hostile_targets():
         return None, "no_attack"
-    obs = observe(ctx, initiative, ctx.src_id)
+    obs = observe(ctx, initiative, ctx.src_id, resources=resources)
     slots = slots_v3.build(ctx, obs)
     if not slots.plans or not slots.targets:
         return None, "no_slots"
@@ -204,14 +232,23 @@ def sample_from_labeled_v3(name: str, labeled, meta: Dict[str, Any],
     if [a.to_dict() for a in slots_v3.decode(slots, label)] != \
             [a.to_dict() for a in labeled.actions]:
         return None, "roundtrip_mismatch"         # три индекса не собирают ход учителя обратно
-    sample = encode_v3.encode(ctx, obs, slots, label, value=labeled.value,
-                              meta=dict(meta, arena=name, score=labeled.score,
-                                        depth=labeled.depth))
+    enc = encode_v4 if schema == spec4.SCHEMA else encode_v3
+    sample = enc.encode(ctx, obs, slots, label, value=labeled.value,
+                        meta=dict(meta, arena=name, score=labeled.score,
+                                  depth=labeled.depth))
     sample["meta"]["actions"] = [a.to_dict() for a in labeled.actions]
     return sample, "ok"
 
 
-SAMPLERS = {spec.SCHEMA: sample_one, spec3.SCHEMA: sample_one_v3}
+def sample_one_v4(name: str, payload: Dict[str, Any], teacher: TeacherPolicy,
+                  meta: Dict[str, Any], initiative: Optional[Tuple[str, ...]] = None
+                  ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 4 из payload: тонкая обёртка teacher.label -> sample_from_labeled_v4 (старт хода)."""
+    labeled = teacher.label(payload)
+    return sample_from_labeled_v4(name, labeled, meta, initiative)
+
+
+SAMPLERS = {spec.SCHEMA: sample_one, spec3.SCHEMA: sample_one_v3, spec4.SCHEMA: sample_one_v4}
 
 
 def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int = 3,
@@ -297,10 +334,27 @@ class SchemaMismatch(ValueError):
 def assert_compatible(sample: Dict[str, Any]) -> None:
     """Впускаем в конвейер только совместные примеры (ЭТАП 6, часть 1.2).
 
-    Для схемы 3 сверяем явную версию признаков и ширину головы клеток: пример со старыми
-    22 признаками (до ЭТАПА 5) или с чужим feat_version обязан быть отвергнут, а не примешан
-    к новой выборке. Схема 2 проходит без изменений (её признаки не тронуты)."""
-    if int(sample.get("schema", spec.SCHEMA)) != spec3.SCHEMA:
+    Если схема 4: сверяем feat_version/ширины по spec4 (cell_feat, weapon_feat, state).
+    Старая v4-выборка с иными ширинами/версией признаков отвергается, а не примешивается.
+    Схема 2 проходит без изменений (её признаки не тронуты)."""
+    got_schema = int(sample.get("schema", spec.SCHEMA))
+    if got_schema == spec4.SCHEMA:
+        want = spec4.FEATURES_VERSION
+        got = sample.get("feat_version")
+        d4 = spec4.dims4()
+        cells = sample.get("cells") or [[]]
+        weapons = sample.get("weapons") or [[]]
+        c_width, w_width = len(cells[0]), len(weapons[0])
+        s_width = len(sample.get("state") or [])
+        if (got != want or c_width != d4["cell_feat"] or w_width != d4["weapon_feat"]
+                or s_width != d4["state"]):
+            raise SchemaMismatch(
+                f"пример схемы 4 несовместим: feat_version={got}/cell_feat={c_width}/"
+                f"weapon_feat={w_width}/state={s_width}, ждём "
+                f"{want}/{d4['cell_feat']}/{d4['weapon_feat']}/{d4['state']}. "
+                f"Старая v4-выборка не примешивается к новой — перегенерируйте её.")
+        return
+    if got_schema != spec3.SCHEMA:
         return
     want = spec3.FEATURES_VERSION
     got = sample.get("feat_version")

@@ -24,8 +24,21 @@ def _gen_block(sidecar: Dict[str, Any]) -> Dict[str, Any]:
     return block
 
 
+def _compatibility_block(from_schema: Optional[int], schema: int) -> Dict[str, Any]:
+    """Отражает partial-transfer: если чекпойнт дообучен из другой схемы (v2/v3 -> v4) — пишем
+    from_schema/reason; иначе прежнее статическое описание (v2 team combat, no warm-start)."""
+    if from_schema is not None and int(from_schema) != int(schema):
+        return {"from_schema": int(from_schema),
+                "reason": f"partial-transfer v{int(from_schema)}->v{int(schema)}: общие колонки "
+                          f"перенесены (copy+pad), хвост ресурсов/Ao обнулён и доучивается",
+                "breaks": []}
+    return {"from_schema": None, "reason": "v2 team combat, no warm-start",
+            "breaks": ["single_actor_sc1_benchmarks"]}
+
+
 def build(name: str, cfg: net.Config, dataset_file: Optional[str], split_report: Optional[Dict],
-          val_source: str, warm_from: Optional[str], summary: Dict[str, Any]) -> Dict[str, Any]:
+          val_source: str, warm_from: Optional[str], summary: Dict[str, Any],
+          from_schema: Optional[int] = None) -> Dict[str, Any]:
     directory = paths.run_dir(name)
     sidecar = provenance.read_sidecar(dataset_file) if dataset_file else {}
     dataset_block = {
@@ -43,9 +56,8 @@ def build(name: str, cfg: net.Config, dataset_file: Optional[str], split_report:
                 "parent_sha256": provenance.sha256_file(warm_from)}
     return {
         "manifest_schema": 1,
-        "schema": spec.SCHEMA,
-        "compatibility": {"from_schema": None, "reason": "v2 team combat, no warm-start",
-                          "breaks": ["single_actor_sc1_benchmarks"]},
+        "schema": cfg.schema,
+        "compatibility": _compatibility_block(from_schema, cfg.schema),
         "run": name,
         "created_utc": provenance.now_utc(),
         "command": list(sys.argv),
@@ -70,8 +82,9 @@ def build(name: str, cfg: net.Config, dataset_file: Optional[str], split_report:
 
 def build_and_write(name: str, cfg: net.Config, dataset_file: Optional[str],
                     split_report: Optional[Dict], val_source: str, warm_from: Optional[str],
-                    summary: Dict[str, Any]) -> str:
-    manifest = build(name, cfg, dataset_file, split_report, val_source, warm_from, summary)
+                    summary: Dict[str, Any], from_schema: Optional[int] = None) -> str:
+    manifest = build(name, cfg, dataset_file, split_report, val_source, warm_from, summary,
+                     from_schema=from_schema)
     return provenance.write_json(paths.file_in(paths.run_dir(name), "run_manifest.json"), manifest)
 
 

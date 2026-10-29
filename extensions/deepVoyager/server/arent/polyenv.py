@@ -9,7 +9,7 @@
 # полного цикла инициативы; смерть якорного «героя» сама по себе бой не заканчивает.
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from arent import encode, encode_v3, joint as joint_mod, slots as slots_mod, slots_v3, spec, spec3
+from arent import encode, encode_v3, encode_v4, joint as joint_mod, slots as slots_mod, slots_v3, spec, spec3, spec4
 from arent.env import FightEnv, shape_reward
 from arent.observe import observe
 from arent.team_reward import TeamReward
@@ -47,14 +47,22 @@ class PolyFightEnv(FightEnv):
         return obs
 
     def _observe(self) -> Dict[str, Any]:
+        # SCHEMA=4: начало хода актёра — откатить ему экномику действий (D&D: реакция тоже
+        # возвращается на своём ходу). Делается ДО наблюдения, чтобы ресурсы попали в state-хвост.
+        if self.schema == spec4.SCHEMA:
+            self.state = self.state.reset_actor_turn(self.actor)
         ctx = self.state.context_for(self.actor)
-        obs = observe(ctx, self.state.initiative_order, self.actor)
+        resources = self.state.units if self.schema == spec4.SCHEMA else None
+        obs = observe(ctx, self.state.initiative_order, self.actor, resources=resources)
         self._ctx = ctx
         self.raw_obs = obs                         # СЫРОЙ читаемый JSON наблюдения (для дампа:
         #   team_eval obs_trace пишет его в шаг как obs_raw; сам бой не трогает)
-        if self.schema == spec3.SCHEMA:
+        if spec3.uses_moveplan(self.schema):
             self.slots = slots_v3.build(ctx, obs)
-            sample = encode_v3.observation(ctx, obs, self.slots)
+            if self.schema == spec4.SCHEMA:
+                sample = encode_v4.observation(ctx, obs, self.slots)
+            else:
+                sample = encode_v3.observation(ctx, obs, self.slots)
         else:
             self.slots = slots_mod.build(ctx, obs)
             sample = encode.observation(ctx, obs, self.slots)
@@ -84,10 +92,12 @@ class PolyFightEnv(FightEnv):
         actor = self.actor
         action = self.legalize(label)
         prev_units = dict(self.state.units)
-        if self.schema == spec3.SCHEMA:
+        if spec3.uses_moveplan(self.schema):
             actions = slots_v3.decode(self.slots, dict(action))
             value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра
-            self.state = self.state.apply_actor_seq(actor, actions)
+            # SCHEMA=4: экономика действий + авто-Ao при движении; v3 (reactions=False) — бит-в-бит.
+            self.state = self.state.apply_actor_seq(actor, actions,
+                                                     reactions=self.schema == spec4.SCHEMA)
         else:
             actions = slots_mod.decode(self.slots, dict(action))
             value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра

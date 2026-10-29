@@ -150,7 +150,7 @@ def test_rollout_and_update_use_same_logp():
     torch.manual_seed(2)
     s = _v2_samples(1)[0]
     out = agent.act(s)
-    new_logp, _ent, _v = agent._eval([s], [out["action"]])
+    new_logp, _ent, _v, _logpi, _legal = agent._eval([s], [out["action"]])
     assert float(new_logp[0].item()) == pytest.approx(out["logp"], abs=1e-4)
 
 

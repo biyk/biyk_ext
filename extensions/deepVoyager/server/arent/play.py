@@ -14,7 +14,8 @@ import math
 import os
 from typing import Any, Callable, Dict, List, Optional
 
-from arent import backend, encode, encode_v3, joint as joint_mod, legalize as legalize_mod, net, paths, slots as slots_mod, slots_v3, spec, spec3
+from arent import backend, encode, encode_v3, encode_v4, joint as joint_mod, \
+    legalize as legalize_mod, net, paths, slots as slots_mod, slots_v3, spec, spec3, spec4
 from arent.net import GROUPS, Y_KEY
 from arent.observe import observe
 from planner.context import BattleContext
@@ -60,9 +61,10 @@ def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
     obs = observe(ctx)
     schema = _schema_of(model)
     yk = net.y_key(schema)
-    if schema == spec3.SCHEMA:
+    if spec3.uses_moveplan(schema):                # v3/v4: голова move-plan (атака+отступление)
         slots = slots_v3.build(ctx, obs)
-        sample = encode_v3.observation(ctx, obs, slots)
+        sample = (encode_v4.observation(ctx, obs, slots) if schema == spec4.SCHEMA
+                  else encode_v3.observation(ctx, obs, slots))
         out = model.predict(sample)                # диагностический baseline: независимый argmax
         raw = {yk[group]: out[yk[group]] for group in GROUPS}
         dec = joint_mod.decode(model, sample, slots, ctx, schema)

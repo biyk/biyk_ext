@@ -10,7 +10,8 @@ import os
 from statistics import mean
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from arent import backend, encode, encode_v3, joint as joint_mod, net, paths, play, provenance, spec, spec3
+from arent import backend, encode, encode_v3, encode_v4, joint as joint_mod, net, paths, play, \
+    provenance, spec, spec3, spec4
 from arent import legalize as legalize_mod
 from arent import slots as slots_mod, slots_v3
 from arent.net import GROUPS, Y_KEY
@@ -58,20 +59,30 @@ def _attack_stat(raw: Dict[str, int], label: Dict[str, int], reason, slots: Any,
 
 
 def _round(model: Any, state: Simulation, schema: int) -> Tuple[Simulation, float, Dict[str, Any]]:
-    """Один раунд героя: v3 идёт через move-plan и apply_actor_seq (удар из attack_cell,
+    """Один раунд героя: v3/v4 идут через move-plan и apply_actor_seq (удар из attack_cell,
     затем отступление), v2 — по-прежнему через клетку и advance. Ответ врагов — foes_act.
-    Перед decode прогоняем ТУ ЖЕ совместную легальность, что и среда обучения."""
+    Перед decode прогоняем ТУ ЖЕ совместную легальность, что и среда обучения.
+
+    SCHEMA=4: на начале хода героя откатываем ему экономику действий (reset_actor_turn) и
+    прокидываем ресурсы в observe/encode_v4; apply_actor_seq(reactions=True) включат авто-Ao
+    и списание action. v3 (reactions=False) остаётся бит-в-бит прежним."""
+    if schema == spec4.SCHEMA:
+        state = state.reset_actor_turn(state.hero_id)
     ctx = state.context_for(state.hero_id)
-    obs = observe(ctx)
-    if schema == spec3.SCHEMA:
+    resources = state.units if schema == spec4.SCHEMA else None
+    obs = observe(ctx, resources=resources)
+    if spec3.uses_moveplan(schema):
         slots = slots_v3.build(ctx, obs)
-        sample = encode_v3.observation(ctx, obs, slots)
+        sample = (encode_v4.observation(ctx, obs, slots) if schema == spec4.SCHEMA
+                  else encode_v3.observation(ctx, obs, slots))
         out = model.predict(sample)                    # диагностический baseline (независимый argmax)
         yk = net.y_key(schema)
         raw = {yk[group]: out[yk[group]] for group in GROUPS}
         dec = joint_mod.decode(model, sample, slots, ctx, schema)   # выбор политики: joint-argmax
         label, reason = legalize_mod.legalize(dec["label"], schema, slots, ctx)
-        hero_state = state.apply_actor_seq(state.hero_id, actions := slots_v3.decode(slots, label))
+        hero_state = state.apply_actor_seq(
+            state.hero_id, actions := slots_v3.decode(slots, label),
+            reactions=schema == spec4.SCHEMA)
         dealt = _dealt(_foe_hp(state), hero_state)
         moved, penalty = hero_state.foes_act()
         stat = _attack_stat(raw, label, reason, slots, dealt)

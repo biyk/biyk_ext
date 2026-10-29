@@ -22,7 +22,7 @@ SCHEMA = spec.SCHEMA
 GROUPS = ("cells", "targets", "weapons")           # как в примере выборки
 Y_KEY = {"cells": "cell", "targets": "target", "weapons": "weapon"}
 CONFIG_SECTIONS = ("net", "train", "backend")
-KNOWN_SCHEMAS = (2, 3)      # 2 = клетка-действие, 3 = move-plan (атака+финиш в бюджете хода)
+KNOWN_SCHEMAS = (2, 3, 4)      # 2 = клетка-действие, 3 = move-plan, 4 = move-plan + экномика действий/Ao
 
 
 def _profile(schema: Optional[int] = None) -> Dict[str, Any]:
@@ -33,6 +33,12 @@ def _profile(schema: Optional[int] = None) -> Dict[str, Any]:
     plan); состояние/цели/оружие общие со схемой 2.
     """
     s = SCHEMA if schema is None else int(schema)
+    if s == 4:
+        from arent import spec4
+        return {"dims": spec4.dims4(),
+                "feats": {"cells": spec4.CELL4_FEATURES, "targets": spec.ENEMY_FEATURES,
+                          "weapons": spec4.WEAPON_FEATURES4},
+                "y_key": {"cells": "plan", "targets": "target", "weapons": "weapon"}}
     if s == 3:
         from arent import spec3
         return {"dims": spec3.dims3(),
@@ -204,6 +210,9 @@ def feature_version(schema: Optional[int] = None) -> int:
     признаки версируются отдельно: v2-признаки = 1, v3 permutation-invariant = 2.
     """
     s = SCHEMA if schema is None else int(schema)
+    if s == 4:
+        from arent import spec4
+        return spec4.FEATURES_VERSION
     if s == 3:
         from arent import spec3
         return spec3.FEATURES_VERSION
@@ -211,15 +220,33 @@ def feature_version(schema: Optional[int] = None) -> int:
 
 
 def _check_feature_compat(checkpoint: Dict[str, Any], where: str) -> None:
-    """Возражаем против чекпойнта v3 со СТАРЫМИ признаками (cell_feat=22 / feat_version!=2).
+    """Отвергаем чекпойнты v3/v4 со СТАРЫМИ/несовместимыми признаками (по dims).
 
-    Только для схемы 3 (v2 не тронут, прежнее поведение бит-в-бит). Новая permutation-invariant
-    голова имеет dims.feat_version==2 и cell_feat==21; старая (до ЭТАПА 5) — cell_feat==22 и
-    вовсе без feat_version. Такие веса молча давали бы мусор, поэтому отвергаем явно."""
-    if int(checkpoint.get("schema", 0)) != 3:
+    Схема 3: permutation-invariant голова dims.feat_version==2 и cell_feat==21; старая
+    (до ЭТАПА 5) — cell_feat==22 и вовсе без feat_version. Схема 4: feat_version spec4,
+    cell_feat/weapon_feat/state по dims4(). v2 не тронут (прежнее поведение бит-в-бит).
+    Несовместимые ширины молча дали бы мусор, поэтому сверяем dims и отвергаем явно."""
+    s = int(checkpoint.get("schema", 0))
+    dims = checkpoint.get("dims") or {}
+    if s == 4:
+        from arent import spec4
+        want = spec4.dims4()
+        got_ver = dims.get("feat_version")
+        got_cell = dims.get("cell_feat")
+        got_weap = dims.get("weapon_feat")
+        got_state = dims.get("state")
+        if (got_ver != spec4.FEATURES_VERSION or got_cell != want["cell_feat"]
+                or got_weap != want["weapon_feat"] or got_state != want["state"]):
+            raise ValueError(
+                f"{where}: признаки v4 несовместимы — в чекпойнте cell_feat={got_cell}/"
+                f"weapon_feat={got_weap}/state={got_state}/feat_version={got_ver}, сейчас "
+                f"cell_feat={want['cell_feat']}/weapon_feat={want['weapon_feat']}/"
+                f"state={want['state']}/feat_version={spec4.FEATURES_VERSION}. Пересоберите "
+                f"выборку/веса схемы 4 (экномика действий + Ao: хвост ресурсов и новые флаги).")
+        return
+    if s != 3:
         return
     from arent import spec3
-    dims = checkpoint.get("dims") or {}
     want = spec3.dims3()
     got_feat = dims.get("cell_feat")
     got_ver = dims.get("feat_version")

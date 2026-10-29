@@ -13,7 +13,7 @@
 # дедуплицирует состояния по dataset.state_key (разметка живым учителем — самое дорогое место).
 from typing import Any, Dict, List, Optional, Tuple
 
-from arent import dataset, polyenv, spec3, teacher_select, teachers
+from arent import dataset, polyenv, spec3, spec4, teacher_select, teachers
 from arent.team_reward import TeamReward
 
 Row = Dict[str, Any]
@@ -74,8 +74,15 @@ def aggregate(policy: Any, sources: List[Tuple[str, Dict[str, Any]]],
             used_teachers.add(tname)
             stats["visited"] += 1
             labeled = labeler(tname).label_ctx(ctx)
-            sample, reason = dataset.sample_from_labeled_v3(
-                source_name, labeled, {"dagger": True}, initiative)
+            if schema == spec4.SCHEMA:
+                # схема 4: размечаем посещённое состояние С ЖИВЫМИ ресурсами актёров
+                # (экономика действует: реакция/действие уже потрачены на этом ходу) -> encode_v4.
+                sample, reason = dataset.sample_from_labeled_v4(
+                    source_name, labeled, {"dagger": True}, initiative,
+                    resources=env.state.units)
+            else:
+                sample, reason = dataset.sample_from_labeled_v3(
+                    source_name, labeled, {"dagger": True}, initiative)
             if sample is None:
                 stats["skip"][reason] = stats["skip"].get(reason, 0) + 1
             else:

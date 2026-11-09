@@ -2,7 +2,8 @@
 
 import math
 import heapq
-from typing import List, Dict, Tuple
+from collections import deque
+from typing import List, Dict, Tuple, Set
 
 class SimplePathfinder:
     """A* по 8 направлениям; диагональ = 1 клетка хода, углы стен не протискиваются."""
@@ -38,6 +39,14 @@ class SimplePathfinder:
             (-1,0): "up", (1,0): "down", (0,-1): "left", (0,1): "right",
             (-1,-1): "upleft", (-1,1): "upright", (1,-1): "downleft", (1,1): "downright",
         }
+
+        # Мемоизация чистых геометрических предикатов: сцена (стены/фигуры) неизменна в
+        # рамках инстанса, а build()/explore/observe переспрашивают ОДНИ И ТЕ ЖЕ клетки/рёбра
+        # тысячи раз (O(R^2) BFS). Кэш убирает повторный O(W) перебор стен без смены результата.
+        self._cell_valid_memo: Dict[tuple, bool] = {}
+        self._edge_valid_memo: Dict[tuple, bool] = {}
+        self._edge_clear_memo: Dict[tuple, bool] = {}
+        self._has_los_memo: Dict[tuple, bool] = {}
 
     # -----------------------------------------------------------------
     def _center(self, r, c):
@@ -78,6 +87,16 @@ class SimplePathfinder:
 
     # -----------------------------------------------------------------
     def _cell_valid(self, r, c, ignore_npc_id: str = None, skip_npcs: bool = False) -> bool:
+        """Мемо-обёртка: чистая функция статичной сцены, см. _cell_valid_compute."""
+        key = (r, c, ignore_npc_id, skip_npcs)
+        memo = self._cell_valid_memo
+        hit = memo.get(key)
+        if hit is None:
+            hit = self._cell_valid_compute(r, c, ignore_npc_id, skip_npcs)
+            memo[key] = hit
+        return hit
+
+    def _cell_valid_compute(self, r, c, ignore_npc_id: str = None, skip_npcs: bool = False) -> bool:
         """Клетка свободна для занятия (без учёта лучей)."""
         x, y, w, h = self._cell_rect(r, c)
         # границы
@@ -96,6 +115,16 @@ class SimplePathfinder:
         return True
 
     def _edge_valid(self, r1, c1, r2, c2, ignore_ids: tuple = ()) -> bool:
+        """Мемо-обёртка чистой проверки ребра, см. _edge_valid_compute."""
+        key = (r1, c1, r2, c2, tuple(ignore_ids))
+        memo = self._edge_valid_memo
+        hit = memo.get(key)
+        if hit is None:
+            hit = self._edge_valid_compute(r1, c1, r2, c2, ignore_ids)
+            memo[key] = hit
+        return hit
+
+    def _edge_valid_compute(self, r1, c1, r2, c2, ignore_ids: tuple = ()) -> bool:
         """Переход центра из клетки в клетку (отрезок не пересекает стены и NPC).
 
         ignore_ids — id токенов, чьи прямоугольники не считаем препятствием
@@ -115,7 +144,61 @@ class SimplePathfinder:
                 return False
         return True
 
+    def _edge_clear(self, r1, c1, r2, c2) -> bool:
+        """Мемо-обёртка стены-только проверки ребра, см. _edge_clear_compute."""
+        key = (r1, c1, r2, c2)
+        memo = self._edge_clear_memo
+        hit = memo.get(key)
+        if hit is None:
+            hit = self._edge_clear_compute(r1, c1, r2, c2)
+            memo[key] = hit
+        return hit
+
+    def _edge_clear_compute(self, r1, c1, r2, c2) -> bool:
+        """Стена-только проверка ребра: отрезок центры-центры не пересекает move-стену.
+
+        NPC здесь НЕ препятствия — связность поля статична и не должна зависеть от того,
+        где сейчас стоят фигуры (юниты сойдут с дороги)."""
+        p1 = self._center(r1, c1)
+        p2 = self._center(r2, c2)
+        return not any(self._segment_intersect(p1, p2, seg[0], seg[1]) for seg in self.walls)
+
+    def reachable(self, r: int, c: int) -> Set[Tuple[int, int]]:
+        """Клетки, достижимые из (r,c) только по стенам (без NPC): BFS по 8 направлениям
+        с тем же угол-правилом D&D 5e и блокировкой рёбер, что и find_path.
+
+        Нужно для валидации связности арен (Этап 4.2): укрытия/стены не должны запечатывать
+        одну команду от другой — иначе бой геометрически невозможен."""
+        seen = {(r, c)}
+        q = deque([(r, c)])
+        while q:
+            cr, cc = q.popleft()
+            for dr, dc in self.dirs:
+                nr, nc = cr + dr, cc + dc
+                if not (0 <= nr < self.rows and 0 <= nc < self.cols) or (nr, nc) in seen:
+                    continue
+                if not self._cell_valid(nr, nc, skip_npcs=True):
+                    continue
+                if dr and dc and not (self._cell_valid(cr, nc, skip_npcs=True)
+                                      and self._cell_valid(nr, cc, skip_npcs=True)):
+                    continue
+                if not self._edge_clear(cr, cc, nr, nc):
+                    continue
+                seen.add((nr, nc))
+                q.append((nr, nc))
+        return seen
+
     def _has_los(self, r1, c1, r2, c2) -> bool:
+        """Мемо-обёртка линии видимости (только стены), см. _has_los_compute."""
+        key = (r1, c1, r2, c2)
+        memo = self._has_los_memo
+        hit = memo.get(key)
+        if hit is None:
+            hit = self._has_los_compute(r1, c1, r2, c2)
+            memo[key] = hit
+        return hit
+
+    def _has_los_compute(self, r1, c1, r2, c2) -> bool:
         p1 = self._center(r1, c1)
         p2 = self._center(r2, c2)
         for seg in self.walls:

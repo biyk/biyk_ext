@@ -52,6 +52,19 @@ HERO_ARSENALS: Dict[str, Sequence[Dict[str, Any]]] = {
 }
 ARSENAL_NAMES: Sequence[str] = tuple(sorted(HERO_ARSENALS))
 
+# Манёвры (SCHEMA=5): три не-атакующих способности, раздаваемые юнитам v5-полигона, чтобы
+# maneuver-голова была обучема (Этап 0: без предметов у юнитов голова мертва). itemId — реальные
+# id предметов FVTT (исполнение на клиенте = use предмета, см. §Этап 6 JS buildManeuvers); kind —
+# семантика для сима (planner/sim.py различает dash/disengage/dodge по maneuver_kinds). ПОРЯДОК
+# фиксирован = spec5.MANEUVER_KINDS (dash=0, disengage=1, dodge=2): индекс слота maneuver-головы
+# должен быть детерминирован, иначе serve!=train. Раздаются ТОЛЬКО v5-полигону (stage43): у
+# боёв v2/v3/v4 предметов нет -> ctx.maneuver_items пусто -> учитель/сим бит-в-бит прежние.
+MANEUVER_ITEMS: Tuple[Dict[str, str], ...] = (
+    {"id": "opqz7Cnq3ySCEghb", "kind": "dash", "name": "Рывок"},
+    {"id": "HpFdD3xEU8NszwfG", "kind": "disengage", "name": "Отступление"},
+    {"id": "UE7u1ia5FcecAuNm", "kind": "dodge", "name": "Уклонение"},
+)
+
 
 def team_sizes(rng: random.Random) -> Tuple[int, int]:
     """(n_ours, n_foes) 1..6: duel 5%, зеркало 2-3 30%, асимметрия ±1-2 45%, 6v6 20%."""

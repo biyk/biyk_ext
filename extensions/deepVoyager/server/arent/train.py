@@ -20,7 +20,7 @@ import random
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from arent import backend, dataset, manifest, net, paths, provenance, spec, spec4, splitting
+from arent import backend, dataset, manifest, net, paths, provenance, spec, spec4, spec5, splitting
 from arent.scores import batches, by_source, epoch_loss, metrics
 
 Row = Dict[str, Any]
@@ -59,6 +59,20 @@ def _transfer_3_to_4(old_params: Dict[str, Any], old_dims: Dict[str, int],
     return out
 
 
+def _transfer_4_to_5(old_params: Dict[str, Any], cfg5: "net.Config") -> Dict[str, Any]:
+    """Partial-transfer v4 -> v5: старые веса побитово + свежая maneuver-голова (Этап 3/7).
+
+    v5 = v4 + четвертая голова «maneuvers»; state/cell/target/weapon ширины НЕ растут
+    (encode_v5: ствол и старые головы bit-for-bit v4, специфика манёвра — только в slot-векторе
+    maneuvers). Поэтому перенос тривиален: deepcopy v4-весов и привить init_params(v5) ключи
+    maneuvers (headW/headB/headU/headUB). манёвр-голова случайна — её и должен выучить BC/DAgger/PPO."""
+    out = copy.deepcopy(old_params)
+    fresh = net.init_params(cfg5)
+    for key in ("headW", "headB", "headU", "headUB"):
+        out[key]["maneuvers"] = fresh[key]["maneuvers"]
+    return out
+
+
 def _warm_params(cfg: net.Config, warm: str):
     """Весы из чекпойнта для дообучения: имя прогона в runs/ или путь к model.json.
 
@@ -81,8 +95,11 @@ def _warm_params(cfg: net.Config, warm: str):
         new_dims = net.dims_for(want_schema)
         transferred = _transfer_3_to_4(checkpoint["params"], old_dims, new_dims, cfg.head)
         return transferred, path, saved_schema
+    if want_schema == spec5.SCHEMA and saved_schema == spec4.SCHEMA:
+        transferred = _transfer_4_to_5(checkpoint["params"], cfg)
+        return transferred, path, saved_schema
     raise RuntimeError(f"Чекпойнт {path}: схема {saved_schema}, просим {want_schema} — веса другой "
-                       f"схемы несовместимы (partial-transfer есть только v2/v3 -> v4)")
+                       f"схемы несовместимы (partial-transfer есть только v2/v3 -> v4 и v4 -> v5)")
 
 
 def run(name: str = "latest", samples: Optional[List[Dict[str, Any]]] = None,

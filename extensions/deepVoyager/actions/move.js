@@ -16,7 +16,6 @@ export async function move(token = null, conf) {
     const step = canvas.grid.size;
     const direction = conf.direction;
     let dx = 0, dy = 0;
-    const movementBackend = CONFIG.Canvas.polygonBackends?.movement;
 
     // === ОПЦИОНАЛЬНЫЙ ВЫВОД: максимальные шаги до препятствия (8 направлений) ===
 // === ОПЦИОНАЛЬНЫЙ ВЫВОД: расстояние в пикселях от центра токена до препятствия (8 направлений) ===
@@ -91,12 +90,13 @@ export async function move(token = null, conf) {
                     break;
                 }
 
-                // Проверка другого живого токена (пересечение прямоугольников)
+                // Проверка другого живого токена (пересечение прямоугольников) — по документам,
+                // чтобы расхождение canvas/документ не рисовало фантомных соседей.
                 const occupied = canvas.tokens.placeables.some(t =>
                     t.id !== token.id &&
                     (t.actor?.system?.attributes?.hp?.value ?? 0) > 0 &&
-                    t.x < left + token.w && t.x + t.w > left &&
-                    t.y < top + token.h && t.y + t.h > top
+                    t.document.x < left + token.w && t.document.x + t.w > left &&
+                    t.document.y < top + token.h && t.document.y + t.h > top
                 );
                 if (occupied) {
                     blocked = true;
@@ -125,66 +125,52 @@ export async function move(token = null, conf) {
             return "неизвестное направление";
     }
 
-    const newX = token.x + dx;
-    const newY = token.y + dy;
+    // --- Координаты: источник истины — документ токена ---
+    // Canvas-позиция (token.x/y) в Foundry 11 проставляется только при сбросе render-флагов,
+    // поэтому каждый шаг одного хода считался от одной и той же устаревшей точки: 5 шагов
+    // политики превращались в 1 реальную клетку, а токен мог «телепортироваться» назад.
+    const baseX = token.document.x;
+    const baseY = token.document.y;
+    const newX = baseX + dx;
+    const newY = baseY + dy;
     const newBounds = new PIXI.Rectangle(newX, newY, token.w, token.h);
 
-    // --- Проверка занятости живыми токенами (пересечение bounding box) ---
-    const occupiedByOther = canvas.tokens.placeables.some(t =>
-        t.id !== token.id && 
-        (t.actor?.system?.attributes?.hp?.value ?? 0) > 0 &&
-        t.x < newBounds.x + newBounds.width &&
-        t.x + t.w > newBounds.x &&
-        t.y < newBounds.y + newBounds.height &&
-        t.y + t.h > newBounds.y
-    );
+    // --- Проверка границ сцены (о них checkCollision ничего не знает) ---
+    if (newX < 0 || newY < 0 || newX + token.w > canvas.dimensions.width
+        || newY + token.h > canvas.dimensions.height) {
+        return `Путь заблокирован! ${token.name} выходит за границу сцены (${newX}, ${newY}).`;
+    }
 
-    if (occupiedByOther) {
-        const occupier = canvas.tokens.placeables.find(t =>
-            t.id !== token.id &&
-            (t.actor?.system?.attributes?.hp?.value ?? 0) > 0 &&
-            t.x < newBounds.x + newBounds.width &&
-            t.x + t.w > newBounds.x &&
-            t.y < newBounds.y + newBounds.height &&
-            t.y + t.h > newBounds.y
-    );
+    // --- Проверка занятости живыми токенами (пересечение bounding box) ---
+    // Соседей берём из документов: их token.x/y тоже может отставать на клетку.
+    const isOccupiedBy = t =>
+        t.id !== token.id &&
+        (t.actor?.system?.attributes?.hp?.value ?? 0) > 0 &&
+        t.document.x < newBounds.x + newBounds.width &&
+        t.document.x + t.w > newBounds.x &&
+        t.document.y < newBounds.y + newBounds.height &&
+        t.document.y + t.h > newBounds.y;
+
+    if (canvas.tokens.placeables.some(isOccupiedBy)) {
+        const occupier = canvas.tokens.placeables.find(isOccupiedBy);
         log.info(`move: клетка занята живым ${occupier?.name}`);
         return `move: клетка занята живым ${occupier?.name} (${newX}, ${newY})`;
     }
 
-    // --- Проверка столкновений (современный API V11+) ---
-    let movementAllowed = false;
-
-    // 1. Приоритет: CONFIG.Canvas.polygonBackends.movement
-    if (movementBackend && typeof movementBackend.testCollision === "function") {
-        try {
-            const newBounds = new PIXI.Rectangle(newX, newY, token.w, token.h);
-            const collision = movementBackend.testCollision({
-                type: "movement",
-                object: token,
-                source: newBounds,
-                mode: "any"
-            });
-            movementAllowed = !collision;
-        } catch (err) {
-            log.warn("Ошибка при modern collision check:", err);
-        }
+    // --- Проверка столкновений ---
+    // В Foundry 11 нет CONFIG.Canvas.polygonBackends.movement (ключи: sight, light, sound, move)
+    // и нет TokenDocument#checkCollision — прежние ветки 1 и 2 никогда не выполнялись.
+    // Ray строим центр-в-центр: старый вариант шёл от token.center в (newX + w/2), то есть
+    // с перелётом на полклетки, что давало ложные блокировки проходов.
+    let movementAllowed = null;
+    if (canvas.walls?.checkCollision) {
+        const from = { x: baseX + token.w / 2, y: baseY + token.h / 2 };
+        const to = { x: newX + token.w / 2, y: newY + token.h / 2 };
+        movementAllowed = !canvas.walls.checkCollision(
+            new Ray(from, to), { type: "move", mode: "any", object: token });
     }
 
-    // 2. Fallback: token.document.checkCollision (может не учитывать размер, но оставляем)
-    if (!movementAllowed && movementAllowed !== false && typeof token.document?.checkCollision === "function") {
-        movementAllowed = await token.document.checkCollision(newX, newY, { mode: "move" });
-    }
-
-    // 3. Старый fallback (на случай совсем старых версий)
-    if (!movementAllowed && canvas.walls?.checkCollision) {
-        const newCenter = { x: newX + token.w/2, y: newY + token.h/2 };
-        const ray = new Ray(token.center, newCenter);
-        movementAllowed = !canvas.walls.checkCollision(ray, { type: "move", mode: "any", object: token });
-    }
-
-    // Если ни один метод не сработал, выдаём ошибку
-    if (!movementAllowed && movementAllowed !== false) {
+    if (movementAllowed === null) {
         return "Нет метода проверки столкновений";
     }
 
@@ -192,11 +178,11 @@ export async function move(token = null, conf) {
         return `Путь заблокирован! ${token.name} не может пройти в (${newX}, ${newY}).`;
     }
 
-    // Перемещаем с анимацией
+    // Перемещаем и сразу синхронизируем PIXI-позицию: следующий шаг того же хода (и любой,
+    // кто читает token.x/y) обязан видеть новые координаты, а не устаревшие.
     await token.document.update({ x: newX, y: newY }, { animate: true });
-    await new Promise(resolve => setTimeout(resolve, 500)); // синхронизация
-
-
+    token.position.set(newX, newY);
+    await new Promise(resolve => setTimeout(resolve, 150)); // синхронизация
 
     return true;
 }

@@ -100,3 +100,75 @@ def test_reset_actor_turn_refills_resources():
     assert (fresh.units["A"].action, fresh.units["A"].bonus, fresh.units["A"].reaction) == (1, 1, 1)
     # откат только у актёра: потратившая Ao реакция B остаётся 0
     assert fresh.units["B"].reaction == spent.units["B"].reaction
+
+
+# --- SCHEMA=5: манёвры (Dash / Disengage / Dodge). Водятся как use фичи-не-атаки. ---
+
+def _with_maneuvers(sim):
+    """A умеет три манёвра; item-id вне оружия -> sim различает их по maneuver_kinds."""
+    a = replace(sim.units["A"], maneuver_kinds={"dash": "dash", "dis": "disengage", "dodge": "dodge"})
+    return sim._clone({**sim.units, "A": a})
+
+
+def test_dash_spends_action_and_cannot_attack():
+    # Рывок: тратит действие, сам удара нет; следующая атака блокирована (действий 0).
+    after = _with_maneuvers(_sim()).apply_actor_seq(
+        "A", [target_action("B"), use_action("dash"), use_action("sword")], reactions=True)
+    assert after.units["A"].action == 0
+    assert after.hp["B"] == 20                         # ни рывок, ни заблокированная атака не бьют
+
+
+def test_dash_move_is_free_of_opportunity_attack_only_when_disengaged():
+    # Сам по себе рывок НЕ защищает от Ao: выход из зоны провоцирует (реакция B тратится).
+    t = tuning()
+    after = _with_maneuvers(_sim()).apply_actor_seq(
+        "A", [use_action("dash"), move_action("left")], reactions=True)
+    assert after.hp["A"] == pytest.approx(20 - 4.5 * t.hit_chance)
+    assert after.units["B"].reaction == 0
+
+
+def test_disengage_suppresses_opportunity_attack():
+    # Отступление: действие списано, флаги подняты, выход из зоны НЕ провоцирует Ao.
+    after = _with_maneuvers(_sim()).apply_actor_seq(
+        "A", [use_action("dis"), move_action("left")], reactions=True)
+    assert after.units["A"].action == 0
+    assert after.units["A"].disengaged is True
+    assert after.hp["A"] == 20                         # Ao подавлено
+    assert after.units["B"].reaction == 1              # реакция врага не израсходована
+
+
+def test_dodge_halves_incoming_opportunity_attack():
+    # Уклонение: Ao против уклоняющегося — с помехой (урон вдвое меньше обычного Ao).
+    t = tuning()
+    dodged = _with_maneuvers(_sim()).apply_actor_seq(
+        "A", [use_action("dodge"), move_action("left")], reactions=True)
+    assert dodged.units["A"].dodging is True
+    assert dodged.hp["A"] == pytest.approx(20 - 0.5 * 4.5 * t.hit_chance)
+
+
+def test_dodge_halves_foes_act_damage():
+    # Ответ врагов по уклоняющемуся герою: штраф и урон вдвое ниже базового.
+    t = tuning()
+    base_after, base_pen = _sim().foes_act()                    # B вплотную, бьёт героя
+    dodging_state = _with_maneuvers(_sim()).apply_actor_seq("A", [use_action("dodge")], reactions=True)
+    dodge_after, dodge_pen = dodging_state.foes_act()
+    assert base_pen == pytest.approx(t.damage_penalty * t.hit_chance)
+    assert dodge_pen == pytest.approx(0.5 * t.damage_penalty * t.hit_chance)
+    assert dodge_after.hp["A"] > base_after.hp["A"]             # уклонение спасает hp
+
+
+def test_reset_actor_turn_clears_maneuver_flags():
+    sim = _with_maneuvers(_sim())
+    dodged = sim.apply_actor_seq("A", [use_action("dodge")], reactions=True)
+    assert dodged.units["A"].dodging is True
+    fresh = dodged.reset_actor_turn("A")
+    assert fresh.units["A"].dodging is False and fresh.units["A"].disengaged is False
+    assert fresh.units["A"].action == 1
+
+
+def test_maneuver_ignored_without_reactions_flag():
+    # reactions=False (v2/v3) — манёвров нет в обороте; use фичи не меняет hp/флаги как раньше.
+    after = _with_maneuvers(_sim()).apply_actor_seq("A", [use_action("dis")], reactions=False)
+    assert after.units["A"].action == 1                  # ресурс не списывался (гейт в reactions)
+    assert after.units["A"].disengaged is False
+

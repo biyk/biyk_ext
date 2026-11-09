@@ -19,7 +19,7 @@ SCHEMA = 3
 # «move-plan vs клетка» везде используют uses_moveplan(schema), а не `== spec3.SCHEMA`, чтобы v4
 # шёл по тому же пути decode/legal_mask/attackable_v3. Схемы-константы импортируются числами
 # (spec4 импортирует spec3 -> обратный импорт был бы циклом).
-MOVEPLAN_SCHEMAS = (3, 4)
+MOVEPLAN_SCHEMAS = (3, 4, 5)
 
 
 def uses_moveplan(schema) -> bool:

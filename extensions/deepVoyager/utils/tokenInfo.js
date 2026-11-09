@@ -7,26 +7,13 @@ export async function getMovementRose(token) {
     if (!token) return null;
 
     // === Вспомогательная функция проверки возможности перемещения ===
-    async function canMoveTo(x, y) {
-        // 1. Через TokenDocument.checkCollision (Foundry V10+)
-        if (typeof token.document?.checkCollision === "function") {
-            return await token.document.checkCollision(x, y, { mode: "move" });
-        }
-        // 2. Через CONFIG.Canvas.polygonBackends.movement (V11+)
-        const movementBackend = CONFIG.Canvas.polygonBackends?.movement;
-        if (movementBackend && typeof movementBackend.testCollision === "function") {
-            const newBounds = new PIXI.Rectangle(x, y, token.w, token.h);
-            const collision = movementBackend.testCollision({
-                type: "movement",
-                object: token,
-                source: newBounds,
-                mode: "any"
-            });
-            return !collision;
-        }
-        // 3. Fallback (работает, но может быть устаревшим)
+    // fromX/fromY — центр ТЕКУЩЕЙ клетки пути: ray обязан идти центр-в-центр конкретного шага,
+    // иначе после первого шага проверяется не то направление (старый вариант всегда начинал
+    // луч от token.center). В Foundry 11 нет ни TokenDocument#checkCollision, ни
+    // polygonBackends.movement — рабочий способ один: canvas.walls.checkCollision.
+    async function canMoveTo(x, y, fromX, fromY) {
         if (canvas.walls?.checkCollision) {
-            const ray = new Ray(token.center, { x: x + token.w / 2, y: y + token.h / 2 });
+            const ray = new Ray({ x: fromX, y: fromY }, { x: x + token.w / 2, y: y + token.h / 2 });
             const collision = canvas.walls.checkCollision(ray, { type: "move", mode: "any", object: token });
             return !collision;
         }
@@ -52,8 +39,9 @@ export async function getMovementRose(token) {
     // Для каждого направления считаем шаги
     for (const dir of directions) {
         let steps = 0;
-        let curX = token.x;
-        let curY = token.y;
+        // Координаты — из документа: canvas-позиция может отставать до сброса render-флагов.
+        let curX = token.document.x;
+        let curY = token.document.y;
         let blocked = false;
 
         while (!blocked) {
@@ -66,7 +54,7 @@ export async function getMovementRose(token) {
                 break;
             }
 
-            const moveAllowed = await canMoveTo(newX, newY);
+            const moveAllowed = await canMoveTo(newX, newY, curX + token.w / 2, curY + token.h / 2);
             if (moveAllowed) {
                 steps++;
                 curX = newX;

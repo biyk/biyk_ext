@@ -12,8 +12,8 @@ from typing import Any, Dict, List
 import torch
 import torch.nn.functional as F
 
-from arent.net import GROUPS, Y_KEY
-from arent.torch_net import _dist, _joint_batch
+from arent.net import GROUPS, Y_KEY, groups_for
+from arent.torch_net import _dist, _joint_batch, _joint_batch_v5
 
 Action = Dict[str, int]
 
@@ -30,7 +30,9 @@ def joint_logp(table: Dict[str, list], action: Action, ykey: Dict[str, str] = No
     множестве, поэтому gather из таблицы корректен и legalization — тождество.
     """
     yk = ykey or Y_KEY
-    return float(sum(table[group][int(action[yk[group]])] for group in GROUPS) - logZ)
+    # Итерация по КЛЮЧАМ таблицы (не по фикс. GROUPS): для v2/3/4 таблица = cells/targets/weapons
+    # (тот же порядок вставки -> побитово прежняя сумма), для v5 к ней добавляется maneuvers.
+    return float(sum(table[group][int(action[yk[group]])] for group in table) - logZ)
 
 
 @torch.no_grad()
@@ -43,12 +45,17 @@ def joint_logpi_of(policy: Any, sample: Dict[str, Any]) -> List[List[List[float]
     """
     state, slots, masks = policy._batch([sample])
     logits, _value = policy._pass(state, slots, masks)
+    groups = groups_for(getattr(getattr(policy, "cfg", None), "schema", 2))
     head: Dict[str, torch.Tensor] = {}
-    for group in GROUPS:
+    for group in groups:
         _probs, logp = _dist(logits[group], masks[group])
         head[group] = logp
     legal = torch.tensor([sample["legal"]], dtype=torch.float32, device=policy.device)
-    logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+    if "maneuvers" in head:
+        logpi, _logZ = _joint_batch_v5(head["cells"], head["targets"], head["weapons"],
+                                       head["maneuvers"], legal)
+    else:
+        logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
     return logpi[0].tolist()
 
 
@@ -87,23 +94,31 @@ class PPOAgent:
         """
         state, slots, masks = self.policy._batch([sample])
         logits, value = self.policy._pass(state, slots, masks)
+        groups = groups_for(getattr(getattr(self.policy, "cfg", None), "schema", 2))
         head: Dict[str, torch.Tensor] = {}
         table: Dict[str, list] = {}
-        for group in GROUPS:
+        for group in groups:
             _probs, logp = _dist(logits[group], masks[group])
             head[group] = logp                                            # [1, size]
             table[group] = [float(x) for x in logp[0].tolist()]
         legal = torch.tensor([sample["legal"]], dtype=torch.float32, device=self.policy.device)
-        logpi, logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
-        logpi, m = logpi[0], legal[0]                                     # [P,T,W]
+        if "maneuvers" in groups:                    # v5: 4D A(s) (pos×target×weapon×maneuver)
+            logpi, logZ = _joint_batch_v5(head["cells"], head["targets"], head["weapons"],
+                                          head["maneuvers"], legal)
+        else:                                        # v2/3/4: прежний 3D-закон (побитово)
+            logpi, logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+        logpi, m = logpi[0], legal[0]                                     # [P,T,W(,M)]
         probs = logpi.exp() * m                                           # точно 0 на недопустимых
         entropy = float(-(probs * (logpi * m)).sum().item())
         idx = int(torch.multinomial(probs.reshape(-1), num_samples=1).item())
-        p_n, t_n, w_n = logpi.shape
-        p = idx // (t_n * w_n); rem = idx % (t_n * w_n); t = rem // w_n; w = rem % w_n
-        action: Action = {self.ykey["cells"]: p, self.ykey["targets"]: t, self.ykey["weapons"]: w}
+        coords = torch.unravel_index(torch.tensor(idx), torch.Size(logpi.shape))
+        action: Action = {self.ykey["cells"]: int(coords[0]),
+                          self.ykey["targets"]: int(coords[1]),
+                          self.ykey["weapons"]: int(coords[2])}
+        if "maneuvers" in groups:
+            action[self.ykey["maneuvers"]] = int(coords[3])
         return {"action": action,
-                "logp": float(logpi[p, t, w].item()),
+                "logp": float(logpi.reshape(-1)[idx].item()),
                 "entropy": entropy,
                 "value": float(value.item()),
                 "logp_table": table, "logZ": float(logZ[0].item())}
@@ -125,13 +140,18 @@ class PPOAgent:
         """
         state, slots, masks = self.policy._batch(batch)
         logits, value = self.policy._pass(state, slots, masks)
+        groups = groups_for(getattr(getattr(self.policy, "cfg", None), "schema", 2))
         head: Dict[str, torch.Tensor] = {}
-        for group in GROUPS:
+        for group in groups:
             _probs, logp = _dist(logits[group], masks[group])
             head[group] = logp                                            # [B, size]
         legal = torch.tensor([s["legal"] for s in batch], dtype=torch.float32,
-                             device=self.policy.device)                   # [B,P,T,W]
-        logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
+                             device=self.policy.device)                   # [B,P,T,W(,M)]
+        if "maneuvers" in groups:
+            logpi, _logZ = _joint_batch_v5(head["cells"], head["targets"], head["weapons"],
+                                           head["maneuvers"], legal)
+        else:
+            logpi, _logZ = _joint_batch(head["cells"], head["targets"], head["weapons"], legal)
         b = logpi.shape[0]
         ar = torch.arange(b, device=self.policy.device)
         ip = torch.tensor([int(a[self.ykey["cells"]]) for a in actions], dtype=torch.long,
@@ -140,7 +160,12 @@ class PPOAgent:
                           device=self.policy.device)
         iw = torch.tensor([int(a[self.ykey["weapons"]]) for a in actions], dtype=torch.long,
                           device=self.policy.device)
-        logp = logpi[ar, ip, it, iw]                                      # [B] нормированный logπ
+        if "maneuvers" in groups:
+            im = torch.tensor([int(a[self.ykey["maneuvers"]]) for a in actions], dtype=torch.long,
+                              device=self.policy.device)
+            logp = logpi[ar, ip, it, iw, im]                              # [B] нормированный logπ
+        else:
+            logp = logpi[ar, ip, it, iw]                                  # [B] нормированный logπ
         probs = logpi.exp() * legal
         ent = -(probs * (logpi * legal)).reshape(b, -1).sum(1)            # [B] энтропия joint
         return logp, ent, value, logpi, legal

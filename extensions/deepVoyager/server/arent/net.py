@@ -19,10 +19,16 @@ from arent import paths, spec
 
 FORMAT = 1
 SCHEMA = spec.SCHEMA
-GROUPS = ("cells", "targets", "weapons")           # как в примере выборки
+GROUPS = ("cells", "targets", "weapons")           # базовые три головы (v2-v4)
+GROUPS_V5 = ("cells", "targets", "weapons", "maneuvers")  # v5 добавляет четвертую голову
 Y_KEY = {"cells": "cell", "targets": "target", "weapons": "weapon"}
 CONFIG_SECTIONS = ("net", "train", "backend")
-KNOWN_SCHEMAS = (2, 3, 4)      # 2 = клетка-действие, 3 = move-plan, 4 = move-plan + экномика действий/Ao
+KNOWN_SCHEMAS = (2, 3, 4, 5)      # 2 = клетка-действие, 3 = move-plan, 4 = +экномика/Ao, 5 = +манёвр
+
+
+def groups_for(schema) -> tuple:
+    """Кортеж групп голов для данной схемы: v2-4 = 3, v5+ = 4 (включая «maneuvers»)."""
+    return GROUPS_V5 if int(schema) >= 5 else GROUPS
 
 
 def _profile(schema: Optional[int] = None) -> Dict[str, Any]:
@@ -33,6 +39,14 @@ def _profile(schema: Optional[int] = None) -> Dict[str, Any]:
     plan); состояние/цели/оружие общие со схемой 2.
     """
     s = SCHEMA if schema is None else int(schema)
+    if s == 5:
+        from arent import spec5
+        return {"dims": spec5.dims5(),
+                "feats": {"cells": spec5.CELL5_FEATURES, "targets": spec.ENEMY_FEATURES,
+                          "weapons": spec5.WEAPON_FEATURES5,
+                          "maneuvers": spec5.MANEUVER_FEATURES},
+                "y_key": {"cells": "plan", "targets": "target", "weapons": "weapon",
+                          "maneuvers": "maneuver"}}
     if s == 4:
         from arent import spec4
         return {"dims": spec4.dims4(),
@@ -154,7 +168,7 @@ def init_params(cfg: Config, dims: Dict[str, int] = None) -> Dict[str, Any]:
     schema = d.get("schema", getattr(cfg, "schema", SCHEMA))
     rng = random.Random(cfg.seed)
     head_w, head_b, head_u, head_ub = {}, {}, {}, {}
-    for group in GROUPS:
+    for group in groups_for(schema):
         cols = cfg.head + slot_size(group, schema)
         head_w[group] = _matrix(cfg.head, cols, rng)
         head_b[group] = [0.0] * cfg.head
@@ -174,7 +188,7 @@ def param_count(cfg: Config, dims: Dict[str, int] = None) -> int:
     d = dims or dims_for(getattr(cfg, "schema", SCHEMA))
     schema = d.get("schema", getattr(cfg, "schema", SCHEMA))
     total = cfg.hidden * (d["state"] + 1) + cfg.head * (cfg.hidden + 1) + cfg.head + 1
-    for group in GROUPS:
+    for group in groups_for(schema):
         total += cfg.head * (cfg.head + slot_size(group, schema) + 1) + cfg.head + 1
     return total
 
@@ -210,6 +224,9 @@ def feature_version(schema: Optional[int] = None) -> int:
     признаки версируются отдельно: v2-признаки = 1, v3 permutation-invariant = 2.
     """
     s = SCHEMA if schema is None else int(schema)
+    if s == 5:
+        from arent import spec5
+        return spec5.FEATURES_VERSION
     if s == 4:
         from arent import spec4
         return spec4.FEATURES_VERSION
@@ -228,6 +245,24 @@ def _check_feature_compat(checkpoint: Dict[str, Any], where: str) -> None:
     Несовместимые ширины молча дали бы мусор, поэтому сверяем dims и отвергаем явно."""
     s = int(checkpoint.get("schema", 0))
     dims = checkpoint.get("dims") or {}
+    if s == 5:
+        from arent import spec5
+        want = spec5.dims5()
+        got_ver = dims.get("feat_version")
+        got_cell = dims.get("cell_feat")
+        got_weap = dims.get("weapon_feat")
+        got_state = dims.get("state")
+        got_maneuvers = dims.get("maneuvers")
+        if (got_ver != spec5.FEATURES_VERSION or got_cell != want["cell_feat"]
+                or got_weap != want["weapon_feat"] or got_state != want["state"]
+                or got_maneuvers != want["maneuvers"]):
+            raise ValueError(
+                f"{where}: признаки v5 несовместимы — в чекпойнте cell_feat={got_cell}/"
+                f"weapon_feat={got_weap}/state={got_state}/maneuvers={got_maneuvers}/"
+                f"feat_version={got_ver}, сейчас cell_feat={want['cell_feat']}/"
+                f"weapon_feat={want['weapon_feat']}/state={want['state']}/"
+                f"maneuvers={want['maneuvers']}/feat_version={spec5.FEATURES_VERSION}.")
+        return
     if s == 4:
         from arent import spec4
         want = spec4.dims4()

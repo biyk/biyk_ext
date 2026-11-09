@@ -28,19 +28,45 @@ from planner.context import BattleContext
 from planner.initiative import team_actors
 from planner.sim import Simulation
 
-METRICS = ("cleared", "survived", "rounds", "rollout", "dmg_net", "dmg_dealt", "dmg_taken")
+# Базовые (исход боя) + тактические счётчики Фазы A (cgpt §6): actions/kills/wasted идут
+# из compare.fight; cover-usage и OA-prevented НЕ добавлены — их не моделирует planner (см.
+# battlecast_heuristics), поэтому метрика была бы выдуманной. Реальные focus-fire/OA —
+# предмет Фаз B/C, когда сим начнёт их различать.
+METRICS = ("cleared", "survived", "rounds", "rollout", "dmg_net", "dmg_dealt", "dmg_taken",
+           "actions", "kills", "wasted")
 
 
-def build_set(count: int, seed: int) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-    """count валидных независимых сцен (name, payload, params); ho_* не производятся."""
+# Источники сцен для набора. count трактуется по-разному: для generate — это ВСЕГО сцен,
+# для stage43-* — сцен НА пару (count_each), т.к. генератор сам перебирает 36 пар.
+# cap (необяз.) срезает готовый валидный набор по первым N — детерминированно (порядок
+# генератора фиксирован), чтобы гонку Фазы A можно было ограничить по стоимости без потери
+# воспроизводимости (тот же seed+cap -> тот же fingerprint).
+_SOURCES = {
+    "generate": lambda count, seed: scenarios.generate(count, seed),
+    "stage43_pool": lambda each, seed: scenarios.generate_stage43_pool(each, seed),
+    "stage43_canon": lambda each, seed: scenarios.generate_stage43_canon(each, seed),
+}
+
+
+def build_set(count: int, seed: int, source: str = "generate",
+              cap: Optional[int] = None) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+    """Валидные независимые сцены (name, payload, params) из источника; ho_* не производятся.
+
+    source: "generate" (count = всего сцен) | "stage43_canon"/"stage43_pool" (count = на пару).
+    cap срезает первые N валидных сцен (детерминированно) — для ограниченной по стоимости гонки.
+    """
+    if source not in _SOURCES:
+        raise ValueError(f"неизвестный источник сцен: {source!r}; доступны {sorted(_SOURCES)}")
     out = []
-    for name, raw, params in scenarios.generate(count, seed):
+    for name, raw, params in _SOURCES[source](count, seed):
         payload = arena.build_payload(raw, name)
         ctx = BattleContext.from_payload(payload)
         if not ctx.hostile_targets() or not ctx.src.is_alive:
             continue
         assert not name.startswith(("ho_", "ho2_", "ho3_")), f"holdout просочился в набор: {name}"
         out.append((name, payload, params))
+        if cap is not None and len(out) >= cap:
+            break
     return out
 
 
@@ -113,15 +139,18 @@ def trace_fight(teacher_name: str, payload: Dict[str, Any], rounds: int,
 def run(count: int = 80, seed: int = 20261020, rounds: int = 8, teacher_rounds: int = 1,
         teachers: Tuple[str, ...] = ("greedy", "battlecast"), ci_seed: int = 1234,
         depth_map: Optional[Dict[str, int]] = None,
-        limit_map: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+        limit_map: Optional[Dict[str, float]] = None, source: str = "generate",
+        cap: Optional[int] = None) -> Dict[str, Any]:
     """Прогон политик на одном зафиксированном наборе; парные разности + bootstrap CI.
 
     depth_map/limit_map — необязательная глубина (rounds) и дедлайн планировщика на учителя:
     по умолчанию все идут на teacher_rounds (сопоставимый одноходовый бюджет). Это даёт
     воспроизводимо сравнить, например, greedy в его штатном lookahead (depth=2/3) против
     однопроходного battlecast — не меняя код политик, только бюджет прогона.
+    source/cap задают источник сцен (см. build_set): для гонки внешних политик Фазы A —
+    stage43_canon (честная линейка) и stage43_pool (обучающий).
     """
-    scenes = build_set(count, seed)
+    scenes = build_set(count, seed, source=source, cap=cap)
     all_rows, coverage, depths = {}, {}, {}
     for name in teachers:
         depth = (depth_map or {}).get(name, teacher_rounds)
@@ -131,7 +160,8 @@ def run(count: int = 80, seed: int = 20261020, rounds: int = 8, teacher_rounds: 
             all_rows[name], coverage[name] = _rows(name, scenes, rounds, depth, limit)
     g, b = teachers[0], teachers[1] if len(teachers) > 1 else teachers[0]
     summary = paired.summarize_paired(all_rows[g], all_rows[b], METRICS, seed=ci_seed)
-    report = {"n_scenes": len(scenes), "set_seed": seed, "set_fingerprint": fingerprint(scenes),
+    report = {"n_scenes": len(scenes), "set_seed": seed, "set_source": source, "set_cap": cap,
+              "set_fingerprint": fingerprint(scenes),
               "rounds_cap": rounds, "teacher_rounds": teacher_rounds, "holdout_excluded": True,
               "a_minus_b": f"{g}-{b}", "teachers": list(teachers), "depths": depths,
               "fixed_set": [{"name": n, "params": p} for n, _pl, p in scenes],
@@ -142,6 +172,12 @@ def run(count: int = 80, seed: int = 20261020, rounds: int = 8, teacher_rounds: 
 
 def _agg(rows: List[Dict[str, Any]], coverage: Dict[str, Any]) -> Dict[str, Any]:
     n = max(1, len(rows))
+    tot_actions = sum(r.get("actions", 0) for r in rows)
+    tot_dealt = sum(r["dmg_dealt"] for r in rows)
+    tot_kills = sum(r.get("kills", 0) for r in rows)
+    tot_foes = sum(r.get("foes", 0) for r in rows)
+    tot_rounds = sum(r["rounds"] for r in rows)
+    tot_wasted = sum(r.get("wasted", 0) for r in rows)
     return {"fights": len(rows), "survival_rate": round(sum(r["survived"] for r in rows) / n, 3),
             "clear_rate": round(sum(r["cleared"] for r in rows) / n, 3),
             "mean_rounds": round(mean([r["rounds"] for r in rows]) if rows else 0.0, 2),
@@ -149,6 +185,10 @@ def _agg(rows: List[Dict[str, Any]], coverage: Dict[str, Any]) -> Dict[str, Any]
             "mean_dmg_dealt": round(mean([r["dmg_dealt"] for r in rows]) if rows else 0.0, 2),
             "mean_dmg_taken": round(mean([r["dmg_taken"] for r in rows]) if rows else 0.0, 2),
             "ms_per_fight": round(mean([r["ms"] for r in rows]) if rows else 0.0, 2),
+            # --- тактические метрики Фазы A (cgpt §6): агрегат по сумме, не среднее долей ---
+            "dmg_per_action": round(tot_dealt / tot_actions, 3) if tot_actions else 0.0,
+            "kill_rate": round(tot_kills / tot_foes, 3) if tot_foes else 0.0,
+            "wasted_rate": round(tot_wasted / tot_rounds, 3) if tot_rounds else 0.0,
             "coverage": coverage}
 
 

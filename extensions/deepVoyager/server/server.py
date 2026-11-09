@@ -5,8 +5,10 @@ import json
 import sys
 import os
 import io
+import time
 import uuid
 from datetime import datetime
+from typing import Any, Dict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(SCRIPT_DIR)
@@ -37,6 +39,50 @@ app.config['JSON_AS_ASCII'] = False
 
 # DeepSeek временно выключен: /ask не запускает браузер/чат, пока DEEPSEEK_ENABLED!=true.
 DEEPSEEK_ENABLED = os.getenv("DEEPSEEK_ENABLED", "false").strip().lower() == "true"
+
+# Чем ходит боец: planner — эвристический учитель (по умолчанию, как раньше),
+# model — нейронная политика arent/play.py. PLAN_MODEL — имя прогона в arent/runs
+# (например s41es) или путь к model.json. Импорт arent ленивый: без model-режима
+# сервер стартует ровно так же и без новых зависимостей.
+PLAN_AGENT = os.getenv("PLAN_AGENT", "planner").strip().lower()
+PLAN_MODEL = os.getenv("PLAN_MODEL", "").strip()
+_MODELS: Dict[str, Any] = {}     # путь чекпойнета -> модель: load_policy дорог, запросов много
+
+
+def _model_path():
+    """runs/<имя>/model.json по PLAN_MODEL, иначе — самый свежий чекпойнет."""
+    from arent import play
+    path = play._checkpoint_path(PLAN_MODEL) or play.latest_checkpoint()
+    if not path:
+        raise RuntimeError(f"Чекпойнета модели нет: PLAN_MODEL={PLAN_MODEL!r}")
+    return path
+
+
+def _model_of():
+    """Одна и та же сеть на весь прогон: load_policy один раз, дальше только прямой проход."""
+    from arent import backend
+    path = _model_path()
+    if path not in _MODELS:
+        _MODELS[path] = backend.load_policy(path)
+    return path, _MODELS[path]
+
+
+def model_plan(data):
+    """Ход нейромодели: play.act отдаёт тот же {"actions": [...]}, что и планировщик.
+
+    В result["modelPath"] кладём реально прошёдший чекпойнет — лог просит имя прогона,
+    но повторно лезть в runs/ на каждый запрос незачем (и тест тогда герметичен).
+    """
+    from arent import play
+    path, model = _model_of()
+    result = play.act(model, data)
+    result["modelPath"] = path
+    return result
+
+
+def _run_of(path):
+    """runs/<имя>/model.json -> <имя>: как подписать прогон в логе."""
+    return os.path.basename(os.path.dirname(path or "")) or "?"
 
 
 def _log(tag, msg):
@@ -167,21 +213,43 @@ def plan_endpoint():
     # Собственный расчёт хода NPC вместо ответа LLM (пункт 3 todo.md).
     # Контракт совпадает с /ask: {"actions": [...]}.
     event = _event_id()
+    _tp = time.perf_counter()
     data = request.get_json(silent=True)
+    _t_parse = (time.perf_counter() - _tp) * 1000.0        # read+parse всего снимка сцены
     if not data:
         _log("plan", f"#{event} ОШИБКА: пустое JSON-тело запроса")
         return jsonify({"error": "Missing JSON body"}), 400
     _log("plan", f"#{event} src={data.get('src')} token={data.get('token')} "
                  f"speed={data.get('speed')} оружие: {describe_weapons(data)}")
     try:
-        result = PlannerService().run_result(data)
-        actions = result.action_dicts
-        summary = (f"итог: {len(actions)} действий -> {describe_actions(actions)} | "
-                   f"очков: {result.score:g} | вариантов просчитано: {result.considered}"
-                   + (f" | {result.details}" if result.details else ""))
+        _tp = time.perf_counter()
+        if PLAN_AGENT == "model":
+            result = model_plan(data)
+            actions = result["actions"]
+            n = result["names"]
+            summary = (f"итог: {len(actions)} действий -> {describe_actions(actions)} | "
+                       f"модель {_run_of(result['modelPath'])} | клетка: {n['cell']} | цель: {n['target']} | "
+                       f"оружие: {n['weapon']} | ценность: {result['value']:.3f}")
+        else:
+            result = PlannerService().run_result(data)
+            actions = result.action_dicts
+            summary = (f"итог: {len(actions)} действий -> {describe_actions(actions)} | "
+                       f"очков: {result.score:g} | вариантов просчитано: {result.considered}"
+                       + (f" | {result.details}" if result.details else ""))
+        _t_run = (time.perf_counter() - _tp) * 1000.0       # контекст+слоты+joint-декод (инференс)
+        _tp = time.perf_counter()
         _log("plan", f"#{event} {summary}")
         _log_exchange("plan", data, {"actions": actions}, summary, event=event)
-        arent_capture.capture(data, {"actions": actions}, event=event)
+        _t_log = (time.perf_counter() - _tp) * 1000.0        # запись полного req+resp в 2 файла
+        # agent в подписи обязателен: capture читается как разметка учителя, а ответ
+        # политики — не эталон, его в разметку брать нельзя
+        agent = "model" if PLAN_AGENT == "model" else "planner"
+        _tp = time.perf_counter()
+        arent_capture.capture(data, {"actions": actions, "agent": agent}, event=event)
+        _t_cap = (time.perf_counter() - _tp) * 1000.0        # sha1(payload)+глоб/dir+запись+prune
+        _log("plan-prof", f"#{event} parse={_t_parse:.1f} run={_t_run:.1f} "
+                         f"log={_t_log:.1f} capture={_t_cap:.1f} "
+                         f"total={(time.perf_counter() - _tp + _t_run + _t_parse + _t_log):.1f} мс")
         return jsonify({"actions": actions}), 200, {"Content-Type": "application/json; charset=utf-8"}
     except ValueError as e:
         _log("plan", f"#{event} ошибка входа: {e}")
@@ -195,4 +263,12 @@ if __name__ == "__main__":
     port = int(os.getenv("SERVER_PORT", "9999"))
     _log("server", f"старт на порту {port}; DeepSeek: "
                    + ("ВКЛЮЧЁН" if DEEPSEEK_ENABLED else "ОТКЛЮЧЁН (DEEPSEEK_ENABLED=false)"))
+    if PLAN_AGENT == "model":
+        try:
+            path = _model_path()
+            _log("server", f"ходит НЕЙРОМОДЕЛЬ: {_run_of(path)} ({path})")
+        except Exception as e:                     # плохой PLAN_MODEL видно сразу, а не в бою
+            _log("server", f"PLAN_AGENT=model, но чекпойнет не loaded: {e}")
+    else:
+        _log("server", "ходит планировщик-учитель (PLAN_AGENT=planner)")
     app.run(host="0.0.0.0", port=port)

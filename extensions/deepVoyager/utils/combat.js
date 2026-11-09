@@ -17,8 +17,9 @@ export function getCurrentTokenData(combat, combatant) {
     return {
         token: token,
         name: token.name,
-        x: token.x,
-        y: token.y,
+        // Документ — источник истины: canvas-позиция отстаёт до сброса render-флагов.
+        x: token.document.x,
+        y: token.document.y,
         speed: token.actor?.system?.attributes?.movement?.walk || 0,
         step: canvas.grid.size,
         status: getStatus(token.actor),
@@ -108,8 +109,8 @@ export function getVisibleCombatTokens(currentToken) {
             id: token.id,
             name: token.name,
             disposition: token.document?.disposition ?? 0,
-            x: token.x,
-            y: token.y,
+            x: token.document.x,
+            y: token.document.y,
             weapon: equippedWeapon,
             ac: ac,
             status: status

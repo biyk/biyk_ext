@@ -61,6 +61,7 @@ class BattleContext:
     raw: Dict[str, Any]  # исходный payload.data — для адаптеров (libs.quin)
     speed_steps: int = 6           # шагов (клеток) за ход: speed_ft / rules.feetPerCell
     weapons: Tuple[Weapon, ...] = ()  # чем атаковать; пусто — атаки нет
+    maneuver_items: Tuple[Dict[str, Any], ...] = ()  # v5: [{'id':..., 'kind':'dash'|...},...]
 
     def token(self, token_id: str) -> Optional[Token]:
         return next((t for t in self.tokens if t.id == token_id), None)
@@ -145,4 +146,5 @@ class BattleContext:
             src_id=src_id, target_id=payload.get("token"), raw=data,
             speed_steps=int(float(payload.get("speed") or 30) // tuning().feet_per_cell),
             weapons=parse_weapons(payload.get("weapons")),
+            maneuver_items=tuple(payload.get("maneuvers") or []),
         )

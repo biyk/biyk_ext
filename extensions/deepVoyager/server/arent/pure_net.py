@@ -9,7 +9,7 @@ import math
 from typing import Any, Dict, List
 
 from arent import joint, net
-from arent.net import GROUPS, masked_argmax
+from arent.net import GROUPS, groups_for, masked_argmax
 
 PAD = -1e30     # как в torch_net: вне маски слот получает крайне отрицательный logp
 
@@ -53,6 +53,7 @@ class PurePolicy:
         self.cfg = cfg
         self.dims = net.dims_for(cfg.schema)
         self.ykey = net.y_key(cfg.schema)
+        self._groups = groups_for(cfg.schema)
         self.params = params if params is not None else net.init_params(cfg)
         self.grad = _zeros_like(self.params)
         self.vel = _zeros_like(self.params)
@@ -65,7 +66,7 @@ class PurePolicy:
         z2 = _lin(p["trunk2"], p["b2"], a1)
         t = _relu(z2)
         logits, cache = {}, {}
-        for group in GROUPS:
+        for group in self._groups:
             rows, bias = p["headW"][group], p["headB"][group]
             head, ub = p["headU"][group], p["headUB"][group]
             allowed, values, kept = [], [], {}
@@ -88,6 +89,8 @@ class PurePolicy:
         Тот же закон головы, что у обучения: softmax берётся по masked-слотам forward (те же
         allowed, что в _accumulate/joint NLL), вне маски — PAD. joint.argmax читает эти векторы
         по индексам слотов и никогда не трогает PAD-позиции (они не входят в A(s)).
+        Возвращает РОВНО (cells, targets, weapons, value) — для v2/3/4/5. Maneuver-логи
+        доступны только через all_head_logp.
         """
         *_, logits, _cache, value = self.forward(sample)
         totals = joint.group_totals(self.cfg.schema)
@@ -101,10 +104,25 @@ class PurePolicy:
             vecs[group] = vec
         return vecs["cells"], vecs["targets"], vecs["weapons"], round(float(value), 4)
 
+    def all_head_logp(self, sample: Dict[str, Any]):
+        """5-tuple (cells, targets, weapons, maneuvers, value) — для v5 joint-декодера."""
+        *_, logits, _cache, value = self.forward(sample)
+        totals = joint.group_totals_v5(self.cfg.schema)
+        vecs: Dict[str, List[float]] = {}
+        for group in self._groups:
+            allowed, values = logits[group]
+            vec = [PAD] * totals[group]
+            if allowed:
+                for i, p in zip(allowed, _softmax(values)):
+                    vec[i] = math.log(max(p, 1e-30))
+            vecs[group] = vec
+        return (vecs["cells"], vecs["targets"], vecs["weapons"], vecs["maneuvers"],
+                round(float(value), 4))
+
     def predict(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         *_, logits, _cache, value = self.forward(sample)
         out: Dict[str, Any] = {"value": round(value, 4)}
-        for group in GROUPS:
+        for group in self._groups:
             allowed, values = logits[group]
             best = masked_argmax(values, [1] * len(values)) if allowed else -1
             out[self.ykey[group]] = allowed[best] if best >= 0 else -1
@@ -114,7 +132,7 @@ class PurePolicy:
     def step_batch(self, batch: List[Dict[str, Any]], lr: float = None) -> Dict[str, Any]:
         """Один шаг оптимизатора по батчу: сумма градиентов, потом обновление."""
         report = {"loss": 0.0, "value": 0.0}
-        for group in GROUPS:
+        for group in self._groups:
             report[self.ykey[group]] = 0.0
         for sample in batch:
             self._accumulate(sample, report)
@@ -125,6 +143,9 @@ class PurePolicy:
         return scaled
 
     def _accumulate(self, sample: Dict[str, Any], report: Dict[str, float]) -> None:
+        if int(self.cfg.schema) >= 5:
+            raise NotImplementedError("_accumulate (BC) для v5 требует 4D joint; "
+                                      "используйте torch-пайплайн (Этап 7).")
         a1pre, a1, z2, t, logits, cache, value = self.forward(sample)
         p, g = self.params, self.grad
         dt = [0.0] * len(t)
@@ -136,7 +157,7 @@ class PurePolicy:
         wanted = {"cells": ip, "targets": it, "weapons": iw}
         lp: Dict[str, Dict[int, float]] = {}
         allowed_map: Dict[str, List[int]] = {}
-        for group in GROUPS:
+        for group in self._groups:
             allowed, values = logits[group]
             probs = _softmax(values)
             lp[group] = {i: math.log(max(pr, 1e-30)) for i, pr in zip(allowed, probs)}
@@ -170,10 +191,10 @@ class PurePolicy:
             mw[ww] = mw.get(ww, 0.0) + pr
         marg = {"cells": mc, "targets": mt, "weapons": mw}
         report["loss"] += logZ - (Lc[ip] + Lt[it] + Lw[iw])   # joint NLL демонстрационного действия
-        for group in GROUPS:
+        for group in self._groups:
             report[self.ykey[group]] += -lp[group][wanted[group]]   # вклад головы (диагностика)
         # dNLL/d(логит) = joint-маргиналь − onehot (независимые softmax-члены сокращаются).
-        for group in GROUPS:
+        for group in self._groups:
             m = marg[group]
             wi = wanted[group]
             for i in allowed_map[group]:
@@ -241,7 +262,7 @@ class PurePolicy:
                 self._sgd(row, g[key][i], v[key][i], lr, wd)
         for key in ("b1", "b2", "valueW"):
             self._sgd(p[key], g[key], v[key], lr, wd)
-        for group in GROUPS:
+        for group in self._groups:
             for i, row in enumerate(p["headW"][group]):
                 self._sgd(row, g["headW"][group][i], v["headW"][group][i], lr, wd)
             self._sgd(p["headB"][group], g["headB"][group], v["headB"][group], lr, wd)

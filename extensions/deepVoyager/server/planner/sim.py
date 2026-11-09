@@ -39,7 +39,8 @@ class Simulation:
                             t.id in hostile, t.initiative,
                             t.id != context.src_id and t.id not in hostile
                             and t.disposition == context.src.disposition
-                            and t.disposition != 0)
+                            and t.disposition != 0,
+                            maneuver_kinds=dict(getattr(t, "maneuver_kinds", None) or {}))
                  for t in context.tokens}
         best = max(context.weapons, key=lambda w: w.expected_damage, default=None)
         if best and context.src_id in units:      # урон героя — из его оружия, а не из «1d8»
@@ -135,9 +136,14 @@ class Simulation:
         raw = self._raw()
         target = self._default_target_for(unit_id)
         weapons, speed = actor_gear(raw, unit_id, self.base.weapons, self.base.speed_steps)
+        # Манёвры актёра (SCHEMA=5) — из ЕГО записи npcs[], как оружие/скорость: учитель на
+        # посещённых DAgger-состояниях видит тот же набор, что и на старте. Без поля (legacy) ->
+        # пусто -> ctx.maneuver_items пуст -> бит-в-бит прежнее поведение v2/v3/v4.
+        entry = next((n for n in raw.get("npcs") or [] if n.get("id") == unit_id), None) or {}
+        maneuvers = tuple(entry.get("maneuvers") or [])
         return BattleContext(scene=self.base.scene, tokens=tuple(parse_tokens({"npcs": raw["npcs"]})),
                              walls=self.base.walls, src_id=unit_id, target_id=target, raw=raw,
-                             speed_steps=speed, weapons=weapons)
+                             speed_steps=speed, weapons=weapons, maneuver_items=maneuvers)
 
     @property
     def pf(self):
@@ -218,7 +224,17 @@ class Simulation:
                     cur = units[actor_id]
                     if cur.action < 1:
                         continue           # действий не осталось (SCHEMA=4) — атака заблокирована
+                    kind = cur.maneuver_kinds.get(a.conf.get("itemId", ""))
                     units[actor_id] = replace(cur, action=cur.action - 1)
+                    # SCHEMA=5: «use» фичи-манёвра (не атака). Действие списано, удара нет.
+                    if kind == "disengage":
+                        units[actor_id] = replace(units[actor_id], disengaged=True)
+                        continue
+                    if kind == "dodge":
+                        units[actor_id] = replace(units[actor_id], dodging=True)
+                        continue
+                    if kind == "dash":
+                        continue           # доп. движение задаёт план (бюджет), сам удар отсутствует
                 weapon = self.context_for(actor_id).weapon(a.conf.get("itemId", ""))
                 foe = units.get(aimed or "")
                 reach = weapon.doubt_cells if weapon else t.default_enemy_reach_cells
@@ -238,6 +254,9 @@ class Simulation:
         Урон — ожиданием (damage_avg*chance), реакция H списывается (не более одного Ao за реакцию).
         Возвращает обновлённый словарь юнитов (hp актёра, reaction врагов)."""
         actor = units[actor_id]
+        if actor.disengaged:
+            return units           # SCHEMA=5 Отступление: выход из зон не провоцирует Ao в этом ходу
+        adv = 0.5 if actor.dodging else 1.0   # SCHEMA=5 Уклонение: Ao против уклоняющегося с помехой
         for hid in sorted(units):
             if hid == actor_id:
                 continue
@@ -249,7 +268,7 @@ class Simulation:
             if not (was_in and now_out):
                 continue
             cur = units[actor_id]
-            units[actor_id] = replace(cur, hp=cur.hp - h.damage_avg * h.chance)
+            units[actor_id] = replace(cur, hp=cur.hp - h.damage_avg * h.chance * adv)
             units[hid] = replace(h, reaction=0)
             if not units[actor_id].is_alive:
                 break
@@ -262,7 +281,8 @@ class Simulation:
         unit = self.units.get(actor_id)
         if unit is None:
             return self
-        units = {**self.units, actor_id: replace(unit, action=1, bonus=1, reaction=1)}
+        units = {**self.units, actor_id: replace(unit, action=1, bonus=1, reaction=1,
+                                                 disengaged=False, dodging=False)}
         return self._clone(units)
 
     def _approach(self, unit: Unit, hero_cell: Cell) -> Unit:
@@ -291,8 +311,9 @@ class Simulation:
                 units[unit.id] = unit
             hero = units[self.hero_id]
             if striking_distance(self.base, unit.cell, hero.cell, unit.reach_cells, self.sight):
-                penalty += t.damage_penalty * unit.chance      # штраф за сам факт урона
-                units[self.hero_id] = replace(hero, hp=hero.hp - unit.damage_avg * unit.chance)
+                adv = 0.5 if hero.dodging else 1.0    # SCHEMA=5 Уклонение героя: атаки впритык с помехой
+                penalty += t.damage_penalty * unit.chance * adv
+                units[self.hero_id] = replace(hero, hp=hero.hp - unit.damage_avg * unit.chance * adv)
         dead = not units[self.hero_id].is_alive
         return (self._clone(units, dead), penalty + (t.death_penalty if dead else 0.0))
 

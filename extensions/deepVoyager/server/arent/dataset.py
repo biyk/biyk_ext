@@ -13,8 +13,8 @@ import random
 import zlib
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from arent import encode, encode_v3, encode_v4, paths, provenance, slots as slots_mod, slots_v3, \
-    spec, spec3, spec4
+from arent import encode, encode_v3, encode_v4, encode_v5, paths, provenance, \
+    slots as slots_mod, slots_v3, spec, spec3, spec4, spec5
 from arent.observe import observe
 from arent.states import variants
 from arent.teacher import pinned
@@ -218,21 +218,33 @@ def _sample_from_labeled_moveplan(name: str, labeled, meta: Dict[str, Any],
     core, чтобы v3 и v4 размечали идентично на общих колонках (гейт побитового префикса).
     """
     ctx = labeled.ctx
-    if not ctx.weapons or not ctx.hostile_targets():
+    if schema == spec5.SCHEMA:
+        # v5: манёвр (Dash/Disengage/Dodge) не требует оружия — достаточно живой цели,
+        # иначе пример не о чём размечать. Оружие при этом не обязательно (отключённый боец
+        # может Уклоняться/Отступать), поэтому не повторяем v3/v4-условие про ctx.weapons.
+        if not ctx.hostile_targets():
+            return None, "no_attack"
+    elif not ctx.weapons or not ctx.hostile_targets():
         return None, "no_attack"
     obs = observe(ctx, initiative, ctx.src_id, resources=resources)
     slots = slots_v3.build(ctx, obs)
+    if schema == spec5.SCHEMA:
+        # serving==train: слоты манёвров зеркала play.act (top-level payload["maneuvers"]).
+        slots.maneuvers = list(ctx.maneuver_items)
     if not slots.plans or not slots.targets:
         return None, "no_slots"
     # план учителя может не влезть в K_MOVEPLAN (дальняя клетка) — вставляем его же маршрутом
     slots_v3.ensure_plan(slots, ctx, labeled.actions)
-    label = slots_v3.label_of(ctx, slots, labeled.actions)
+    label = (slots_v3.label_of_v5(ctx, slots, labeled.actions) if schema == spec5.SCHEMA
+             else slots_v3.label_of(ctx, slots, labeled.actions))
     if label is None:
         return None, "label_out_of_slots"        # (attack,end) учителя не собрался в слотах
-    if [a.to_dict() for a in slots_v3.decode(slots, label)] != \
+    decode_fn = slots_v3.decode_v5 if schema == spec5.SCHEMA else slots_v3.decode
+    if [a.to_dict() for a in decode_fn(slots, label)] != \
             [a.to_dict() for a in labeled.actions]:
-        return None, "roundtrip_mismatch"         # три индекса не собирают ход учителя обратно
-    enc = encode_v4 if schema == spec4.SCHEMA else encode_v3
+        return None, "roundtrip_mismatch"         # индексы не собирают ход учителя обратно
+    enc = (encode_v5 if schema == spec5.SCHEMA
+           else encode_v4 if schema == spec4.SCHEMA else encode_v3)
     sample = enc.encode(ctx, obs, slots, label, value=labeled.value,
                         meta=dict(meta, arena=name, score=labeled.score,
                                   depth=labeled.depth))
@@ -248,7 +260,30 @@ def sample_one_v4(name: str, payload: Dict[str, Any], teacher: TeacherPolicy,
     return sample_from_labeled_v4(name, labeled, meta, initiative)
 
 
-SAMPLERS = {spec.SCHEMA: sample_one, spec3.SCHEMA: sample_one_v3, spec4.SCHEMA: sample_one_v4}
+def sample_from_labeled_v5(name: str, labeled, meta: Dict[str, Any],
+                           initiative: Optional[Tuple[str, ...]] = None,
+                           resources: Optional[Dict[str, Any]] = None
+                           ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 5: тот же move-plan core + maneuver-голова (Dash/Disengage/Dodge).
+
+    Отличие от v4 (в общем ядре _sample_from_labeled_moveplan по schema==5): слоты манёвров
+    берём из ctx.maneuver_items (голова 4-я), метка label_of_v5/roundtrip decode_v5, энкодер
+    encode_v5. resources (uid->Unit) — живая экономика для DAgger, как в v4. При пустом
+    ctx.maneuver_items maneuver==NONE и пример побитово совпадает с v4 (обратная совместимость).
+    """
+    return _sample_from_labeled_moveplan(name, labeled, meta, initiative, spec5.SCHEMA, resources)
+
+
+def sample_one_v5(name: str, payload: Dict[str, Any], teacher: TeacherPolicy,
+                  meta: Dict[str, Any], initiative: Optional[Tuple[str, ...]] = None
+                  ) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Схема 5 из payload: тонкая обёртка teacher.label -> sample_from_labeled_v5 (старт хода)."""
+    labeled = teacher.label(payload)
+    return sample_from_labeled_v5(name, labeled, meta, initiative)
+
+
+SAMPLERS = {spec.SCHEMA: sample_one, spec3.SCHEMA: sample_one_v3, spec4.SCHEMA: sample_one_v4,
+            spec5.SCHEMA: sample_one_v5}
 
 
 def generate(count: int = 200, seed: int = 7, per_src: int = 4, rounds_max: int = 3,
@@ -338,6 +373,26 @@ def assert_compatible(sample: Dict[str, Any]) -> None:
     Старая v4-выборка с иными ширинами/версией признаков отвергается, а не примешивается.
     Схема 2 проходит без изменений (её признаки не тронуты)."""
     got_schema = int(sample.get("schema", spec.SCHEMA))
+    if got_schema == spec5.SCHEMA:
+        want = spec5.FEATURES_VERSION
+        got = sample.get("feat_version")
+        d5 = spec5.dims5()
+        cells = sample.get("cells") or [[]]
+        weapons = sample.get("weapons") or [[]]
+        maneuvers = sample.get("maneuvers") or [[]]
+        c_width, w_width = len(cells[0]), len(weapons[0])
+        s_width = len(sample.get("state") or [])
+        m_count, m_width = len(maneuvers), len(maneuvers[0])
+        if (got != want or c_width != d5["cell_feat"] or w_width != d5["weapon_feat"]
+                or s_width != d5["state"] or m_count != d5["maneuvers"]
+                or m_width != d5["maneuver_feat"]):
+            raise SchemaMismatch(
+                f"пример схемы 5 несовместим: feat_version={got}/cell_feat={c_width}/"
+                f"weapon_feat={w_width}/state={s_width}/maneuvers={m_count}x{m_width}, ждём "
+                f"{want}/{d5['cell_feat']}/{d5['weapon_feat']}/{d5['state']}/"
+                f"{d5['maneuvers']}x{d5['maneuver_feat']}. "
+                f"Старая v5-выборка не примешивается к новой — перегенерируйте её.")
+        return
     if got_schema == spec4.SCHEMA:
         want = spec4.FEATURES_VERSION
         got = sample.get("feat_version")

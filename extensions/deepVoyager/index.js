@@ -3,7 +3,7 @@ import {target} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
 import {sendMessage} from "./actions/message.js";
-import {getStatus, buildItemAction, buildWeapons} from "./utils/help.js";
+import {getStatus, buildItemAction, buildWeapons, npcSimFields} from "./utils/help.js";
 import {getCurrentTokenData, getVisibleCombatTokens, groupTokensByDisposition} from "./utils/combat.js";
 import {log} from "./utils/logger.js";
 import {addGMButton} from "./utils/messageBox.js";
@@ -14,7 +14,7 @@ export function init() {
     const isDM = () => game.user.isGM;
 
     let lastCombatTurnTime = 0;
-    const COMBAT_TURN_THROTTLE = 5000; // 5 секунд
+    const COMBAT_TURN_THROTTLE = 500; // 0.5 с (дубли-вход и так закрыт флагом turnInProgress)
 
     async function combatTurn() {
         if (!isDM()) return;
@@ -26,7 +26,15 @@ export function init() {
         }
         lastCombatTurnTime = now;
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // --- [turn-prof] пофазный замер хода (только логирование, поведение не меняем) ---
+        const _p0 = performance.now();
+        let _pl = _p0;
+        const _P = (n) => { const t = performance.now();
+            log.info(`[turn-prof] ${n}: +${(t - _pl).toFixed(0)}мс (всего ${(t - _p0).toFixed(0)}мс)`);
+            _pl = t; };
+
+        await new Promise(resolve => setTimeout(resolve, 150));
+        _P('сон-старт (150мс)');
 
         const currentTokenDoc = game.combat.current;
         if (!currentTokenDoc) return log.info('no current combatant');
@@ -35,7 +43,13 @@ export function init() {
 
         if (!token) return log.info('no token');
 
-        if (token.actor?.system?.attributes?.hp == 0) return log.info('Актер мертв');
+        // Смерть проверяем по hp.value: attributes.hp — объект, и сравнение его с 0 никогда
+        // не срабатывало, из-за чего кнопка заставляла ходить мёртвого бойца.
+        if ((token.actor?.system?.attributes?.hp?.value ?? 1) <= 0) {
+            log.info('Актер мертв');
+            await game.combat.nextTurn();
+            return ui.notifications.warn(`${token.name}: мёртв, ход передан дальше`);
+        }
         if (token.actor?.type !== 'npc') return log.info('это не НПС');
         log.info(token);
 
@@ -84,6 +98,7 @@ export function init() {
         data.availableActions = availableActions;
         data.availableFeats = availableFeats;
         data.movement = await getMovementRose(token);
+        _P('видимые токены+действия+rose (сбор данных)');
         //console.log(data);return ;
 
         // ---------- 4. Запрос к ИИ ----------
@@ -97,8 +112,9 @@ export function init() {
             log.info('вооружение:', weapons.map(w => `${w.name} ${w.sureFt}/${w.doubtFt}ф`
                 + `${w.properties?.includes('thr') ? ' (метат)' : (w.ranged ? ' (дальнобой)' : '')}`));
             actions = await api.getPlanActions(token, enemy ? enemy.id : null, currentData.speed, weapons);
+            _P('запрос /plan (+сбор getAllData + RTT + инференс)');
         }
-        if (!actions.length) actions = await getAction(data);
+        if (!actions.length) { actions = await getAction(data); _P('fallback /ask (LLM)'); }
 
         let limit = {
             move: data.baseMove,
@@ -121,7 +137,7 @@ export function init() {
                 try {
                     if (action === 'target') {
                         target(token, conf);
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await new Promise(resolve => setTimeout(resolve, 200));
                     }
 
                 }catch (e) {
@@ -196,7 +212,7 @@ export function init() {
                     }
                     if (action === 'target') {
                         target(token, conf);
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await new Promise(resolve => setTimeout(resolve, 200));
                     }
                     if (action === 'use') {
                         if(!limit.use) continue
@@ -211,12 +227,15 @@ export function init() {
                         limit.use--;
                     }
                     if (action === 'message') await sendMessage(token, conf);
+                    _P('действие: ' + action);
                 }catch (e) {
                     console.error(e);
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            _P('сон-финал (1200мс)');
             game.combat.nextTurn();
+            _P('nextTurn (перерисовка трекера)');
         }
 
         ui.notifications.warn(`Ход завершен!`);
@@ -342,6 +361,15 @@ export function init() {
             }
 
             // 1. Сбор NPC токенов
+            // Инициатива из активного боя: сервер иначе перекидывает врагам d20 на каждый /plan,
+            // а тренировочный контракт ожидает стабильное поле initiative у каждого npc.
+            const iniByToken = new Map();
+            const combatants = game.combat?.combatants?.contents ?? game.combat?.combatants ?? [];
+            for (const c of combatants) {
+                if (c.tokenId && Number.isFinite(Number(c.initiative))) {
+                    iniByToken.set(c.tokenId, Number(c.initiative));
+                }
+            }
             const npcs = [];
             for (let token of canvas.tokens.placeables) {
                 const actor = token.actor;
@@ -365,8 +393,10 @@ export function init() {
                         npcs.push({
                             id: token.id,
                             name: token.name,
-                            x: token.x,
-                            y: token.y,
+                            // document.x/y согласованы с center (тоже от документа): раньше в
+                            // одном объекте жили две разные клетки, если канвас не успел перерисоваться.
+                            x: token.document.x,
+                            y: token.document.y,
                             width: token.w,
                             height: token.h,
                             center: { x: token.center.x, y: token.center.y },
@@ -375,7 +405,8 @@ export function init() {
                                 current: hp.value,
                                 max: hp.max,
                                 temp: hp.temp
-                            }
+                            },
+                            ...npcSimFields(token, iniByToken.get(token.id))
                         });
                     }
                 }

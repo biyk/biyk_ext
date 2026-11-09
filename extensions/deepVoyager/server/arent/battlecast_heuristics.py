@@ -14,10 +14,14 @@
 #    инициативы союзников) — одноходовой учитель оценивает EV самотеля, а не координированный
 #    план всех союзников; согласование команды реализуется на полиакторном RL-уровне.
 #  • выбор стратегии по модификатору INT — в payload нет интеллекта;
-#  • провоцированные атаки (oaRiskPenalty) и «отход без помех» (disengage) — отдельной
-#    механики opportunity attack у нас нет; вместо этого позиция штрафуется за реальный
-#    ожидаемый ответный огонь (e.dmgToMe в зоне досягаемости врага за ход) — это ровно то,
-#    что считает Simulation.foes_act, а не выдуманная формула OA.
+#
+# Механики, которые РАНЬШЕ считались непортируемыми, а ТЕПЕРЬ моделируются (схема v5):
+#  • провоцированные атаки (opportunity attack) и «отход без помех» (disengage) — сим
+#    (planner/sim.py:_apply_opportunities) считает Ao на ШАГЕ выхода из melee-зоны врага, а
+#    Отступление (манёвр) их снимает. Учитель оценивает их ЭВ-примитивами ниже
+#    (avoided_opportunities/reach_contacts), согласованно с sim, а не выдуманной формулой.
+#  • Уклонение (dodge) — входящие атаки по уклоняющемуся с помехой (adv=0.5 в sim);
+#  • Рывок (dash) — удвоенный бюджет движения за ход (достигает клеток, недосягаемых шагом).
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
@@ -30,12 +34,12 @@ from arent import spec
 FINISH_VALUE = 10.0      # бонус за добивание: удар с ожиданием >= оставшегося hp цели
 APPROACH_STEP = 1.0      # цена сблизиться на одну клетку, когда атаки из клетки нет
 INCOMING_WEIGHT = 1.0    # ответный огонь врага считается один-в-один (та же шкала EV)
+DODGE_ADV = 0.5          # множитель шанса получить удар по уклоняющемуся (ровно как в sim)
 
 # Механики battlecast, сознательно НЕ портированные (проверено: нет в нашей симуляции).
 UNSUPPORTED_MECHANICS: Tuple[str, ...] = (
     "resistance/vulnerability/immunity", "conditions", "aoe_spells",
     "pack_and_dispersion_team_tactics", "ally_affinity", "int_modifier_strategy_choice",
-    "opportunity_attacks", "free_disengage",
 )
 
 
@@ -106,3 +110,52 @@ def incoming_at_cell(cell: Cell, enemies: List[Enemy]) -> float:
 def position_value(strike_ev: float, approach_gain: float, incoming: float) -> float:
     """Композиция оценки клетки: EV атаки (+ приоритет добить внутри strike_ev) минус угроза."""
     return strike_ev + APPROACH_STEP * approach_gain - INCOMING_WEIGHT * incoming
+
+
+# ---------------------------------------------------------------------------
+# Примитивы оценки МАНЁВРОВ (схема v5). Каждый — чистая функция того же состояния,
+# что считает сим (planner/sim.py), поэтому serving==train: учитель размечает ровно то,
+# что затем исполнит/оценит сим, а не выдуманные формулы.
+def reach_contacts(cell: Cell, enemies: List[Enemy]) -> int:
+    """Сколько врагов держат клетку в своей melee-зоне (dist <= reach).
+
+
+    Ключ к распознаванию «окружён / выхожу из боя»: melee-зона = тот же striking_distance
+    по клеткам, что в sim (_apply_opportunities was_in/now_out).
+    """
+    return sum(1 for e in enemies if cell_distance(cell, e.cell) <= e.reach_cells)
+
+
+def avoided_opportunities(from_cell: Cell, to_cell: Cell, enemies: List[Enemy]) -> float:
+    """EV ответных Ao, которых НЕ будет, если выйти from_cell->to_cell с Отступлением.
+
+    Снимает урон тех врагов, чью melee-зону шаг покидает: был in (from_cell), стал out
+    (to_cell). Ровно условие sim._apply_opportunities (was_in and now_out), агрегированное
+    по всему перемещению — учитель оценивает верхнюю границу экономии без пот-шагового
+    разбора маршрута (для разметки это консервативно и детерминированно).
+    """
+    total = 0.0
+    for e in enemies:
+        was_in = cell_distance(from_cell, e.cell) <= e.reach_cells
+        now_out = cell_distance(to_cell, e.cell) > e.reach_cells
+        if was_in and now_out:
+            total += e.dmg_to_me
+    return total
+
+
+def movement_value(cell: Cell, me_cell: Cell, enemies: List[Enemy],
+                   dodge: bool = False) -> float:
+    """Оценка клетки БЕЗ удара (манёвр тратит действие): сближение минус угроза.
+
+    approach_gain — на сколько клетка приблизилась к ближайшему к нам врагу (та же мера,
+    что в BattlecastTeacher.choose для случая без strike). dodge=True halvит входящий огонь
+    (Уклонение: adv=DODGE_ADV), отражая sim. Если врагов нет — только позиция (0 − 0).
+    """
+    if not enemies:
+        return 0.0
+    near = min(enemies, key=lambda e: (cell_distance(me_cell, e.cell), e.cell))
+    approach = cell_distance(me_cell, near.cell) - cell_distance(cell, near.cell)
+    incoming = incoming_at_cell(cell, enemies)
+    if dodge:
+        incoming *= DODGE_ADV
+    return position_value(0.0, approach, incoming)

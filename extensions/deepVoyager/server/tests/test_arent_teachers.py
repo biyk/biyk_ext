@@ -86,6 +86,39 @@ def test_cli_gen_defaults_to_greedy_teacher():
     assert args.teacher == "greedy"
 
 
+# --- Фаза A / A1: внешние политики-учителя для бенчмарка (через @register) -----------
+# План: сначала реестр внешних политик = battlecast с иными весами/профилем.
+# battlecast_baseline — честный алиас (равен battlecast), чтобы бенчмарк имел
+# неизменную базовую колонку; ja2_positioning — осторожный позиционный профиль
+# (повышенный вес угрозы + disengage/dodge), подключается РЕЕСТРОМ без правок боя.
+def test_registry_offers_external_benchmark_policies():
+    names = list_teachers()
+    for n in ("battlecast", "battlecast_baseline", "ja2_positioning"):
+        assert n in names, f"{n} не в реестре: {names}"
+
+
+def test_battlecast_baseline_is_faithful_alias_of_battlecast():
+    """baseline обязан совпадать с battlecast (иначе базовая колонка бенчмарка лжёт)."""
+    payload = load_arena("corridor_archer")
+    with pinned(rounds=1, time_limit_sec=0.5):
+        base = get_teacher("battlecast_baseline", rounds=1)
+        bc = get_teacher("battlecast", rounds=1)
+        lb, lbc = base.label(payload), bc.label(payload)
+        assert [a.to_dict() for a in lb.actions] == [a.to_dict() for a in lbc.actions]
+        assert lb.value == lbc.value
+
+
+def test_ja2_positioning_is_registered_deterministic_policy():
+    payload = load_arena("corridor_archer")
+    with pinned(rounds=1, time_limit_sec=0.5):
+        p = get_teacher("ja2_positioning", rounds=1)
+        assert isinstance(p, TeacherPolicy) and p.name == "ja2_positioning"
+        first = p.label(payload)
+        again = get_teacher("ja2_positioning", rounds=1).label(payload)
+        assert [x.to_dict() for x in first.actions] == [x.to_dict() for x in again.actions]
+        assert first.value == again.value
+
+
 def _shape(samples):
     """Стабильная форма для сравнения двух прогонов: план, маски и разметка без meta-шума."""
     return [(s["y"], tuple(s["mask"]["cells"]), tuple(s["mask"]["targets"]),

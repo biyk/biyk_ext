@@ -25,6 +25,8 @@ from typing import Any, Dict, List
 import math
 
 from arent import net, slots as slots_mod, slots_v3, spec, spec3
+from arent.slots_v3 import SlotsV3
+from planner.los import sight_segments
 
 # «Не атаковать» = последний masked-слот соответствующей группы (совпадает с legalize/env).
 NONE_TARGET = spec.K_TARGETS
@@ -67,11 +69,12 @@ def legal_mask(slots: Any, ctx: Any, schema: int) -> List[List[List[int]]]:
     targets = slots.targets
     weapons = slots.weapons
     check = (slots_v3.attackable_v3 if spec3.uses_moveplan(schema) else slots_mod.attackable)
+    segments = sight_segments(ctx)     # один раз на всю маску: ниже — сотня вызовов los_clear
     for p in range(min(n_pos, p_n)):
         mask[p][NONE_TARGET][NONE_WEAPON] = 1        # ровно один вариант «без атаки» на позицию
         for t in range(min(len(targets), t_n)):
             for w in range(min(len(weapons), w_n)):
-                if check(slots, ctx, p, t, w):
+                if check(slots, ctx, p, t, w, segments):
                     mask[p][t][w] = 1
     return mask
 
@@ -196,6 +199,10 @@ def decode(model: Any, sample: Dict[str, Any], slots: Any = None, ctx: Any = Non
     по тем же slots/ctx. Математика легальности не дублируется.
     """
     s = int(schema if schema is not None else sample.get("schema", net.SCHEMA))
+    if s >= 5:
+        # v5: 4D A(s) (pos×target×weapon×maneuver) — общий декодер serving/eval обязан идти
+        # через maneuver-голову, иначе маска-4D попала бы в 3D-argmax, а label потерял бы «maneuver».
+        return decode_v5(model, sample, slots=slots, ctx=ctx, schema=s)
     legal = sample.get("legal")
     if legal is None:
         if slots is None or ctx is None:
@@ -226,3 +233,173 @@ def independent_baseline(logps: Dict[str, List[float]], schema: int) -> Dict[str
         vec = logps[group]
         out[name] = max(range(len(vec)), key=vec.__getitem__) if vec else spec.NONE_SLOT
     return out
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════
+# SCHEMA 5: 4D joint — (pos × target × weapon × maneuver)
+# ═══════════════════════════════════════════════════════════════════════════════════
+
+def group_totals_v5(schema: int) -> Dict[str, int]:
+    """Длины векторов v5: cells, targets, weapons, maneuvers."""
+    from arent import spec5
+    d = net.dims_for(schema)
+    return {"cells": d["cells"], "targets": d["targets"], "weapons": d["weapons"],
+            "maneuvers": d["maneuvers"]}
+
+
+def legal_mask_v5(slots: SlotsV3, ctx: Any, schema: int, action_available: bool = True
+                  ) -> List[List[List[List[int]]]]:
+    """4D-маска [pos][target][weapon][maneuver] для схемы v5.
+
+    Правила легальности:
+      • maneuver==NONE (slot=MANEUVER_NONE): как 3D v4 — no-attack (p, NT, NW) и реальные
+        атаки (p, t, w) если attackable_v3.
+      • maneuver!=NONE: (p, NONE_TARGET, NONE_WEAPON, m) легален, если action_available
+        и maneuver m присутствует в slots.maneuvers.
+    """
+    from arent import spec5
+    totals = group_totals_v5(schema)
+    p_n, t_n, w_n, m_n = totals["cells"], totals["targets"], totals["weapons"], totals["maneuvers"]
+    mask = [[[[0] * m_n for _ in range(w_n)] for _ in range(t_n)] for _ in range(p_n)]
+    n_pos = len(slots.plans)
+    targets = slots.targets
+    weapons = slots.weapons
+    NONE_M = spec5.MANEUVER_NONE
+    segments = sight_segments(ctx)
+    check = slots_v3.attackable_v3
+
+    for p in range(min(n_pos, p_n)):
+        # v4 path: maneuver=NONE
+        mask[p][NONE_TARGET][NONE_WEAPON][NONE_M] = 1
+        for t in range(min(len(targets), t_n)):
+            for w in range(min(len(weapons), w_n)):
+                if check(slots, ctx, p, t, w, segments):
+                    mask[p][t][w][NONE_M] = 1
+
+        # v5 path: maneuvers != NONE (force target/weapon = NONE)
+        if action_available:
+            for m_idx in range(min(len(slots.maneuvers), spec5.K_MANEUVERS)):
+                mask[p][NONE_TARGET][NONE_WEAPON][m_idx] = 1
+
+    return mask
+
+
+def argmax_v5(mask: List[List[List[List[int]]]],
+              cell_logp: List[float], target_logp: List[float],
+              weapon_logp: List[float], maneuver_logp: List[float],
+              schema: int) -> Dict[str, int]:
+    """4D joint-argmax: max лог-совместной вероятности по A(s) (включая maneuver-измерение)."""
+    from arent import spec5
+    best, score = None, float("-inf")
+    for p, row_p in enumerate(mask):
+        for t, row_t in enumerate(row_p):
+            for w, row_w in enumerate(row_t):
+                for m, ok in enumerate(row_w):
+                    if not ok:
+                        continue
+                    s = cell_logp[p] + target_logp[t] + weapon_logp[w] + maneuver_logp[m]
+                    if s > score:
+                        score, best = s, (p, t, w, m)
+    if best is None:
+        return {}
+    p, t, w, m = best
+    return {"plan": p, "target": t, "weapon": w, "maneuver": m}
+
+
+def logz_v5(mask: List[List[List[List[int]]]],
+            cell_logp: List[float], target_logp: List[float],
+            weapon_logp: List[float], maneuver_logp: List[float]) -> float:
+    """Лог-сумма-экспонента по 4D A(s): нормировка joint v5."""
+    top = float("-inf")
+    vals: List[float] = []
+    for p, row_p in enumerate(mask):
+        for t, row_t in enumerate(row_p):
+            for w, row_w in enumerate(row_t):
+                for m, ok in enumerate(row_w):
+                    if ok:
+                        u = cell_logp[p] + target_logp[t] + weapon_logp[w] + maneuver_logp[m]
+                        vals.append(u)
+                        if u > top:
+                            top = u
+    if not vals:
+        raise ValueError("пустое A(s) v5: нормировка joint-закона неопределена")
+    return top + math.log(sum(math.exp(u - top) for u in vals))
+
+
+def is_jointly_legal_v5(action: Dict[str, int], mask: List[List[List[List[int]]]]) -> bool:
+    """Легальна ли четвёрка (pos, target, weapon, maneuver) в 4D-маске."""
+    from arent import spec5
+    p = int(action.get("plan", -1))
+    t = int(action.get("target", spec.NONE_SLOT))
+    w = int(action.get("weapon", spec.NONE_SLOT))
+    m = int(action.get("maneuver", spec5.MANEUVER_NONE))
+    try:
+        return bool(mask[p][t][w][m])
+    except IndexError:
+        return False
+
+
+def decode_v5(model: Any, sample: Dict[str, Any], slots=None, ctx=None,
+              schema: int = None) -> Dict[str, Any]:
+    """Единый v5 joint-декодер: 4-head model -> (plan, target, weapon, maneuver)."""
+    from arent import spec5
+    s = int(schema if schema is not None else sample.get("schema", 5))
+    legal = sample.get("legal")
+    if legal is None:
+        if slots is None or ctx is None:
+            raise ValueError("v5 joint-декодеру нужна маска A(s): sample['legal'] или (slots, ctx)")
+        # determine action_available from state
+        # RESOURCE_FEATURES order: actionRemaining, bonusRemaining, reactionRemaining
+        state_len = net.dims_for(s)["state"]
+        v4_state_len = net.dims_for(4)["state"]
+        # actionRemaining is the first resource feature at position v4_state - len(RESOURCE_FEATURES)
+        from arent import spec4
+        action_idx = state_len - len(spec4.RESOURCE_FEATURES)  # first resource feature
+        action_remaining = float(sample["state"][action_idx]) if action_idx < len(sample["state"]) else 1.0
+        legal = legal_mask_v5(slots, ctx, s, action_available=(action_remaining >= 1.0))
+
+    # Get all 4 head logits + value
+    lcs, lts, lws, lms, value = model.all_head_logp(sample)
+    label = argmax_v5(legal, lcs, lts, lws, lms, s)
+    if not label:
+        raise ValueError("v5 joint-декодер вернул пустую метку: маска A(s) пуста")
+    z = logz_v5(legal, lcs, lts, lws, lms)
+    p, t, w, m = label["plan"], label["target"], label["weapon"], label["maneuver"]
+    prob = math.exp(lcs[p] + lts[t] + lws[w] + lms[m] - z)
+    return {"label": label, "mask": legal, "value": value,
+            "logp": {"cells": lcs, "targets": lts, "weapons": lws, "maneuvers": lms},
+            "joint_prob": round(prob, 6)}
+
+
+def ensure_jointly_legal_v5(sample: Dict[str, Any], schema: int = None):
+    """В5-версия: тройка + манёвр метки учителя -> (ip, it, iw, im) или ValueError."""
+    from arent import spec5
+    s = int(sample.get("schema", schema if schema is not None else 5))
+    legal = sample.get("legal")
+    ident = example_id(sample)
+    if legal is None:
+        raise ValueError(f"пример {ident} (schema {s}): нет совместной маски 'legal'.")
+    totals = group_totals_v5(s)
+    none_t = totals["targets"] - 1
+    none_w = totals["weapons"] - 1
+    none_m = totals["maneuvers"] - 1
+    ip = net.y_index(sample, "cells", s)
+    it = net.y_index(sample, "targets", s)
+    iw = net.y_index(sample, "weapons", s)
+    im = net.y_index(sample, "maneuvers", s)
+    # Канонизация: maneuver≠NONE ⇒ weapon=NONE ⇒ target=NONE
+    if im != none_m:
+        iw = none_w
+        it = none_t
+    elif iw == none_w:
+        it = none_t
+    try:
+        ok = bool(legal[ip][it][iw][im])
+    except IndexError:
+        ok = False
+    if not ok:
+        raw = (sample.get("y") or {})
+        raise ValueError(
+            f"пример {ident} (schema {s}): метка учителя (pos={ip}, target={it}, "
+            f"weapon={iw}, maneuver={im}; исходная y={raw}) вне A(s).")
+    return ip, it, iw, im

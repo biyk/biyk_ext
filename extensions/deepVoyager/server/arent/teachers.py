@@ -77,6 +77,14 @@ def _autoload() -> None:
         import arent.battlecast  # noqa: F401  (появится на этапе 2)
     except ImportError:
         pass
+    try:
+        import arent.battlecast_v2  # noqa: F401  (Фаза B: надстройка развязки по исходу)
+    except ImportError:
+        pass
+    try:
+        import arent.ext_teachers  # noqa: F401  (внешние политики бенчмарка, Фаза A)
+    except ImportError:
+        pass
 
 
 def get_teacher(name: str = DEFAULT_TEACHER, **kwargs: Any) -> TeacherPolicy:

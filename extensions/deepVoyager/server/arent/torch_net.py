@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 
 from arent import joint, net
-from arent.net import GROUPS
+from arent.net import GROUPS, groups_for
 
 PAD = -1e30                      # вместо -inf: он остаётся конечным и не ломает sum
 
@@ -41,15 +41,33 @@ def _joint_batch(lcs: torch.Tensor, lts: torch.Tensor, lws: torch.Tensor,
     return joint_t - logZ[:, None, None, None], logZ
 
 
+def _joint_batch_v5(lcs: torch.Tensor, lts: torch.Tensor, lws: torch.Tensor,
+                    lms: torch.Tensor, legal: torch.Tensor):
+    """4D joint logπ по допустимому множеству v5: (позиция × цель × оружие × манёвр).
+
+    Разложение того же закона, что 3D _joint_batch, на четвёртое измерение: логит-сумма
+    голов + маска legal [B,P,T,W,M]. Манёвр взаимоисключает атаку, и это УЖЕ зашито в A(s)
+    (joint.legal_mask_v5 кладёт 1 только на (p, NT, NW, m) для манёвра и на (p, t, w, NONE)
+    для атаки), поэтому здесь не нужна отдельная логика исключения — только broadcasting.
+    Возвращает (logπ [B,P,T,W,M], logZ [B]).
+    """
+    joint_t = (lcs[:, :, None, None, None] + lts[:, None, :, None, None]
+               + lws[:, None, None, :, None] + lms[:, None, None, None, :])
+    joint_t = joint_t.masked_fill(legal == 0, PAD)
+    logZ = torch.logsumexp(joint_t.reshape(joint_t.shape[0], -1), dim=1)      # [B]
+    return joint_t - logZ[:, None, None, None, None], logZ
+
+
 def _module(cfg: net.Config) -> torch.nn.Module:
     """Ствол по состоянию + по голове на группу слотов + линейная голова стоимости."""
     d = net.dims_for(cfg.schema)
+    groups = groups_for(cfg.schema)
     layers = torch.nn.ModuleDict({
         "trunk1": torch.nn.Linear(d["state"], cfg.hidden),
         "trunk2": torch.nn.Linear(cfg.hidden, cfg.head),
         "heads": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head + net.slot_size(g, cfg.schema), cfg.head)
-                                      for g in GROUPS}),
-        "score": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head, 1) for g in GROUPS}),
+                                      for g in groups}),
+        "score": torch.nn.ModuleDict({g: torch.nn.Linear(cfg.head, 1) for g in groups}),
         "value": torch.nn.Linear(cfg.head, 1),
     })
     return layers
@@ -64,6 +82,7 @@ class TorchPolicy:
         self.cfg = cfg
         self.dims = net.dims_for(cfg.schema)
         self.ykey = net.y_key(cfg.schema)
+        self._groups = groups_for(cfg.schema)
         cuda = torch.cuda.is_available()
         want = (device or "auto")
         self.device = torch.device("cuda" if want in ("auto", "cuda") and cuda else "cpu")
@@ -84,7 +103,7 @@ class TorchPolicy:
             self.layers["trunk2"].bias.copy_(_t(params["b2"]))
             self.layers["value"].weight.copy_(_t([params["valueW"]]))
             self.layers["value"].bias.copy_(_s(params["valueB"]))
-            for group in GROUPS:
+            for group in self._groups:
                 self.layers["heads"][group].weight.copy_(_t(params["headW"][group]))
                 self.layers["heads"][group].bias.copy_(_t(params["headB"][group]))
                 self.layers["score"][group].weight.copy_(_t([params["headU"][group]]))
@@ -99,7 +118,7 @@ class TorchPolicy:
                    "valueW": _l(self.layers["value"].weight)[0],
                    "valueB": float(self.layers["value"].bias.item()),
                    "headW": {}, "headB": {}, "headU": {}, "headUB": {}}
-            for group in GROUPS:
+            for group in self._groups:
                 out["headW"][group] = _l(self.layers["heads"][group].weight)
                 out["headB"][group] = _l(self.layers["heads"][group].bias)
                 out["headU"][group] = _l(self.layers["score"][group].weight)[0]
@@ -111,15 +130,15 @@ class TorchPolicy:
         state = torch.tensor([s["state"] for s in samples], dtype=torch.float32,
                              device=self.device)
         slots = {g: torch.tensor([s[g] for s in samples], dtype=torch.float32,
-                                 device=self.device) for g in GROUPS}
+                                 device=self.device) for g in self._groups}
         masks = {g: torch.tensor([s["mask"][g] for s in samples], dtype=torch.float32,
-                                 device=self.device) for g in GROUPS}
+                                 device=self.device) for g in self._groups}
         return state, slots, masks
 
     def _pass(self, state, slots, masks):
         stem = F.relu(self.layers["trunk2"](F.relu(self.layers["trunk1"](state))))
         logits = {}
-        for group in GROUPS:
+        for group in self._groups:
             wide = stem.unsqueeze(1).expand(-1, slots[group].size(1), -1)
             hit = F.relu(self.layers["heads"][group](torch.cat([wide, slots[group]], dim=2)))
             raw = self.layers["score"][group](hit).squeeze(2)
@@ -132,6 +151,7 @@ class TorchPolicy:
         Тот же примитив закона головы (_dist), что у BC-шага и PPO act/_eval: masked
         log-softmax по всем слотам; вне маски значения крайне отрицательные и joint-argmax
         их не выбирает (mask A(s) их всё равно исключает).
+        Возвращает РОВНО (cells, targets, weapons, value) — для v2/3/4/5.
         """
         state, slots, masks = self._batch([sample])
         with torch.no_grad():
@@ -140,12 +160,22 @@ class TorchPolicy:
                     for g in GROUPS}
         return vecs["cells"], vecs["targets"], vecs["weapons"], round(float(value.item()), 4)
 
+    def all_head_logp(self, sample: Dict[str, Any]):
+        """5-tuple (cells, targets, weapons, maneuvers, value) для v5 joint-декодера."""
+        state, slots, masks = self._batch([sample])
+        with torch.no_grad():
+            logits, value = self._pass(state, slots, masks)
+            vecs = {g: [float(x) for x in _dist(logits[g], masks[g])[1][0].tolist()]
+                    for g in self._groups}
+        return (vecs["cells"], vecs["targets"], vecs["weapons"], vecs["maneuvers"],
+                round(float(value.item()), 4))
+
     def predict(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         state, slots, masks = self._batch([sample])
         with torch.no_grad():
             logits, value = self._pass(state, slots, masks)
             out: Dict[str, Any] = {"value": round(float(value.item()), 4)}
-            for group in GROUPS:
+            for group in self._groups:
                 row, ok = logits[group][0], sample["mask"][group]
                 index = int(torch.argmax(row).item())
                 allowed = index < len(ok) and ok[index]
@@ -166,6 +196,8 @@ class TorchPolicy:
         if lr is not None:
             for group_ in self.optim.param_groups:
                 group_["lr"] = lr
+        if int(self.cfg.schema) >= 5:
+            return self._step_batch_v5(batch)
         state, slots, masks = self._batch(batch)
         trip = [joint.ensure_jointly_legal(s, self.cfg.schema) for s in batch]   # (ip,it,iw)
         idx = {"cells": [x[0] for x in trip], "targets": [x[1] for x in trip],
@@ -191,6 +223,45 @@ class TorchPolicy:
         # Diagnostic per head: независимая CE каждой головы (НЕ оптимизируется, только отчёт).
         parts = {self.ykey[g]: round(float(F.cross_entropy(logits[g], targets[g]).item()), 4)
                  for g in GROUPS}
+        report = {"loss": round(float(total.item()), 4),
+                  "value": round(float(value_loss.item()), 4)}
+        report.update(parts)
+        report["n"] = len(batch)
+        return report
+
+    def _step_batch_v5(self, batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Совместный BC-шаг схемы 5: 4D joint NLL поверх legal [B,P,T,W,M] + value MSE.
+
+        Тот же закон, что у PPO-act/инференса (torch_rl._eval, joint.decode_v5): logπ(a*|s) из
+        _joint_batch_v5 поверх sample["legal"]. Метка учителя проходит joint.ensure_jointly_legal_v5
+        (канон maneuver≠NONE ⇒ weapon=NONE ⇒ target=NONE + попадание в A(s)); недопустимая ->
+        ValueError, чтобы в датасете не осталось размеченного вне menю хода. Градиент получает и
+        maneuver-голова: на позитивном манёвре onehot по m ≠ NONE толкает её вероятность вверх.
+        """
+        state, slots, masks = self._batch(batch)
+        trip = [joint.ensure_jointly_legal_v5(s, self.cfg.schema) for s in batch]  # (ip,it,iw,im)
+        idx = {"cells": [x[0] for x in trip], "targets": [x[1] for x in trip],
+               "weapons": [x[2] for x in trip], "maneuvers": [x[3] for x in trip]}
+        targets = {g: torch.tensor(idx[g], dtype=torch.long, device=self.device)
+                   for g in self._groups}
+        wanted = torch.tensor([float(s.get("value", 0.0)) for s in batch], dtype=torch.float32,
+                              device=self.device)
+        legal = torch.tensor([s["legal"] for s in batch], dtype=torch.float32,
+                             device=self.device)                              # [B,P,T,W,M]
+        self.optim.zero_grad(set_to_none=True)
+        logits, value = self._pass(state, slots, masks)
+        head = {g: _dist(logits[g], masks[g])[1] for g in self._groups}        # log-softmax [B,size]
+        logpi, _logZ = _joint_batch_v5(head["cells"], head["targets"], head["weapons"],
+                                       head["maneuvers"], legal)
+        ar = torch.arange(len(batch), device=self.device)
+        action_loss = -logpi[ar, targets["cells"], targets["targets"],
+                             targets["weapons"], targets["maneuvers"]].mean()
+        value_loss = F.mse_loss(value, wanted)
+        total = action_loss + 0.5 * self.cfg.value_w * value_loss
+        total.backward()
+        self.optim.step()
+        parts = {self.ykey[g]: round(float(F.cross_entropy(logits[g], targets[g]).item()), 4)
+                 for g in self._groups}
         report = {"loss": round(float(total.item()), 4),
                   "value": round(float(value_loss.item()), 4)}
         report.update(parts)

@@ -34,6 +34,21 @@ class DistanceField:
 
 
 @dataclass(frozen=True)
+class ManeuverWeights:
+    """Веса выбора манёвров учителем battlecast (схема v5), в ЕДИНИЦАХ ожидаемого урона.
+
+    То же измерение, что FINISH_VALUE/INCOMING_WEIGHT в battlecast_heuristics — поэтому
+    прибавка сравнима с EV удара и с экономией ответного огня. Это НЕ λ-шейпинг-тег
+    (реестр arent/tactics их не содержит): числа читаются напрямую, без валидации ключей,
+    как tactics.base/distance_field. Значения по умолчанию = «манёвр ровно окупает то, что
+    стоит» (нулевая добавка); positive сдвигает выбор учителя в сторону этого манёвра.
+    """
+    dash_bonus: float = 0.0
+    disengage_bonus: float = 0.0
+    dodge_bonus: float = 0.0
+
+
+@dataclass(frozen=True)
 class TacticsConfig:
     """Действующая секция tactics. Пустые weights/penalties = shaping выключен по существу."""
     enabled_global: bool = True
@@ -53,6 +68,8 @@ class TacticsConfig:
     #: cap_of_win·|WIN| за бой — без капа неугасающий штраф даёт runaway-минус и роняет value-хед.
     #: Пример: ranged_grabbed + морковки дистанции (симметричный выживающий канал кнут+пряник).
     hard: frozenset = frozenset()
+    #: веса выбора манёвров учителем (tactics.maneuvers) — вне реестра тегов, hot-reload.
+    maneuver: ManeuverWeights = field(default_factory=ManeuverWeights)
 
     def lam(self, iter_index: int, total_iters: int) -> float:
         """λ(iter): decay_mode=linear -> затухание к decay_floor; unknown -> 1.0 (без затухания)."""
@@ -107,6 +124,24 @@ def _parse_hard(section: dict) -> frozenset:
     return frozenset(out)
 
 
+def _parse_maneuver(section: dict) -> ManeuverWeights:
+    """tactics.maneuvers -> ManeuverWeights (dash/disengage/dodge). Вне реестра тегов:
+    это веса EV-эвристик учителя, а не λ-шейпинг. Неизвестный ключ игнорируем
+    (в отличие от weights/penalties), чтобы правка файла не ломала загрузку.
+    """
+    raw = section.get("maneuvers") or {}
+    if not isinstance(raw, dict):
+        return ManeuverWeights()
+    kw = {}
+    for name in ("dash_bonus", "disengage_bonus", "dodge_bonus"):
+        if name in raw:
+            try:
+                kw[name] = float(raw[name])
+            except (TypeError, ValueError):
+                pass
+    return ManeuverWeights(**kw)
+
+
 def parse(section: Optional[dict]) -> TacticsConfig:
     """raw['tactics'] -> TacticsConfig с проверкой ключей против реестра. Нет секции -> выкл."""
     if not isinstance(section, dict) or not section:
@@ -139,6 +174,7 @@ def parse(section: Optional[dict]) -> TacticsConfig:
         base=_parse_base(section),
         disabled=_parse_disabled(section),
         hard=_parse_hard(section),
+        maneuver=_parse_maneuver(section),
     )
 
 

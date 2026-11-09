@@ -23,10 +23,11 @@ Cell2 = Tuple[int, int]
 
 @dataclass
 class SlotsV3:
-    """Слоты v3: plans (move-plan'ы) × targets × weapons. Индексы = порядок списков."""
+    """Слоты v3/v4/v5: plans (move-plan'ы) × targets × weapons [× maneuvers для v5]."""
     plans: List[Dict[str, Any]] = field(default_factory=list)
     targets: List[Dict[str, Any]] = field(default_factory=list)
     weapons: List[Dict[str, Any]] = field(default_factory=list)
+    maneuvers: List[Dict[str, Any]] = field(default_factory=list)  # v5: [{'id':..., 'kind':'dash'},...]
 
     @property
     def n_plans(self) -> int:
@@ -58,7 +59,7 @@ def _can_strike(ctx: BattleContext, cell: Cell, enemies: List[Dict[str, Any]],
         at = _cell_of(ctx, e["id"])
         dist = cell_distance(cell, at)
         if any(dist <= float(w["doubtCells"]) + 0.5 for w in weapons) \
-                and los_clear(ctx, cell, at):
+                and los_clear(ctx, cell, at, segments):
             return True
     return False
 
@@ -202,8 +203,12 @@ def ensure_plan(slots: SlotsV3, ctx: BattleContext, actions: List[Any]) -> int:
 
 
 def attackable_v3(slots: SlotsV3, ctx: BattleContext, plan_i: int, target_i: int,
-                  weapon_i: int) -> bool:
-    """Легально ли три: цель жива, план в слотах, оружие ДОСТАЁТ ЦЕЛЬ ИЗ ПОЗИЦИИ АТАКИ."""
+                  weapon_i: int, segments=None) -> bool:
+    """Легально ли три: цель жива, план в слотах, оружие ДОСТАЁТ ЦЕЛЬ ИЗ ПОЗИЦИИ АТАКИ.
+
+    segments — предвычисленные sight_segments(ctx) от joint.legal_mask: los_clear не собирает
+    стены заново на каждую тройку (сотни вызовов на один /plan).
+    """
     if not (0 <= plan_i < slots.n_plans) or target_i < 0 or weapon_i < 0:
         return False
     if not (0 <= target_i < len(slots.targets) and 0 <= weapon_i < len(slots.weapons)):
@@ -217,7 +222,7 @@ def attackable_v3(slots: SlotsV3, ctx: BattleContext, plan_i: int, target_i: int
     attack_cell = slots.plans[plan_i]["attack_cell"]
     at = _cell_of(ctx, enemy["id"])
     dist = cell_distance(attack_cell, at)
-    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, attack_cell, at)
+    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, attack_cell, at, segments)
 
 
 def _real(index: int, count: int) -> int:
@@ -256,3 +261,53 @@ def label_of(ctx: BattleContext, slots: SlotsV3, actions: List[Any]) -> Optional
     target_i = next((i for i, t in enumerate(slots.targets) if t["id"] == aimed), spec.NONE_SLOT)
     weapon_i = next((i for i, w in enumerate(slots.weapons) if w["id"] == used), spec.NONE_SLOT)
     return {"plan": plan_i, "target": target_i, "weapon": weapon_i}
+
+
+def decode_v5(slots: SlotsV3, label: Dict[str, int]) -> List[Any]:
+    """(plan, target, weapon, maneuver) -> actions. v5: maneuver≠NONE ⇒ use_action(maneuverItemId),
+    attack component forced NONE. При maneuver==NONE — обычный v4-decode.
+
+    Порядок исполнения: move(dirs_in) → USE(maneuver) → move(dirs_out) — движение происходит
+    до и после действия (per 5e: move is free and can be split around the action).
+    """
+    from arent import spec5
+    m_i = int(label.get("maneuver", spec5.MANEUVER_NONE))
+    plan = slots.plans[label["plan"]] if 0 <= label.get("plan", -1) < slots.n_plans else None
+
+    if m_i < spec5.K_MANEUVERS and 0 <= m_i < len(slots.maneuvers):
+        # Манёвр выбран: оружие и цель форсируются в NONE; исполняем use_action
+        actions: List[Any] = []
+        if plan is not None:
+            actions += [move_action(d) for d in plan["dirs_in"]]
+        actions.append(use_action(slots.maneuvers[m_i]["id"]))
+        if plan is not None:
+            actions += [move_action(d) for d in plan["dirs_out"]]
+        return actions
+
+    # Манёвр = NONE: стандартное v4-поведение (атака или пропуск)
+    return decode(slots, label)
+
+
+def label_of_v5(ctx: BattleContext, slots: SlotsV3, actions: List[Any]) -> Optional[Dict[str, int]]:
+    """Actions → (plan, target, weapon, maneuver). Используется учителем/battlecast.
+
+    Если в действиях есть USE с itemId, принадлежащим slots.maneuvers — это манёвр;
+    weapon/target форсируются в NONE. Иначе — стандартный v4 label_of.
+    """
+    from arent import spec5
+    # сначала ищем USE из манёвров
+    maneuver_items = {m["id"]: i for i, m in enumerate(slots.maneuvers)}
+    used_ids = [a.conf.get("itemId") for a in actions if a.action == ACTION_USE]
+    maneuver_i = spec5.MANEUVER_NONE
+    for uid in used_ids:
+        if uid in maneuver_items:
+            maneuver_i = maneuver_items[uid]
+            break
+    base = label_of(ctx, slots, actions)
+    if base is None:
+        return None
+    if maneuver_i < spec5.MANEUVER_NONE:
+        # это был манёвр, а не атака
+        return {**base, "target": spec.NONE_SLOT, "weapon": spec.NONE_SLOT,
+                "maneuver": maneuver_i}
+    return {**base, "maneuver": spec5.MANEUVER_NONE}

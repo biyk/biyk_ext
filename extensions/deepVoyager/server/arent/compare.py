@@ -39,9 +39,13 @@ def fight(teacher: Any, payload: Dict[str, Any], rounds: int) -> Dict[str, Any]:
     state = Simulation.of(BattleContext.from_payload(payload))
     foes_total, played = len(state.foes), 0
     dealt = taken = total_value = 0.0
+    actions_total = wasted = 0
     while played < max(1, int(rounds)) and not state.hero_dead and state.foes:
         ctx = state.context_for(state.hero_id)
         actions = teacher.plan(ctx)
+        actions_total += len(actions)
+        if not actions:                       # холостой раунд: политика не смогла ничего сделать
+            wasted += 1
         round_value = Scorer().score(ctx, actions)
         before = {u.id: u.hp for u in state.foes}
         hero_before = state.hero.hp
@@ -51,9 +55,11 @@ def fight(teacher: Any, payload: Dict[str, Any], rounds: int) -> Dict[str, Any]:
         total_value += round_value + penalty        # ровно advance(actions)[1], но одним проходом
         taken += max(0.0, hero_before - state.hero.hp)
         played += 1
+    kills = foes_total - len(state.foes)      # снимает «kill conversion»: сколько реально убито
     return {"rounds": played, "survived": not state.hero_dead, "cleared": not state.foes,
             "foes": foes_total, "foes_left": len(state.foes), "rollout": round(total_value, 3),
-            "dmg_dealt": round(dealt, 2), "dmg_taken": round(taken, 2)}
+            "dmg_dealt": round(dealt, 2), "dmg_taken": round(taken, 2),
+            "actions": actions_total, "wasted": wasted, "kills": kills}
 
 
 def _coverage(teacher_name: str, states: List[Tuple[str, Dict[str, Any], Dict[str, Any]]],

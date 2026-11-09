@@ -6,7 +6,7 @@
 # нужные для симуляции чужих ходов. Старый клиент их не присылает, и сервер берёт
 # дефолты из points.json, поэтому контракт /plan остаётся прежним.
 # Модель боя и её методы — в planner/context.py; здесь только «данные -> объекты».
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Sequence, Tuple
 
 from planner.armament import Weapon, parse_weapons
@@ -32,6 +32,9 @@ class Token:
     reach_ft: float = 0.0   # досягаемость его атаки
     hit_chance: float = 0.0  # вероятность попадания; 0 = «не прислано»
     initiative: int = 0     # явная инициатива (1..30); 0 = «не прислано» -> бросим d20
+    # Манёвры (SCHEMA=5): itemId -> kind (dash|disengage|dodge) из записи npcs[]. Пустая карта
+    # (v2/v3/v4 и готовые арены без maneuvers) => sim.apply_actor_seq бит-в-бит прежний.
+    maneuver_kinds: Dict[str, str] = field(default_factory=dict)
 
     @property
     def is_alive(self) -> bool:
@@ -103,7 +106,25 @@ def parse_tokens(data: Dict[str, Any]) -> List[Token]:
             reach_ft=_number(n.get("reachFt"), as_int=False),
             hit_chance=_number(n.get("hitChance"), as_int=False),
             initiative=_number(n.get("initiative")),
+            maneuver_kinds=parse_maneuver_kinds(n.get("maneuvers")),
         ))
     if not out:
         raise ValueError("No tokens in scene data")
+    return out
+
+
+def parse_maneuver_kinds(raw_list: Any) -> Dict[str, str]:
+    """Список 'maneuvers' ({'id','kind',...}) -> itemId->kind (dash|disengage|dodge).
+
+    Пусто/не-список/элементы без id или kind -> {} — манёвров нет, и sim держит прежний
+    бит-в-бит путь (v2/v3/v4 и готовые арены). Первый элемент на id берётся (id уникален)."""
+    out: Dict[str, str] = {}
+    if not isinstance(raw_list, list):
+        return out
+    for m in raw_list:
+        if not isinstance(m, dict):
+            continue
+        mid, kind = m.get("id"), m.get("kind")
+        if mid and kind and mid not in out:
+            out[str(mid)] = str(kind)
     return out

@@ -91,8 +91,12 @@ def ensure_cell(slots: Slots, src_cell: Cell, cell: Cell, dirs: List[str]) -> in
 
 
 def attackable(slots: Slots, ctx: BattleContext, cell_i: int, target_i: int,
-               weapon_i: int) -> bool:
-    """Легально ли три: цель жива, клетка в слотах, оружие достает И есть линия видимости."""
+               weapon_i: int, segments=None) -> bool:
+    """Легально ли три: цель жива, клетка в слотах, оружие достает И есть линия видимости.
+
+    segments — предвычисленные sight_segments(ctx): joint.legal_mask считает их один раз на
+    всю маску и пропускает вниз, чтобы los_clear не пересобирал список стен на каждую тройку.
+    """
     if cell_i < 0 or target_i < 0 or weapon_i < 0:
         return False
     if not (0 <= cell_i < slots.n_cells):
@@ -107,7 +111,7 @@ def attackable(slots: Slots, ctx: BattleContext, cell_i: int, target_i: int,
     # F-C: то же правило, что у исполнения урона (planner/sim) и наблюдения (observe):
     # дистанция И линия видимости из выбранной клетки. Маска больше не разрешает выстрел
     # сквозь стену, который симуляция потом обнуляет.
-    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, cell, at)
+    return dist <= float(weapon["doubtCells"]) + 0.5 and los_clear(ctx, cell, at, segments)
 
 
 def decode(slots: Slots, label: Dict[str, int]) -> List[Action]:

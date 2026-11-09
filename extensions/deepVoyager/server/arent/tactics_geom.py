@@ -126,3 +126,23 @@ def chokepoint_cells(ctx: BattleContext) -> frozenset:
 
 def is_choke(ctx: BattleContext, cell: Cell) -> bool:
     return cell in chokepoint_cells(ctx)
+
+
+def move_reachable(ctx: BattleContext, start: Cell) -> frozenset:
+    """Компонента связности графа проходимости, содержащая start (только стены, без NPC).
+
+    Делегирует BFS pathфайндеру (8 направлений + угол-правило 5e), чтобы критерий связности
+    совпадал с тем, что реально считает планировщик хода, а не с упрощённой ортогональной сеткой."""
+    return frozenset(SimplePathfinder(ctx.raw).reachable(start[0], start[1]))
+
+
+def teams_reachable(ctx: BattleContext) -> bool:
+    """Все живые токены в ОДНОЙ компоненте связности (стены не отрезают команду от команды).
+
+    Основа валидации арен Этапа 4.2: укрытия/профили стен обязуют связный бой — если генератор
+    запечатал одну сторону в изолированном регионе, сценарий не боеспособен и отбраковывается."""
+    cells = [ctx.cell_of(t) for t in ctx.tokens if t.is_alive]
+    if len(cells) < 2:
+        return True
+    reach = move_reachable(ctx, cells[0])
+    return all(c in reach for c in cells)

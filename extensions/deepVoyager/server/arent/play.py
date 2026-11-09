@@ -14,9 +14,9 @@ import math
 import os
 from typing import Any, Callable, Dict, List, Optional
 
-from arent import backend, encode, encode_v3, encode_v4, joint as joint_mod, \
-    legalize as legalize_mod, net, paths, slots as slots_mod, slots_v3, spec, spec3, spec4
-from arent.net import GROUPS, Y_KEY
+from arent import backend, encode, encode_v3, encode_v4, encode_v5, joint as joint_mod, \
+    legalize as legalize_mod, net, paths, slots as slots_mod, slots_v3, spec, spec3, spec4, spec5
+from arent.net import GROUPS, GROUPS_V5, Y_KEY, groups_for
 from arent.observe import observe
 from planner.context import BattleContext
 
@@ -61,6 +61,33 @@ def act(model: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
     obs = observe(ctx)
     schema = _schema_of(model)
     yk = net.y_key(schema)
+
+    if schema >= spec5.SCHEMA:                            # v5: move-plan + economy + maneuver head
+        slots = slots_v3.build(ctx, obs)
+        # populate maneuver slots from payload
+        maneuver_items = payload.get("maneuvers", [])
+        slots.maneuvers = list(maneuver_items)
+        sample = encode_v5.observation(ctx, obs, slots)
+        out = model.predict(sample)                       # diagnostic baseline (independent argmax)
+        dec = joint_mod.decode_v5(model, sample, slots, ctx, schema)
+        label = dec["label"]
+        actions = slots_v3.decode_v5(slots, label)
+        return {
+            "schema": schema, "actions": [a.to_dict() for a in actions], "y": label,
+            "y_proposed": {yk[g]: out[yk[g]] for g in groups_for(schema) if g in yk},
+            "decoder": "joint_argmax_v5",
+            "joint": {"prob": dec["joint_prob"]},
+            "value": dec["value"],
+            "prob": _head_probs(dec["logp"], label, yk, tuple(groups_for(schema))),
+            "names": {"cell": _plan(slots, label.get("plan", -1)),
+                      "target": _name(slots.targets, label.get("target", -1)),
+                      "weapon": _name(slots.weapons, label.get("weapon", -1)),
+                      "maneuver": _name(slots.maneuvers, label.get("maneuver", -1))},
+            "counts": {"cells": slots.n_plans, "targets": len(slots.targets),
+                       "weapons": len(slots.weapons), "maneuvers": len(slots.maneuvers)},
+            "me": obs["me"]["name"], "src": ctx.src_id, "grid": obs["grid"],
+        }
+
     if spec3.uses_moveplan(schema):                # v3/v4: голова move-plan (атака+отступление)
         slots = slots_v3.build(ctx, obs)
         sample = (encode_v4.observation(ctx, obs, slots) if schema == spec4.SCHEMA

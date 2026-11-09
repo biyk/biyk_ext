@@ -24,9 +24,16 @@ FIELD_PROFILES: Sequence[Tuple[str, int, int]] = (
 FIELD_WEIGHTS: Sequence[float] = (0.25, 0.5, 0.25)
 
 # Профили стен выбираются по seed НЕЗАВИСИМО от архетипа (число сегментов 0..20).
+# bottleneck НЕ входит в WALL_PROFILES (случайный pick_wall_profile его не выдаёт — он нужен
+# только Этапу 4.2, где профиль задаётся явно): сплошная вертикальная стена с ОДНОЙ клеточной
+# дверью. Бюджет завышен (>= max строк поля), чтобы rng.sample в build_walls НЕ прорежал стену и
+# не разрушал единственную дверь — иначе профиль теряет гарантированную узость (артикуляционную
+# точку графа проходимости) и choke-тактика (hold_choke/leave_choke) становится необучаемой.
 WALL_PROFILES: Sequence[str] = ("open", "scatter", "pillars", "corridor", "ring", "maze_lite")
+_BOTTLENECK_MAX_ROWS = 40
 _WALL_BUDGET: Dict[str, int] = {"open": 0, "scatter": 5, "pillars": 16,
-                                 "corridor": 12, "ring": 14, "maze_lite": 20}
+                                 "corridor": 12, "ring": 14, "maze_lite": 20,
+                                 "bottleneck": _BOTTLENECK_MAX_ROWS}
 
 DEPLOYMENTS: Sequence[str] = ("edge", "corner", "diagonal")
 
@@ -125,6 +132,16 @@ def _candidates(profile: str, rows: int, cols: int, rng: random.Random) -> List[
                     push(_edge_h(r - 1, c), 1)
                 if c % 2 == 0 and rng.random() < 0.5:
                     push(_edge_v(r, c - 1), 1)
+    elif profile == "bottleneck":                   # глухая вертикальная стена + ОДНА клеточная дверь
+        # Перегородка на всю высоту поля (между колонками col-1 и col) кроме одного ряда-проёма:
+        # половины связны только этой дверью => клетка проёма = артикуляционная точка (узость).
+        # Сегментов ровно rows-1 (< бюджет), поэтому build_walls не прорежет и дверь уцелеет.
+        col = rng.randint(cols // 3, max(cols // 3, 2 * cols // 3))
+        door = rng.randint(1, max(1, rows - 2))
+        for r in range(rows):
+            if r == door:
+                continue
+            push(_edge_v(r, col - 1), 1)
     return out
 
 

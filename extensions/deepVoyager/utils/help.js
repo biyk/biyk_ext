@@ -83,7 +83,7 @@ function weaponEntry(item) {
     return {
         id: item.id,
         name: item.name,
-        damage: item.system.damage?.parts?.[0]?.[0] || null,
+        damage: resolvedDamage(item),
         attackBonus: attackBonus(item),
         sureFt: sure,
         doubtFt: doubt,
@@ -115,11 +115,41 @@ function isRanged(item) {
     return (Number(range.value) || 0) > 5 || (Number(range.long) || 0) > 0;
 }
 
-/** Бонус атаки: система считает сама и кладёт в labels.toHit («+5»), иначе — магический бонус. */
+/**
+ * Бонус атаки: labels.toHit форматируется с пробелом («+ 4»), поэтому parseInt
+ * давал NaN и бонус обнулялся — вытаскиваем знак с цифрами регуляркой.
+ * Цепочка: labels.toHit → labels.modifier → магический бонус.
+ */
 function attackBonus(item) {
-    const fromLabel = parseInt(item.labels?.toHit ?? item.labels?.modifier ?? '', 10);
-    if (Number.isFinite(fromLabel)) return fromLabel;
-    return Number(item.system.magicalBonus ?? item.system.magicBonus ?? 0) || 0;
+    const fromLabel = signedNumber(item.labels?.toHit) ?? signedNumber(item.labels?.modifier);
+    if (fromLabel !== null) return fromLabel;
+    return Number(item.system?.magicalBonus ?? item.system?.magicBonus ?? 0) || 0;
+}
+
+/** Число со знаком из произвольной строки («+ 4» → 4, «−2» → -2), иначе null. */
+function signedNumber(text) {
+    const m = /(−|-)?\s*\d+/.exec(String(text ?? ''));
+    if (!m) return null;
+    const value = Number(m[0].replace('−', '-').replace(/\s+/g, ''));
+    return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Разрешённый урон: в labels.derivedDamage[0].formula модификатор уже подставлен
+ * («1d4 + 2»); пробелы убираем к тренировочному формату «1d4+2». Если labels не
+ * вычисляются или формула осталась с @mod — фолбэк на сырую формулу системы.
+ */
+function resolvedDamage(item) {
+    const derived = item.labels?.derivedDamage?.[0]?.formula;
+    if (derived && !String(derived).includes('@')) return String(derived).replace(/\s+/g, '');
+    return item.system.damage?.parts?.[0]?.[0] || null;
+}
+
+/** Средний урон по формуле «NdS±C»; null — если формула не читается. */
+function damageAvg(formula) {
+    const m = /(\d+)d(\d+)([+-]\d+)?/.exec(String(formula || '').replace(/\s+/g, ''));
+    if (!m) return null;
+    return (Number(m[1]) * (Number(m[2]) + 1)) / 2 + (Number(m[3]) || 0);
 }
 
 /** Досягаемость ближнего боя в футах: 5 без свойства reach, иначе 10. */
@@ -127,6 +157,35 @@ function reachFt(item) {
     if (propertyList(item).includes('rch')) return 10;
     const explicit = Number(item.reach);
     return Number.isFinite(explicit) && explicit > 0 ? explicit : 5;
+}
+
+/**
+ * Симуляционные поля актёра для npcs-записи /plan (контракт тренировки: speed,
+ * damage, reachFt, initiative). damage — формула лучшего оружия, reachFt — самая
+ * дальняя уверенная атака (для лучника/пращи 30, для мили 5). hitChance не
+ * передаём: сервер считает свою 0.65 — как и на тренировке.
+ * @param {Token} token
+ * @param {number|string|undefined} initiative из боевого трекера (может не быть)
+ * @returns {object} часть payload для npcs[i]
+ */
+export function npcSimFields(token, initiative) {
+    const fields = {};
+    const walk = Number(token?.actor?.system?.attributes?.movement?.walk);
+    if (Number.isFinite(walk) && walk > 0) fields.speed = walk;
+
+    let damage = null;
+    let reachFt = 0;
+    for (const w of buildWeapons(token)) {
+        if (w.sureFt > reachFt) reachFt = w.sureFt;
+        const avg = damageAvg(w.damage);
+        if (w.damage && (avg !== null) && (damage === null || avg > damageAvg(damage))) damage = w.damage;
+    }
+    if (damage) fields.damage = damage;
+    if (reachFt) fields.reachFt = reachFt;
+
+    const ini = Math.round(Number(initiative));
+    if (Number.isFinite(ini)) fields.initiative = ini;
+    return fields;
 }
 
 /**

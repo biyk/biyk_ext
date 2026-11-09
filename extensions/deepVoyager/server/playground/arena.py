@@ -11,8 +11,9 @@ from typing import Any, Dict, List
 ARENAS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arenas")
 DEFAULT_SCENE = {"width": 500, "height": 500, "gridSize": 50}
 # поля токена, которые /plan читает «как есть» для симуляции чужих ходов
-# (weapons — свой арсенал токена: «универсальный солдат» ходит от лица любого из них)
-SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance", "initiative", "weapons")
+# (weapons — свой арсенал токена: «универсальный солдат» ходит от лица любого из них;
+#  maneuvers — набор манёвров токена (SCHEMA=5), sim разбирает maneuver_kinds по npcs[])
+SIM_FIELDS = ("speed", "damage", "reachFt", "hitChance", "initiative", "weapons", "maneuvers")
 
 
 def arena_file(name: str) -> str:
@@ -96,9 +97,13 @@ def build_payload(raw: Dict[str, Any], where: str) -> Dict[str, Any]:
     weapons = hero.get("weapons") or lead.get("weapons")
     if not weapons:
         raise ValueError(f"арена {where}: нет оружия ни у hero, ни у первого токена")
+    # манёвры актёра (SCHEMA=5): с лица src, как weapons. Legacy-арены (ho_*) без maneuvers ->
+    # [] -> ctx.maneuver_items пусто -> поведение v2/v3/v4 бит-в-бит прежнее.
+    maneuvers = hero.get("maneuvers") or lead.get("maneuvers") or []
     return {
         "src": src_id, "token": raw.get("target"), "mode": raw.get("mode", "direct"),
         "speed": hero.get("speed") or lead.get("speed") or 30, "weapons": weapons,
+        "maneuvers": maneuvers,
         "data": {"scene": scene, "npcs": npcs,
                  "walls": [_wall(w, i, where) for i, w in enumerate(raw.get("walls") or [])]},
     }

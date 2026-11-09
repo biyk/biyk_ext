@@ -6,7 +6,7 @@
 # Броски и разрыв ничьих идут из отдельных rng-сегментов env_seed: один seed -> один порядок,
 # и ничья не разрешается алфавитом id (иначе порядок был бы структурно смещён).
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional, Tuple
 
 from planner.geometry import Cell
@@ -31,6 +31,11 @@ class Unit:
     action: int = 1             # действие (атака) осталось (0 = атаковать нельзя)
     bonus: int = 1              # бонусное действие (признак наблюдения; гейт атаки не трогает)
     reaction: int = 1           # реакция = атака по возможности (Ao); 0 = уже израсходована
+    # Манёвры (SCHEMA=5): карта itemId -> kind (dash|disengage|dodge) для «use»-фич, которые
+    # НЕ атака. Пустая карта (v2/v3/v4 и все готовые арены) => apply_actor_seq бит-в-бит прежний.
+    maneuver_kinds: Dict[str, str] = field(default_factory=dict)
+    disengaged: bool = False    # Отступление: юнит не провоцирует Ao, пока активен его ход
+    dodging: bool = False       # Уклонение: входящие по юниту атаки — с помехой (шанс пополам)
 
     @property
     def is_alive(self) -> bool:

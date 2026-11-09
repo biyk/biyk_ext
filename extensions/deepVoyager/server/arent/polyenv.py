@@ -9,7 +9,8 @@
 # полного цикла инициативы; смерть якорного «героя» сама по себе бой не заканчивает.
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from arent import encode, encode_v3, encode_v4, joint as joint_mod, slots as slots_mod, slots_v3, spec, spec3, spec4
+from arent import encode, encode_v3, encode_v4, encode_v5, joint as joint_mod, slots as slots_mod, \
+    slots_v3, spec, spec3, spec4, spec5
 from arent.env import FightEnv, shape_reward
 from arent.observe import observe
 from arent.team_reward import TeamReward
@@ -47,27 +48,37 @@ class PolyFightEnv(FightEnv):
         return obs
 
     def _observe(self) -> Dict[str, Any]:
-        # SCHEMA=4: начало хода актёра — откатить ему экномику действий (D&D: реакция тоже
+        # SCHEMA>=4: начало хода актёра — откатить ему экномику действий (D&D: реакция тоже
         # возвращается на своём ходу). Делается ДО наблюдения, чтобы ресурсы попали в state-хвост.
-        if self.schema == spec4.SCHEMA:
+        # v5 (== v4 по экономике + maneuver-голова) идёт тем же путём, что v4.
+        if self.schema >= spec4.SCHEMA:
             self.state = self.state.reset_actor_turn(self.actor)
         ctx = self.state.context_for(self.actor)
-        resources = self.state.units if self.schema == spec4.SCHEMA else None
+        resources = self.state.units if self.schema >= spec4.SCHEMA else None
         obs = observe(ctx, self.state.initiative_order, self.actor, resources=resources)
         self._ctx = ctx
         self.raw_obs = obs                         # СЫРОЙ читаемый JSON наблюдения (для дампа:
         #   team_eval obs_trace пишет его в шаг как obs_raw; сам бой не трогает)
         if spec3.uses_moveplan(self.schema):
             self.slots = slots_v3.build(ctx, obs)
-            if self.schema == spec4.SCHEMA:
+            if self.schema >= spec5.SCHEMA:
+                self.slots.maneuvers = list(ctx.maneuver_items)   # serve==train: 4-я голова
+                sample = encode_v5.observation(ctx, obs, self.slots)
+            elif self.schema == spec4.SCHEMA:
                 sample = encode_v4.observation(ctx, obs, self.slots)
             else:
                 sample = encode_v3.observation(ctx, obs, self.slots)
         else:
             self.slots = slots_mod.build(ctx, obs)
             sample = encode.observation(ctx, obs, self.slots)
-        # множество совместно допустимых троек для PPO-политики (тот же примитив, что у legalize)
-        sample["legal"] = joint_mod.legal_mask(self.slots, ctx, self.schema)
+        # множество совместно допустимых действий для PPO-политики (тот же примитив, что у legalize):
+        # v5 — 4D A(s) (pos×target×weapon×maneuver), v2/3/4 — прежнее 3D (бит-в-бит).
+        if self.schema >= spec5.SCHEMA:
+            action_available = float(obs.get("me", {}).get("actionRemaining", 1.0)) >= 1.0
+            sample["legal"] = joint_mod.legal_mask_v5(self.slots, ctx, self.schema,
+                                                      action_available=action_available)
+        else:
+            sample["legal"] = joint_mod.legal_mask(self.slots, ctx, self.schema)
         return sample
 
     def _next_after(self, actor: str) -> Tuple[Optional[str], bool]:
@@ -93,11 +104,12 @@ class PolyFightEnv(FightEnv):
         action = self.legalize(label)
         prev_units = dict(self.state.units)
         if spec3.uses_moveplan(self.schema):
-            actions = slots_v3.decode(self.slots, dict(action))
+            decode = slots_v3.decode_v5 if self.schema >= spec5.SCHEMA else slots_v3.decode
+            actions = decode(self.slots, dict(action))
             value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра
-            # SCHEMA=4: экономика действий + авто-Ao при движении; v3 (reactions=False) — бит-в-бит.
+            # SCHEMA>=4: экономика действий + авто-Ao при движении; v3 (reactions=False) — бит-в-бит.
             self.state = self.state.apply_actor_seq(actor, actions,
-                                                     reactions=self.schema == spec4.SCHEMA)
+                                                     reactions=self.schema >= spec4.SCHEMA)
         else:
             actions = slots_mod.decode(self.slots, dict(action))
             value = Scorer().score(self._ctx, actions)          # сырое значение глазами актёра

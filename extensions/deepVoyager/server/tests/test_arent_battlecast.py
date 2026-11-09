@@ -124,5 +124,11 @@ def test_incoming_at_cell_counts_only_reachable_threats():
 def test_unsupported_mechanics_are_declared_not_faked():
     """Guard честности: то, чего нет в нашей симуляции, честно числится неподдержанным."""
     for mechanic in ("resistance/vulnerability/immunity", "conditions", "aoe_spells",
-                     "opportunity_attacks", "int_modifier_strategy_choice"):
+                     "int_modifier_strategy_choice"):
         assert mechanic in UNSUPPORTED_MECHANICS
+
+
+def test_opportunity_and_disengage_now_modeled_not_unsupported():
+    """Схема v5: Ao и Отступление моделируются симом, поэтому сняты с чёрного списка."""
+    assert "opportunity_attacks" not in UNSUPPORTED_MECHANICS
+    assert "free_disengage" not in UNSUPPORTED_MECHANICS

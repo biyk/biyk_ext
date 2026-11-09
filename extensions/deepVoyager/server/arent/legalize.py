@@ -13,7 +13,7 @@
 # ничего не двигает и не ранит (можно вызывать ради диагностики без побочного эффекта).
 from typing import Any, Dict, Optional, Tuple
 
-from arent import slots as slots_mod, slots_v3, spec, spec3
+from arent import slots as slots_mod, slots_v3, spec, spec3, spec5
 
 NONE_INDEX = spec.K_WEAPONS            # «не атаковать» = последний слот оружия (совпадает с env.NONE_INDEX)
 
@@ -47,6 +47,16 @@ def legalize(action: Dict[str, int], schema: int, slots: Any,
     target = int(action.get("target", spec.NONE_SLOT))
     weapon = int(action.get("weapon", spec.NONE_SLOT))
     out = {key: pos, "target": target, "weapon": weapon}
+    # v5: maneuver-голова. Манёвр (≠NONE) стоит действие и взаимоисключает атаку
+    # (канон v5: maneuver≠NONE ⇒ weapon=NONE ⇒ target=NONE). Тогда проверка досягаемости
+    # оружия не нужна — ход легален по построению (4D-маска A(s) его уже допустила).
+    if schema >= spec5.SCHEMA:
+        maneuver = int(action.get("maneuver", spec5.MANEUVER_NONE))
+        out["maneuver"] = maneuver
+        if maneuver < spec5.K_MANEUVERS and 0 <= maneuver < len(slots.maneuvers or []):
+            out["target"] = spec.NONE_SLOT
+            out["weapon"] = spec.NONE_SLOT
+            return out, None
     if 0 <= target < len(slots.targets) and 0 <= weapon < len(slots.weapons):
         if spec3.uses_moveplan(schema):
             reachable = slots_v3.attackable_v3(slots, ctx, pos, target, weapon)

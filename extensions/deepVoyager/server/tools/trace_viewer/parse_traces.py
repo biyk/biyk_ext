@@ -314,8 +314,16 @@ def parse_json_file(path, obs_dir=None):
                 for t in (r.get("arena") or {}).get("tokens") or []}
         for st in steps:
             st["round"] = st["n"] // n_act
-        units = {"A1": {"side": "hero", "cls": cls_a, "hpMax": hp_max.get("A1", 0)},
-                 "F1": {"side": "foe", "cls": cls_f, "hpMax": hp_max.get("F1", 0)}}
+        # Стороны по uid board (A*=команда героя, F*=враги): 1v1 даёт A1/F1, 2v2 — ещё A2/F2.
+        # Класс (cls) известен только для базовых A1/F1 из имени боя; доп. бойцы — без иконки.
+        units = {}
+        for uid, hpm in hp_max.items():
+            is_hero = str(uid).startswith("A")
+            units[uid] = {"side": "hero" if is_hero else "foe",
+                          "cls": (cls_a if is_hero else cls_f) if uid in ("A1", "F1") else None,
+                          "hpMax": hpm}
+        units.setdefault("A1", {"side": "hero", "cls": cls_a, "hpMax": 0})
+        units.setdefault("F1", {"side": "foe", "cls": cls_f, "hpMax": 0})
         battles.append({
             "id": name, "file": fname, "block": "%s vs %s" % (r.get("candidate", run),
                                                                r.get("opponent", "?")),

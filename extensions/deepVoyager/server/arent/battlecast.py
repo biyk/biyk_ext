@@ -72,7 +72,10 @@ class BattlecastTeacher(TeacherPolicy):
         Порядок детерминирован (сначала короткие пути, затем координаты) и замена строгая,
         поэтому при равных значениях побеждает первый достигнутый оптимум — как у greedy.
         """
-        enemies = self._enemies(ctx, obs)
+        return self._choose_from(ctx, obs, self._enemies(ctx, obs))
+
+    def _choose_from(self, ctx: BattleContext, obs: Dict[str, Any], enemies):
+        """Ядро choose() над ЗАДАННЫМ списком врагов (подклассы сужают пул, не копируя цикл)."""
         weapons = list(ctx.weapons)
         fallback = tuning().hit_chance
         me_cell = ctx.src_cell

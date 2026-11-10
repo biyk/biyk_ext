@@ -247,6 +247,9 @@ def build_controller(policy: Any, schema: Optional[int] = None):
     if isinstance(policy, str):
         if policy in RANDOM_OPPONENTS:
             return RandomController(schema=schema)
+        if policy == "wesnoth_focusfire":       # командный залп: план держит контроллер, не учитель
+            from arent.team_focus import TeamFocusController   # лениво: нет цикла импортов
+            return TeamFocusController(schema=schema)
         if policy in teachers.list_teachers():
             return TeacherController(teachers.get_teacher(policy, rounds=1, time_limit_sec=None),
                                      schema)

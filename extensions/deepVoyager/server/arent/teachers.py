@@ -85,6 +85,10 @@ def _autoload() -> None:
         import arent.ext_teachers  # noqa: F401  (внешние политики бенчмарка, Фаза A)
     except ImportError:
         pass
+    try:
+        import arent.team_focus  # noqa: F401  (wesnoth_focusfire: командный залп, Фаза C/D)
+    except ImportError:
+        pass
 
 
 def get_teacher(name: str = DEFAULT_TEACHER, **kwargs: Any) -> TeacherPolicy:

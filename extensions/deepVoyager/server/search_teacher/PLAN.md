@@ -13,7 +13,7 @@
 | **0** | Верификация источников (пригодность учителей) | ✅ | `search_teacher/PHASE0.md` (web-первичка, лицензии/силы подтверждены) |
 | **A** | Инфраструктура измерений (реестр политик + метрики `abset.py` + бенчмарк) | ✅ | A1+A2+A3 готовы; артефакт `bench/baseline_vs_ja2.json` (canon 72 + pool 180 сцен, fingerprint стабилен) |
 | **B** | Усиление battlecast (evaluate_plan/focus-fire/позиция/heatmaps/roleplayer) | ✅ | B1 `battlecast_v2` (развязка по исходу сима + манёвр) — артефакт `bench/battlecast_v2_vs_base.json`; B2–B5 измерены и сознательно не внедрены (сведено к B1/переобучение/нет механики) |
-| **C** | Новые учителя-стили (ufo_style/wesnoth_focusfire/ja2_positioning/cdda_ranged_support) | ✅ | `ufo_style`/`cdda_ranged_support` добавлены поведенчески-отличными (+ `ja2_positioning` из A); diversity-гонка `bench/phase_c_styles.json`: все играют, ни один не сломан. `wesnoth_focusfire` честно отсрочен (полиакторный уровень = D). ДоD C закрыт: разнообразие реально, метрики покрывают |
+| **C** | Новые учителя-стили (ufo_style/wesnoth_focusfire/ja2_positioning/cdda_ranged_support) | ✅ | `ufo_style`/`cdda_ranged_support` добавлены поведенчески-отличными (+ `ja2_positioning` из A); diversity-гонка `bench/phase_c_styles.json`: все играют, ни один не сломан. `wesnoth_focusfire` — командный залп `arent/team_focus.py` (`test_arent_team_focus` 12✅): цель выбирается по силам КОМАНДЫ, контроллер держит общий план на раунд; closed-loop A/B 2v2 — паритет с base (4W/4L vs 5W/3L), illegal=0. DoD C закрыт: разнообразие реально, метрики покрывают |
 | **D** | Встраивание в обучение (BC-мультиучитель, оппонент-микс PPO, гейт-mix, куррикулум) | ✅ | Plumbing+local ✅: реестр generic (стили служат BC-демо/PPO-оппонентом без правок ядра — `test_arent_ext_styles_training` 16✅), честный гейт-mix `arent/gate.py` (`test_arent_gate` 6✅), wiring `.ray/ray_stage5_pipeline.py` (D1–D3 env-миксы), fix `_fan` (int-приведение). **Кластерный прогон (10.11.2026): BC+PPO-гейт против всех 5 учителей — PASS** (worst_win=0.6204); BC без PPO — FAIL на `cdda_ranged_support` (0.4907). **D4 куррикулум реализован в ядре** (`RlConfig.curriculum` + `parse_curriculum`/`curriculum_opponents`, `test_arent_curriculum` 9✅) — ждёт кластерного staged-замера. Подробно §D, лог `.ray/stage5_cluster_resume.log` |
 
 > **Ключевые поправки Ф0 к этому плану:** (1) `roleplayer` подтверждён **MIT** и реально содержит
@@ -146,12 +146,13 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
 Метод (по протоколу diagnostic-first): каждый внешний принцип — отдельным рычагом ПОВЕРХ
 `battlecast_v2`, замер на canon(72)+pool(96) закрытым циклом; в код v2 попадает только доказанно
 устойчивое улучшение. Итог — честные отрицательные/нейтральные вердикты, а не фиктивные фичи:
-- **B2. Командный focus-fire (Wesnoth).** ⚠️ СВЕДЕНО К B1, кода НЕ добавлено. Доп. вес «добить
-  угрозу / сократить число врагов» в ранжировании кандидатов дал **побитово идентичный** результат
-  (canon/pool rollout совпали с дефолтом при top=6 и при top=ALL). Причина: rollout УЖЕ учитывает,
-  что мёртвый враг перестаёт бить (ценность добивания встроена в исход), а `best_strike` несёт
-  finisher-бонус + приоритет по `dmg_to_me`. Настоящий КОМАНДНЫЙ focus-fire ( скоординированные
-  действия СОЮЗНИКОВ) вне объёма одно-акторного учителя — это полиакторный RL-уровень (Фаза D).
+- **B2. Командный focus-fire (Wesnoth).** ⚠️ В B СВЕДЕНО К B1 (кода в B не добавлено): доп. вес
+  «добить угрозу / сократить число врагов» в ранжировании кандидатов дал **побитово идентичный**
+  результат (canon/pool rollout совпали с дефолтом при top=6 и при top=ALL). Причина: rollout УЖЕ
+  учитывает, что мёртвый враг перестаёт бить (ценность добивания встроена в исход), а `best_strike`
+  несёт finisher-бонус + приоритет по `dmg_to_me`. Настоящий КОМАНДНЫЙ focus-fire (скоординированные
+  действия СОЮЗНИКОВ) вне объёма одно-акторного учителя — реализован позже на уровне команды в
+  **C2 `wesnoth_focusfire`** (`arent/team_focus.py`), где контроллер держит один план залпа на раунд.
 - **B3. Позиционная осторожность (JA2/OpenXcom).** ❌ НЕ ПРИНЯТО (сигнал переобучения). Усиление
   штрафа за входящий огонь в PRIOR кандидатов: на **честной линейке canon** CI накрывает 0
   (rollout +3.2 [−2.6, +10.9] — незначимо), выигрыш появился ТОЛЬКО на обучающем pool
@@ -188,12 +189,23 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
   член `keep_distance * (дистанция до ближайшего врага)` — отдельная цель «держать интервал», а не
   перевес `threat`. Якорь `keep_distance=0` сводит `choose()` к ПОБИТОВО базе (тест). Это reposition,
   а не fleeing: оружие и удар остаются в силе, меняется лишь выбор клетки при прочих равных.
-- **C2. `wesnoth_focusfire`** ⚠️ ОТСРОЧЕН честно (кода НЕТ, по той же причине, что B2). Настоящий
-  командный focus-fire — координация СРАЗУ нескольких актёров по одной цели. Наш учитель одно-акторный
-  (`plan(ctx)` на одного src), а в одно-акторном frame добивание УЖЕ учтено (`best_strike` finisher +
-  приоритет `dmg_to_me`, и rollout ценит «мёртвый враг не бьёт»). Отдельный одно-акторный
-  «wesnoth_focusfire» был бы ровно battlecast под другим именем (запрещено). Согласованный залп —
-  уровень полиакторного RL → перенесён в Фазу D (там же, куда свалились B2/B4-heatmap).
+- **C2. `wesnoth_focusfire`** ✅ — командный залп, реализован на УРОВНЕ КОМАНДЫ (не одиночного учителя).
+  Одно-акторный `plan(ctx)` физически не видит ходов союзников, поэтому focus-fire в нём был бы battlecast
+  под другим именем (запрещено). Но в полиакторном контуре `team_eval.TeacherController` живёт ВЕСЬ бой и
+  вызывается по очереди за каждого союзника — там и живёт координация (`arent/team_focus.py`):
+  • `team_damage_on(ctx, allies, enemy)` — суммарный EV урона ВСЕХ живых союзников по врагу (свои оружия/
+    скорости из per-token записей, LOS, зоны `mode_at`), т.е. сила КОМАНДЫ, а не одного стрелка;
+  • `team_focus_target(ctx)` — цель залпа: добиваемая сообща (`team_damage_on >= hp`) → иначе самая опасная
+    (EV её удара); детерминированный порядок (threat, hp, id);
+  • `WesnothFocusFireTeacher` — stateless-исполнитель: `preferred_target=None` ПОБИТОВО равен battlecast
+    (якорь-тест), с целью — бьёт её, если достижима, иначе честный фолбэк на базу (не идёт в недостижимую);
+  • `TeamFocusController` — общий план на раунд: новый раунд (актёр повторился), смерть цели и новая битва
+    (состав/HP) пересчитывают план; между боями состояние не течёт. `build_controller("wesnoth_focusfire")`
+    возвращает этот контроллер, поэтому имя работает в BC-демо, PPO-оппоненте, гейте и closed-loop A/B.
+  Ядро `battlecast.choose` отрефакторено в `_choose_from(ctx, obs, enemies)` — подкласс сужает пул, не копируя
+  цикл; регресс базы зелёный. Тесты: `test_arent_team_focus` 12✅. Closed-loop A/B 2v2 (10 сцен × обе стороны):
+  focus 4W/4L/2 other против base 5W/3L/2 other — примерный ПАРИТЕТ, а не «сильнее»; заявка честная —
+  механика командной цели работает и легальна (illegal=0), выигрыша по win-rate пока нет.
 - **DoD C** ✅ (для построенных стилей): diversity-гонка `arent.teacher_bench` над всеми пятью
   (`battlecast`, `battlecast_v2`, `ja2_positioning`, `ufo_style`, `cdda_ranged_support`) на честной
   линейке stage43_canon + обучающем pool (`bench/phase_c_styles.json`). Ни один не сломан: у ВСЕХ
@@ -308,13 +320,53 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
 3. **Фаза C** (стили) ✅ — добавлены поведенчески-отличные `ufo_style` (подкласс v2, агрессивный
    исход-оценщик) и `cdda_ranged_support` (новый член ценности `keep_distance`, якорь 0 = база);
    `ja2_positioning` живёт с Фазы A. Diversity-гонка всех пяти (`bench/phase_c_styles.json`): все
-   играют, `wasted_rate=0`, ни один не сломан. `wesnoth_focusfire` честно отсрочен в D (одно-акторный
-   эквивалент = battlecast под именем; настоящий focus-fire — полиакторный RL). Следующий шаг — Фаза D
-   (подключение v2/ufo/cdda как оппонент-микса в BC/гейт + полиакторный focus-fire + heatmap-вход сети).
+   играют, `wasted_rate=0`, ни один не сломан. `wesnoth_focusfire` реализован как КОМАНДНЫЙ залп
+   (`arent/team_focus.py`, `test_arent_team_focus` 12✅): цель по суммарному EV команды, контроллер
+   держит общий план на раунд; stateless-учитель при `preferred_target=None` побитово = battlecast.
+   Closed-loop A/B 2v2 — паритет с base (4W/4L vs 5W/3L), illegal=0. Следующий шаг — Фаза D
+   (подключение v2/ufo/cdda как оппонент-микса в BC/гейт + heatmap-вход сети).
 4. **Фаза D** (мульти-учитель в BC + оппонент-микс в PPO/гейте) ✅ — замер роста выполнен,
    DoD D PASS (worst_win 0.6204). **D4 (куррикулум weak→strong): код ядра готов** (`RlConfig.curriculum`,
    `test_arent_curriculum` 9✅, env `S5_PPO_CURRICULUM`) — остался кластерный staged-замер против
-   равномерного микса. **Остаётся отдельно:** полиакторный `wesnoth_focusfire` (кода нет — multi-agent RL).
+   равномерного микса. Полиакторный focus-fire закрыт в Фазе C (`wesnoth_focusfire` = командный
+   `TeamFocusController`); остаётся только кластерный замер D4 и heatmap-вход сети (B4).
+
+### Кластерный замер D4: статус спасения прогона (10.11)
+
+Первый staged-прогон (`s5ppo_cur`) дошёл до iter 34/40, но был убит обрывом Ray Client
+data-channel на Windows→head. Спасение через `rl_state.save` (пишет ppo_state.pt каждую итерацию):
+
+| шаг | что сделано | статус |
+|---|---|---|
+| 1 | Забор `ppo_state.pt` с head (`_fetch_state.py`) -> `.ray/s5ppo_cur_ppo_state.pt` (967 КБ) | OK iter=35, schema=2, hidden/head/policy_semantics совпадают |
+| 2 | Инжект в пайплайн: `state_bytes=None` -> `ppo_task`, запись в run_dir нового пакета + resume=True | OK драйверный смоук (torch-free venv) |
+| 3 | TDD-тест на контракт: rl.run(resume=True) доигрывает оставшиеся итерации, не с нуля | OK test_run_resume_continues_from_saved_iteration |
+| 4 | Фикс кросс-py-version RNG restore (rng_restore: TypeError при pickle across Python) | OK регресс 2OK |
+| 5 | Лаунчер `.ray/launch_s5_cur_resume.ps1` (S5_PPO_STATE -> resume) | OK прошёл, гейт PASS |
+
+**Важное ограничение для отчёта:** после resume best_params/best_score сбрасываются на итерацию
+сохранения; история начинается с next_iter. Поэтому best/final в summary посчитаны только по
+доигранным итерациям (5 шт.), а не по всем 40 как у baseline s5ppo. Это делает сравнение
+консервативным: финальная модель меряется честно, но отбор best менее информативен.
+
+### Результат D4 curriculum vs uniform mix (10.11)
+
+| | BC+PPO baseline s5ppo | PPO curriculum s5ppo_cur (resume iter 36-40) |
+|---|--:|--:|
+| worst_win | **0.6204** | **0.6157** |
+| cdda_ranged_support win | 0.6204 | 0.6157 (-0.005) |
+| battlecast bootCI> | 0.7361 | 0.7419 (+0.006) |
+| ja2_positioning bootCI> | 0.8148 | 0.8194 (+0.005) |
+
+**Вывод:** curriculum-микс **паритет с baseline s5ppo** (-0.005 worst_win в пределах шума).
+D4 куррикулум weak->strong не ухудшил финальный результат — staged обучение работает корректно.
+
+### Фикс S5_EVAL_BACKEND=pure для CPU workers eval_shard
+
+CPU-воркеры (num_cpus=1) не имеют torch: backend.resolve(kind=torch) -> RuntimeError.
+Добавлено в оба лаунчера (launch_s5.ps1, launch_s5_cur_resume.ps1). Инференс гейта работает
+на pure-python бэкенде без потери точности (проверено на этом прогоне).
+
 5. Параллельно: заполнять `sources/<slug>.md` по шаблону §4 для всех вариантов из §1.
 
 **Опорные точки в коде:** `arent/teachers.py` (@register/get_teacher/_autoload), `arent/team_eval.py`

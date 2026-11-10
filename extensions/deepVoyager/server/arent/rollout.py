@@ -2,8 +2,9 @@
 #
 # Отделено от rl.py (оркестрация/чекпойнты) ради одного места за наградо-адвантейдж
 # математикой: RlConfig — тюнинг PPO (не размеры сети), collect — rollout round-robin по
-# сценам через arent.env, gae — адвантейджи/возвраты. Никакого torch здесь нет: это чистые
-# структуры данных поверх act/value_of агента, поэтому тестируются синтетикой.
+# сценам через arent.env, gae — адвантейджи/возвраты. Разбор куррикулума (D4) физически
+# живёт в arent/curriculum.py (torch-free: его импортирует драйвер прогона без torch) и
+# реэкспортируется отсюда для потребителей ядра.
 #
 # Ключевые свойства (по замечаниям консультанта):
 #  • политика сэмплирует из совместного распределения по допустимому множеству (arent/joint.py),
@@ -19,6 +20,8 @@ from dataclasses import asdict, dataclass, fields
 from typing import Any, Dict, List, Optional, Tuple
 
 from arent import env, polyenv, spec, spec3
+from arent.curriculum import curriculum_opponents, parse_curriculum  # noqa: F401  (D4: реэкспорт
+# torch-free разбора — его импортирует ДРАЙВЕР прогона, у которого нет torch; см. arent/curriculum.py)
 from arent.tactics_config import TacticsConfig
 from arent.tactics_counters import Counters
 from arent.tactics_map import allowed_set
@@ -84,48 +87,6 @@ class RlConfig:
     def from_dict(cls, data: Dict[str, Any]) -> "RlConfig":
         known = {f.name for f in fields(cls)}
         return cls(**{k: v for k, v in (data or {}).items() if k in known})
-
-
-def parse_curriculum(spec: str) -> Tuple[Tuple[int, Tuple[str, ...]], ...]:
-    """Разобрать env-строку куррикулума 'start:opp1,opp2;start2:opp...' в стадии.
-
-    Пустая строка -> () (куррикулума нет). Стадии сортируются по start_iter. Кривой
-    start (не int) -> ValueError: молча игнорировать расписание опаснее, чем упасть."""
-    stages: List[Tuple[int, Tuple[str, ...]]] = []
-    for chunk in (spec or "").split(";"):
-        chunk = chunk.strip()
-        if not chunk:
-            continue
-        start_s, sep, opp_s = chunk.partition(":")
-        if not sep:
-            raise ValueError("куррикулум: стадия %r без ':' (нужно 'start:opp1,opp2')" % chunk)
-        try:
-            start = int(start_s.strip())
-        except ValueError as exc:
-            raise ValueError("куррикулум: start=%r не целое (стадия %r)" % (start_s.strip(), chunk)) from exc
-        opps = tuple(x.strip() for x in opp_s.split(",") if x.strip())
-        if not opps:
-            raise ValueError("куррикулум: стадия %r без оппонентов" % chunk)
-        stages.append((start, opps))
-    stages.sort(key=lambda s: s[0])
-    return tuple(stages)
-
-
-def curriculum_opponents(cfg: "RlConfig", iteration: int) -> Tuple[str, ...]:
-    """Активный набор оппонентов на итерации PPO по куррикулуму (D4).
-
-    Пустой curriculum -> cfg.opponents (прежнее поведение). Иначе — набор последней стадии
-    с start_iter <= iteration; до первой стадии — cfg.opponents как безопасный фолбэк
-    (пустой список уронил бы collect_asymmetric). Вход не мутируется."""
-    if not cfg.curriculum:
-        return tuple(cfg.opponents)
-    active: Tuple[str, ...] = tuple(cfg.opponents)
-    for start, stage in cfg.curriculum:
-        if iteration >= int(start):
-            active = tuple(stage)
-        else:
-            break
-    return active
 
 
 def gae(rewards: List[float], values: List[float], next_values: List[float],

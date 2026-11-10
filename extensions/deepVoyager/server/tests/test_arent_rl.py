@@ -271,6 +271,30 @@ def test_run_writes_checkpoints_and_manifest(tmp_path, monkeypatch):
     assert "eval" in result["history"][-1] and result["best"]["survival"] >= 0.0
 
 
+def test_run_resume_continues_from_saved_iteration(tmp_path, monkeypatch):
+    """SALVAGE-контракт: resume=True доигрывает ОСТАВШИЕСЯ итерации, а не начинает с нуля.
+
+    На этом держится спасение прогона, убитого обрывом Ray Client: rl_state.save пишет
+    ppo_state.pt каждую итерацию, чекпойнт кладут в run_dir нового пакета, и rl.run должен
+    продолжить цикл с сохранённого счётчика (history начинается со next_iter). Важно и то,
+    что при resume best/final выбираются только по доигранным итерациям — summary.iters
+    равен длине новой истории, а не исходному числу итераций."""
+    from arent import paths
+    paths.set_workspace(str(tmp_path))
+    monkeypatch.setattr(rl.dataset, "sources",
+                        lambda arenas, use_live, **_kw: [("arenaA", _scene()), ("arenaB", _scene())])
+    first = rl.run(name="ppoR", warm=None, rcfg=_tiny_rcfg(iters=2), net_cfg=_tiny_net(),
+                   kind="torch", device="cpu", log=lambda *_a: None)
+    assert [r["iter"] for r in first["history"]] == [1, 2]
+    assert os.path.exists(os.path.join(str(tmp_path), "runs", "ppoR", "ppo_state.pt"))
+
+    second = rl.run(name="ppoR", warm=None, rcfg=_tiny_rcfg(iters=4), net_cfg=_tiny_net(),
+                    kind="torch", device="cpu", resume=True, log=lambda *_a: None)
+    assert [r["iter"] for r in second["history"]] == [3, 4]
+    assert second["summary"]["iters"] == 2        # только доигранные, не 4
+    assert os.path.exists(os.path.join(str(tmp_path), "runs", "ppoR", "model.json"))
+
+
 def test_run_without_scenarios_raises(tmp_path, monkeypatch):
     from arent import paths
     paths.set_workspace(str(tmp_path))

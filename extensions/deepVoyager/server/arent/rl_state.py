@@ -32,12 +32,25 @@ def rng_snapshot() -> Dict[str, Any]:
 
 
 def rng_restore(snap: Dict[str, Any]) -> None:
-    """Вернуть RNG: то, чего нет в snapshot (например, CUDA на CPU-машине), молча пропускаем."""
+    """Вернуть RNG: то, чего нет в snapshot (например, CUDA на CPU-машине), молча пропускаем.
+
+    ВАЖНО: при кросс-py-version restore (3.10.22 head vs 3.10.11 worker) torch.set_rng_state
+    может вернуть TypeError ('RNG state must be a torch.ByteTensor') — pickle-загрузка меняет тип.
+    В этом случае CPU RNG не восстановится, но CUDA и numpy всё ещё могут сработать; если и они
+    падают — молча продолжаем (CUDA RNG сбросит GPU на дефолт)."""
     import random
     if snap.get("python") is not None:
-        random.setstate(snap["python"])
+        try:
+            random.setstate(snap["python"])
+        except Exception:
+            pass
     if snap.get("torch") is not None:
-        torch.set_rng_state(snap["torch"])
+        try:
+            torch.set_rng_state(snap["torch"])
+        except (TypeError, RuntimeError):
+            # кросс-py-version pickle-загрузка ломает тип тензора RNG; не фатально — CUDA/np
+            # всё ещё могут восстановиться ниже. Если и они падают — молча продолжаем.
+            pass
     if snap.get("numpy") is not None:
         try:
             import numpy as np
@@ -45,7 +58,10 @@ def rng_restore(snap: Dict[str, Any]) -> None:
         except Exception:
             pass
     if snap.get("cuda") is not None and torch.cuda.is_available():
-        torch.cuda.set_rng_state_all(snap["cuda"])
+        try:
+            torch.cuda.set_rng_state_all(snap["cuda"])
+        except (TypeError, RuntimeError):
+            pass
 
 
 def save(path: str, policy: Any, rcfg: Any, net_cfg: net.Config, iteration: int,

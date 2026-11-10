@@ -4,11 +4,41 @@
 # цепочка прогонов поверх тёплого старта. Здесь добавляем ЧЕСТНЫЙ механизм в ядро:
 # расписание стадий (start_iter -> набор оппонентов) и чистую функцию выбора активного
 # набора для итерации. Код НЕ меняет прежнее поведение: пустой curriculum -> cfg.opponents.
+#
+# DRIVER-КОНТРАКТ (§8: Ray Client Windows -> head): драйвер прогона (.ray/.venv) НЕ имеет
+# torch — он живёт только на GPU-head. Разбор env-строки куррикулума делает ДРАЙВЕР, поэтому
+# он обязан жить в torch-free модуле (arent.curriculum), а arent.rollout лишь реэкспортирует
+# его для внутренних потребителей. Иначе `_parse_curriculum_env` падает с ModuleNotFoundError.
 import json
+import os
+import subprocess
+import sys
 
 import pytest
 
+from arent.curriculum import parse_curriculum as parse_curriculum_torchfree
 from arent.rollout import RlConfig, curriculum_opponents, parse_curriculum
+
+_SERVER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+# --- torch-free разбор (драйвер прогона) -----------------------------------
+
+def test_curriculum_parsing_does_not_require_torch():
+    """В subprocess блокируем torch и импортируем разбор — так падал драйвер Ray."""
+    code = ("import sys; sys.modules['torch'] = None\n"
+            "from arent.curriculum import parse_curriculum, curriculum_opponents\n"
+            "class C: opponents=('greedy',); curriculum=parse_curriculum('0:a;5:a,b')\n"
+            "print(parse_curriculum('0:a;5:a,b'), curriculum_opponents(C, 5))\n")
+    proc = subprocess.run([sys.executable, "-c", code], cwd=_SERVER,
+                          capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    assert "((0, ('a',)), (5, ('a', 'b'))) ('a', 'b')" in proc.stdout
+
+
+def test_rollout_reexports_the_same_parser():
+    # единственный источник правды: rollout не держит копию
+    assert parse_curriculum is parse_curriculum_torchfree
 
 
 # --- parse_curriculum ------------------------------------------------------

@@ -14,7 +14,7 @@
 | **A** | Инфраструктура измерений (реестр политик + метрики `abset.py` + бенчмарк) | ✅ | A1+A2+A3 готовы; артефакт `bench/baseline_vs_ja2.json` (canon 72 + pool 180 сцен, fingerprint стабилен) |
 | **B** | Усиление battlecast (evaluate_plan/focus-fire/позиция/heatmaps/roleplayer) | ✅ | B1 `battlecast_v2` (развязка по исходу сима + манёвр) — артефакт `bench/battlecast_v2_vs_base.json`; B2–B5 измерены и сознательно не внедрены (сведено к B1/переобучение/нет механики) |
 | **C** | Новые учителя-стили (ufo_style/wesnoth_focusfire/ja2_positioning/cdda_ranged_support) | ✅ | `ufo_style`/`cdda_ranged_support` добавлены поведенчески-отличными (+ `ja2_positioning` из A); diversity-гонка `bench/phase_c_styles.json`: все играют, ни один не сломан. `wesnoth_focusfire` честно отсрочен (полиакторный уровень = D). ДоD C закрыт: разнообразие реально, метрики покрывают |
-| **D** | Встраивание в обучение (BC-мультиучитель, оппонент-микс PPO, гейт-mix, куррикулум) | 🔄 | Plumbing+local ✅: реестр уже generic (стили служат BC-демо/PPO-оппонентом без правок ядра — `test_arent_ext_styles_training` 16✅), честный гейт-mix `arent/gate.py` (`test_arent_gate` 6✅), wiring `.ray/ray_stage5_pipeline.py` (D1–D3 env-миксы, дефолт = прежнее). Эмпирический DoD «v5-на-mix ≥ v5-на-battlecast против ВСЕХ» требует реального кластер-прогона (§D, команда ниже) — ещё не мерялся |
+| **D** | Встраивание в обучение (BC-мультиучитель, оппонент-микс PPO, гейт-mix, куррикулум) | ✅ | Plumbing+local ✅: реестр generic (стили служат BC-демо/PPO-оппонентом без правок ядра — `test_arent_ext_styles_training` 16✅), честный гейт-mix `arent/gate.py` (`test_arent_gate` 6✅), wiring `.ray/ray_stage5_pipeline.py` (D1–D3 env-миксы), fix `_fan` (int-приведение). **Кластерный прогон (10.11.2026): BC+PPO-гейт против всех 5 учителей — PASS** (worst_win=0.6204); BC без PPO — FAIL на `cdda_ranged_support` (0.4907). Подробно §D, лог `.ray/stage5_cluster_resume.log` |
 
 > **Ключевые поправки Ф0 к этому плану:** (1) `roleplayer` подтверждён **MIT** и реально содержит
 > готовый D&D-ИИ (focus-fire/expected-damage/лечение/Dash) → добавлен в B5 и как BC-демо-учитель;
@@ -203,7 +203,7 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
   0.267 на canon при сознательно отрицательном rollout: держит дистанцию вместо сближения). Это ВЕРДИКТ
   «все играют / ни один не сломан», а НЕ «кто сильнее» — сравнение силы учителей = Фаза D.
 
-### Фаза D — Встраивание в обучение 🔄 (модель становится сильнее)
+### Фаза D — Встраивание в обучение ✅ (модель стала сильнее)
 Диагностика ядра показала: инфраструктура УЖЕ реестро-управляема — `dataset.generate(teacher=…)`,
 `team_eval.build_controller(имя)` и `collect_asymmetric` (round-robin по `cfg.opponents`) разрешают
 ЛЮБОЕ зарегистрированное имя без правок боевого ядра. Значит D — не «писать новые фичи», а (1) доказать
@@ -223,6 +223,12 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
   6) + `_fan` переписан на петлю по `S5_GATE_TEACHERS` (дефолт `battlecast` = прежний одиночный гейт):
   для каждого учителя agg(win/boot_lower/fights) → PASS = модель переигрывает ВСЕХ (win≥порог И
   boot-нижняя≥порог И fights≥30 на каждом), иначе `failed`/`insufficient` перечислены.
+- **Fix `_fan` type casting.** ✅ Баг пофиксен: `%d` формат ломался на строковых значениях
+  `n_hero`/`n_foe`/`fights`, пришедших из Ray remote-task транзитом. Явное `int(...)` перед
+  `%d` добавлено в `_fan` (строки ~300-302 в `ray_stage5_pipeline.py`). Регресс тестов зелёный.
+- **`launch_s5.ps1` дополнен env-иксами микса.** ✅ Строки 10–12 (закомментированы, ASCII): рекомендуемый
+  mix учителей для кластерного прогона Phase D. Дефолт остаётся прежним (`battlecast` only для гейта,
+  `greedy,battlecast` для BC-демо, self-play для PPO), поэтому текущий прогон не изменится молча.
 - **D4. Куррикулум силы.** ⚠️ ОПЕРАЦИОННЫЙ, кода ядра НЕ добавлено честно: `collect_asymmetric`
   использует равномерный round-robin по `cfg.opponents` — планировщика «от слабых к сильным по итерации»
   в ядре НЕТ, вписывать его было бы risky core-change. Куррикулум достигается прогонами поверх тёплого
@@ -231,10 +237,27 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
 - **Запуск (эмпирика, делает пользователь на кластере):**
   `$env:S5_BC_TEACHERS='greedy,battlecast,battlecast_v2'; $env:S5_PPO_OPPONENTS='battlecast,ufo_style,cdda_ranged_support'; $env:S5_GATE_TEACHERS='battlecast,battlecast_v2,ufo_style,ja2_positioning,cdda_ranged_support'; python .ray/ray_stage5_pipeline.py`
   (см. `launch_s5.ps1`; в финале печатается `RESULT_JSON` с `bc_gate.verdict`/`ppo_gate.verdict`).
-- **DoD D (не мерян — честная пометка):** гейт-вердикт «модель_v5_на_mix» против ВСЕХ учителей микса
-  PASS (worst_win_rate≥0.50, boot_lower≥0.50 на каждом, fights≥30). Локально обеспечены гейт-механика,
-  контракт и wiring; ЧИСЛОВОЙ вердикт возможен только после реального BC→PPO-прогона на GPU-кластере —
-  выдумывать win-rate не будем.
+  После обрыва связи на PPO-фазе: добавить `$env:S5_SKIP_BC='1'` — пайплайн пропустит BC и стартует
+  PPO с сохранённого `arent/runs/s5bc/model.json` (проверяется `schema=5`), не теряя дорогую BC-фазу.
+- **DoD D (✅ выполнен на GPU-кластере, 10.11.2026):** числовой вердикт гейт-микса получен реальным
+  прогоном (BC resume с `s5bc` → PPO 40 iters `warm=s5bc` → гейт vs 5 учителей). Пороги прежние
+  (win≥0.50, boot_lower≥0.50, fights≥30 на каждом), **не двигались**. Лог: `.ray/stage5_cluster_resume.log`.
+  - **BC без PPO (s5bc): FAIL** — worst_win=**0.4907**, `failed=['cdda_ranged_support']`
+    (win 0.4907 / boot 0.4630). Остальные 4 пройдены (0.675–0.777).
+  - **BC+PPO (s5ppo): PASS** — worst_win=**0.6204**, `failed=[]`, `insufficient=[]`, по 864 бою на учителя:
+
+    | учитель | win_rate | boot_lower | вердикт |
+    |---|--:|--:|:-:|
+    | battlecast | 0.7604 | 0.7361 | PASS |
+    | battlecast_v2 | 0.7616 | 0.7373 | PASS |
+    | ufo_style | 0.7454 | 0.7199 | PASS |
+    | ja2_positioning | 0.8356 | 0.8148 | PASS |
+    | cdda_ranged_support | 0.6204 | 0.5926 | PASS |
+
+  - **Вывод:** PPO-микс (D2) поднял именно слабое место BC — `cdda_ranged_support` 0.4907 → **0.6204**
+    (+0.13): асимметричный rollout против замороженных стилей реально закрывает разрыв. Duel-отбор best
+    vs `battlecast`: 0.7083 (final 0.6992, 1210 боёв), 40 iters, 14416 сцен, PPO 27903 с; весь прогон
+    ~9.1 ч. `_fan` int-fix подтверждён — гейт-строки напечатались без падений.
 
 ---
 
@@ -278,13 +301,15 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
    НЕ внедрены (B2 сведено к B1; B3 — переобучение под pool; B4/B5 — нет механики в симе). Следующий
    шаг — Фаза C (стили) и/или Фаза D (подключение v2 как второго учителя в BC/гейт + полиакторный
    focus-fire + heatmap как вход сети).
-3. **Фаза C** (стили) 🔄 — добавлены поведенчески-отличные `ufo_style` (подкласс v2, агрессивный
+3. **Фаза C** (стили) ✅ — добавлены поведенчески-отличные `ufo_style` (подкласс v2, агрессивный
    исход-оценщик) и `cdda_ranged_support` (новый член ценности `keep_distance`, якорь 0 = база);
    `ja2_positioning` живёт с Фазы A. Diversity-гонка всех пяти (`bench/phase_c_styles.json`): все
    играют, `wasted_rate=0`, ни один не сломан. `wesnoth_focusfire` честно отсрочен в D (одно-акторный
    эквивалент = battlecast под именем; настоящий focus-fire — полиакторный RL). Следующий шаг — Фаза D
    (подключение v2/ufo/cdda как оппонент-микса в BC/гейт + полиакторный focus-fire + heatmap-вход сети).
-4. **Фаза D** (мульти-учитель в BC + оппонент-микс в PPO/гейте + curiculum) → замер роста модели.
+4. **Фаза D** (мульти-учитель в BC + оппонент-микс в PPO/гейте) ✅ — замер роста выполнен,
+   DoD D PASS (worst_win 0.6204). **Остаётся отдельно:** куррикулум D4 (staged weak→strong, операционный)
+   и полиакторный `wesnoth_focusfire` (кода нет — multi-agent RL).
 5. Параллельно: заполнять `sources/<slug>.md` по шаблону §4 для всех вариантов из §1.
 
 **Опорные точки в коде:** `arent/teachers.py` (@register/get_teacher/_autoload), `arent/team_eval.py`

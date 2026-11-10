@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from arent import backend, dataset, evaluate, manifest, net, paths, provenance, rl_setup, rl_state
 from arent import tactics_config, team_eval
-from arent.rollout import RlConfig, collect
+from arent.rollout import RlConfig, collect, curriculum_opponents
 from arent.tactics_counters import Counters
 from arent.torch_rl import PPOAgent
 
@@ -174,11 +174,17 @@ def run(name: str = "ppo", warm: Optional[str] = "bc2", rcfg: Optional[RlConfig]
     best_score, best_params, best_eval = -1e18, copy.deepcopy(policy.params), None
     started = time.monotonic()
     warm_sha = provenance.sha256_file(warm_from) if warm_from else None
+    prev_opp: Optional[Tuple[str, ...]] = None
     for it in range(start_iter + 1, rcfg.iters + 1):
         diag: List[Row] = []
+        active_opp = curriculum_opponents(rcfg, it) if rcfg.curriculum else None
+        if active_opp is not None and active_opp != prev_opp:
+            say(f"iter {it}: куррикулум -> opponents={list(active_opp)}")
+            prev_opp = active_opp
         report = agent.update(collect(agent, train_pool, rcfg, rng, phi, diag,
                                       counters=counters, shape=shape, stage=stage,
-                                      anneal=(it, rcfg.iters), ref_policy=ref_policy))
+                                      anneal=(it, rcfg.iters), ref_policy=ref_policy,
+                                      opponents=active_opp))
         row: Row = {"iter": it, **report}
         if it % max(1, rcfg.eval_every) == 0 or it == rcfg.iters:
             row["eval"] = _eval_select(policy, select_pool, rcfg)

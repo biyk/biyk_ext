@@ -14,7 +14,7 @@
 | **A** | Инфраструктура измерений (реестр политик + метрики `abset.py` + бенчмарк) | ✅ | A1+A2+A3 готовы; артефакт `bench/baseline_vs_ja2.json` (canon 72 + pool 180 сцен, fingerprint стабилен) |
 | **B** | Усиление battlecast (evaluate_plan/focus-fire/позиция/heatmaps/roleplayer) | ✅ | B1 `battlecast_v2` (развязка по исходу сима + манёвр) — артефакт `bench/battlecast_v2_vs_base.json`; B2–B5 измерены и сознательно не внедрены (сведено к B1/переобучение/нет механики) |
 | **C** | Новые учителя-стили (ufo_style/wesnoth_focusfire/ja2_positioning/cdda_ranged_support) | ✅ | `ufo_style`/`cdda_ranged_support` добавлены поведенчески-отличными (+ `ja2_positioning` из A); diversity-гонка `bench/phase_c_styles.json`: все играют, ни один не сломан. `wesnoth_focusfire` честно отсрочен (полиакторный уровень = D). ДоD C закрыт: разнообразие реально, метрики покрывают |
-| **D** | Встраивание в обучение (BC-мультиучитель, оппонент-микс PPO, гейт-mix, куррикулум) | ✅ | Plumbing+local ✅: реестр generic (стили служат BC-демо/PPO-оппонентом без правок ядра — `test_arent_ext_styles_training` 16✅), честный гейт-mix `arent/gate.py` (`test_arent_gate` 6✅), wiring `.ray/ray_stage5_pipeline.py` (D1–D3 env-миксы), fix `_fan` (int-приведение). **Кластерный прогон (10.11.2026): BC+PPO-гейт против всех 5 учителей — PASS** (worst_win=0.6204); BC без PPO — FAIL на `cdda_ranged_support` (0.4907). Подробно §D, лог `.ray/stage5_cluster_resume.log` |
+| **D** | Встраивание в обучение (BC-мультиучитель, оппонент-микс PPO, гейт-mix, куррикулум) | ✅ | Plumbing+local ✅: реестр generic (стили служат BC-демо/PPO-оппонентом без правок ядра — `test_arent_ext_styles_training` 16✅), честный гейт-mix `arent/gate.py` (`test_arent_gate` 6✅), wiring `.ray/ray_stage5_pipeline.py` (D1–D3 env-миксы), fix `_fan` (int-приведение). **Кластерный прогон (10.11.2026): BC+PPO-гейт против всех 5 учителей — PASS** (worst_win=0.6204); BC без PPO — FAIL на `cdda_ranged_support` (0.4907). **D4 куррикулум реализован в ядре** (`RlConfig.curriculum` + `parse_curriculum`/`curriculum_opponents`, `test_arent_curriculum` 9✅) — ждёт кластерного staged-замера. Подробно §D, лог `.ray/stage5_cluster_resume.log` |
 
 > **Ключевые поправки Ф0 к этому плану:** (1) `roleplayer` подтверждён **MIT** и реально содержит
 > готовый D&D-ИИ (focus-fire/expected-damage/лечение/Dash) → добавлен в B5 и как BC-демо-учитель;
@@ -229,11 +229,15 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
 - **`launch_s5.ps1` дополнен env-иксами микса.** ✅ Строки 10–12 (закомментированы, ASCII): рекомендуемый
   mix учителей для кластерного прогона Phase D. Дефолт остаётся прежним (`battlecast` only для гейта,
   `greedy,battlecast` для BC-демо, self-play для PPO), поэтому текущий прогон не изменится молча.
-- **D4. Куррикулум силы.** ⚠️ ОПЕРАЦИОННЫЙ, кода ядра НЕ добавлено честно: `collect_asymmetric`
-  использует равномерный round-robin по `cfg.opponents` — планировщика «от слабых к сильным по итерации»
-  в ядре НЕТ, вписывать его было бы risky core-change. Куррикулум достигается прогонами поверх тёплого
-  старта: сначала `S5_PPO_OPPONENTS=battlecast`, затем дообучение с `S5_PPO_OPPONENTS=battlecast,ufo_style,cdda_ranged_support,battlecast_v2`
-  (чекпойнт-цепочка), т.е. разнообразие оппонентов наращивается между запусками, не выдумывается в цикле.
+- **D4. Куррикулум силы.** ✅ РЕАЛИЗОВАН В ЯДРЕ (раньше был «операционный, без кода»): в
+  `arent/rollout.py` добавлено `RlConfig.curriculum` = стадии `(start_iter, набор_оппонентов)`,
+  чистые `parse_curriculum(spec)` / `curriculum_opponents(cfg, it)`; `rl.run` на каждой итерации
+  берёт активный набор и передаёт его в `collect(..., opponents=…)` → `collect_asymmetric`. Пустое
+  расписание = прежнее равномерное поведение (обратная совместимость, покрыто тестами). Env-формат
+  пайплайна: `S5_PPO_CURRICULUM='0:battlecast;20:battlecast,ufo_style;30:battlecast,ufo_style,cdda_ranged_support'`
+  (парсится на драйвере, передаётся в `ppo_task`). Тесты: `tests/test_arent_curriculum.py` (9✅:
+  порядок стадий, границы итераций, фолбэк до первой стадии, purity, JSON-round-trip). Осталось
+  **эмпирически** прогнать staged-цепочку на кластере и сравнить с равномерным миксом (числовой замер).
 - **Запуск (эмпирика, делает пользователь на кластере):**
   `$env:S5_BC_TEACHERS='greedy,battlecast,battlecast_v2'; $env:S5_PPO_OPPONENTS='battlecast,ufo_style,cdda_ranged_support'; $env:S5_GATE_TEACHERS='battlecast,battlecast_v2,ufo_style,ja2_positioning,cdda_ranged_support'; python .ray/ray_stage5_pipeline.py`
   (см. `launch_s5.ps1`; в финале печатается `RESULT_JSON` с `bc_gate.verdict`/`ppo_gate.verdict`).
@@ -308,8 +312,9 @@ Freeciv/0 A.D. (RTS-макро, не TBT-микро), чисто шахматн�
    эквивалент = battlecast под именем; настоящий focus-fire — полиакторный RL). Следующий шаг — Фаза D
    (подключение v2/ufo/cdda как оппонент-микса в BC/гейт + полиакторный focus-fire + heatmap-вход сети).
 4. **Фаза D** (мульти-учитель в BC + оппонент-микс в PPO/гейте) ✅ — замер роста выполнен,
-   DoD D PASS (worst_win 0.6204). **Остаётся отдельно:** куррикулум D4 (staged weak→strong, операционный)
-   и полиакторный `wesnoth_focusfire` (кода нет — multi-agent RL).
+   DoD D PASS (worst_win 0.6204). **D4 (куррикулум weak→strong): код ядра готов** (`RlConfig.curriculum`,
+   `test_arent_curriculum` 9✅, env `S5_PPO_CURRICULUM`) — остался кластерный staged-замер против
+   равномерного микса. **Остаётся отдельно:** полиакторный `wesnoth_focusfire` (кода нет — multi-agent RL).
 5. Параллельно: заполнять `sources/<slug>.md` по шаблону §4 для всех вариантов из §1.
 
 **Опорные точки в коде:** `arent/teachers.py` (@register/get_teacher/_autoload), `arent/team_eval.py`

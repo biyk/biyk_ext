@@ -70,6 +70,13 @@ class RlConfig:
     duel_opponents: Tuple[str, ...] = ()  # микс для ЧЕСТНОГО отбора best (duel win-rate); пусто -> survival/clear
     duel_replays: int = 1              # повторов на (сцену, оппонента) в duel-eval отбора
 
+    # --- D4: куррикулум силы оппонентов (weak -> strong по итерациям) ---
+    # stages = кортеж (start_iter, набор_оппонентов), отсортированный по start_iter.
+    # На итерации it активен набор последней стадии с start_iter<=it (см. curriculum_opponents).
+    # Пусто -> прежнее равномерное поведение (cfg.opponents на всех итерациях). Env:
+    # S5_PPO_CURRICULUM='0:battlecast;20:battlecast,ufo_style;30:battlecast,ufo_style,cdda_ranged_support'.
+    curriculum: Tuple[Tuple[int, Tuple[str, ...]], ...] = ()
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
@@ -77,6 +84,48 @@ class RlConfig:
     def from_dict(cls, data: Dict[str, Any]) -> "RlConfig":
         known = {f.name for f in fields(cls)}
         return cls(**{k: v for k, v in (data or {}).items() if k in known})
+
+
+def parse_curriculum(spec: str) -> Tuple[Tuple[int, Tuple[str, ...]], ...]:
+    """Разобрать env-строку куррикулума 'start:opp1,opp2;start2:opp...' в стадии.
+
+    Пустая строка -> () (куррикулума нет). Стадии сортируются по start_iter. Кривой
+    start (не int) -> ValueError: молча игнорировать расписание опаснее, чем упасть."""
+    stages: List[Tuple[int, Tuple[str, ...]]] = []
+    for chunk in (spec or "").split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        start_s, sep, opp_s = chunk.partition(":")
+        if not sep:
+            raise ValueError("куррикулум: стадия %r без ':' (нужно 'start:opp1,opp2')" % chunk)
+        try:
+            start = int(start_s.strip())
+        except ValueError as exc:
+            raise ValueError("куррикулум: start=%r не целое (стадия %r)" % (start_s.strip(), chunk)) from exc
+        opps = tuple(x.strip() for x in opp_s.split(",") if x.strip())
+        if not opps:
+            raise ValueError("куррикулум: стадия %r без оппонентов" % chunk)
+        stages.append((start, opps))
+    stages.sort(key=lambda s: s[0])
+    return tuple(stages)
+
+
+def curriculum_opponents(cfg: "RlConfig", iteration: int) -> Tuple[str, ...]:
+    """Активный набор оппонентов на итерации PPO по куррикулуму (D4).
+
+    Пустой curriculum -> cfg.opponents (прежнее поведение). Иначе — набор последней стадии
+    с start_iter <= iteration; до первой стадии — cfg.opponents как безопасный фолбэк
+    (пустой список уронил бы collect_asymmetric). Вход не мутируется."""
+    if not cfg.curriculum:
+        return tuple(cfg.opponents)
+    active: Tuple[str, ...] = tuple(cfg.opponents)
+    for start, stage in cfg.curriculum:
+        if iteration >= int(start):
+            active = tuple(stage)
+        else:
+            break
+    return active
 
 
 def gae(rewards: List[float], values: List[float], next_values: List[float],
@@ -155,7 +204,8 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
             shape: Optional[TacticsConfig] = None, stage: Optional[str] = None,
             expected: Optional[Dict[str, Any]] = None,
             anneal: Tuple[int, int] = (0, 1),
-            ref_policy: Optional[Any] = None) -> List[Row]:
+            ref_policy: Optional[Any] = None,
+            opponents: Optional[Tuple[str, ...]] = None) -> List[Row]:
     """rollout_steps шагов round-robin по сценам; исполненное действие и его logπ в буфере.
 
     Шаг — ход текущего актёра по инициативе (обе стороны одной политикой: self-play),
@@ -169,9 +219,10 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
     (collect_asymmetric): политика ведёт свою команду, врага — оппонент; только ходы политики
     в градиент, шаги оппонента сворачиваются в macro-переходы GAE.
     """
-    if cfg.opponents:
+    active = tuple(opponents) if opponents is not None else tuple(cfg.opponents)
+    if active:
         return collect_asymmetric(agent, scenarios, cfg, rng, phi=phi, diag=diag,
-                                  anneal=anneal, ref_policy=ref_policy)
+                                  anneal=anneal, ref_policy=ref_policy, opponents=active)
     environment = _make_env(cfg, _team_reward(cfg), phi)
     if shape is not None and shape.enabled_global:
         environment.set_shaper(TacticsShaper(shape, shape.allowed(stage),
@@ -228,7 +279,8 @@ def collect(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]], cfg: R
 def collect_asymmetric(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any]]],
                        cfg: RlConfig, rng: random.Random, *, phi: Optional[Any] = None,
                        diag: Optional[List[Row]] = None, anneal: Tuple[int, int] = (0, 1),
-                       ref_policy: Optional[Any] = None) -> List[Row]:
+                       ref_policy: Optional[Any] = None,
+                       opponents: Optional[Tuple[str, ...]] = None) -> List[Row]:
     """Асимметричный rollout: политика ведёт свою (hero) команду, вражескую сторону ходит
     замороженный оппонент из cfg.opponents (round-robin по эпизодам).
 
@@ -245,9 +297,10 @@ def collect_asymmetric(agent: PPOAgent, scenarios: List[Tuple[str, Dict[str, Any
     environment = _make_env(cfg, _team_reward(cfg), phi)
     if environment.shaper is not None:              # на всякий: в этом режиме шейпера нет
         environment.set_shaper(None)
-    controllers = [team_eval.build_controller(nm, cfg.schema) for nm in cfg.opponents]
+    active = tuple(opponents) if opponents is not None else tuple(cfg.opponents)
+    controllers = [team_eval.build_controller(nm, cfg.schema) for nm in active]
     if not controllers:
-        raise RuntimeError("collect_asymmetric: cfg.opponents пуст (используйте collect)")
+        raise RuntimeError("collect_asymmetric: opponents пуст (используйте collect)")
     order = list(range(len(scenarios)))
     rng.shuffle(order)
     episodes: Dict[int, int] = {}

@@ -1,5 +1,5 @@
 import {move} from "./actions/move.js";
-import {target} from "./actions/target.js";
+import {target, clearTargets} from "./actions/target.js";
 import {use} from "./actions/use.js";
 import {getAction} from "./actions/api.js";
 import {sendMessage} from "./actions/message.js";
@@ -52,6 +52,11 @@ export function init() {
         }
         if (token.actor?.type !== 'npc') return log.info('это не НПС');
         log.info(token);
+
+        // Цели прошлых ходов не наследуем: dnd5e/midi-qol бьют по game.user.targets
+        // (общее состояние GM), а не по «цели актёра». Оставшаяся цель — часто сам
+        // этот боец (его били в прошлом ходу) — иначе превращает его атаку в удар по себе.
+        clearTargets(`начало хода ${token.name}`);
 
         // ---------- 1. Данные текущего токена ----------
         const currentData = getCurrentTokenData(game.combat, currentTokenDoc);
@@ -159,6 +164,11 @@ export function init() {
                 }).render(true);
             }
         } else {
+            // План может прийти от LLM в любом порядке, поэтому цель ищем по всем действиям
+            // хода: use() ставит её явно, чтобы атака не ушла в «висящую» цель прошлого хода.
+            const plannedTargetId = actions.find(a => a.action === 'target'
+                && a.conf?.id && a.conf.id !== token.id)?.conf?.id ?? null;
+
             for (const item of actions) {
                 const action = item.action;
                 const conf = item.conf;
@@ -182,7 +192,9 @@ export function init() {
                                     }
                                 }
                             }
-                            const targets = Array.from(game.user.targets);
+                            const plannedTarget = plannedTargetId ? canvas.tokens.get(plannedTargetId) : null;
+                            const targets = (plannedTarget ? [plannedTarget] : Array.from(game.user.targets))
+                                .filter(t => t && t.id !== token.id);
                             if (targets.length > 0) {
                                 let targetToken = targets[0];
                                 let response = await api.sendRequest(currentToken, targetToken)
@@ -223,8 +235,10 @@ export function init() {
                                 }
                             }
                         }
-                        await use(token, conf);
-                        limit.use--;
+                        const used = await use(token, conf, plannedTargetId);
+                        // Пропущенная атака (нет цели) не тратит лимит use: план может содержать
+                        // ещё одно действие, и оно должно остаться доступным.
+                        if (used) limit.use--;
                     }
                     if (action === 'message') await sendMessage(token, conf);
                     _P('действие: ' + action);

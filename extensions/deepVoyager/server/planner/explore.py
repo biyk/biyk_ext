@@ -110,13 +110,24 @@ def best_strike(ctx: BattleContext, cell: Cell, enemies, t: Optional[Tuning] = N
 
 def _candidate(ctx: BattleContext, scorer: Scorer, kind: str,
                cell: Cell, dirs: List[str], enemies, t: Optional[Tuning] = None) -> Candidate:
-    """Действия target -> move... -> атака (если из клетки есть чем ударить)."""
+    """Действия target -> move... -> атака (если из клетки есть чем ударить по врагу).
+
+    Если лучший кандидат — не враг (fallback при пустых hostile_targets), атаки пропускаем.
+    """
     strike = best_strike(ctx, cell, enemies, t)
+    # Не бьём по non-hostile (fallback к союзникам/нейтралам): только цель для сближения.
+    is_fallback_ref = False
+    if strike:
+        ref_enemy = next((e for e in enemies if e.id == strike[0].id), None)
+        if ref_enemy and not ctx.is_hostile(ref_enemy):
+            is_fallback_ref = True
+            strike = None  # снимаем атаку — бить союзника нельзя
+
     nearest = strike[0] if strike else min(
         enemies, key=lambda e: cell_distance(cell, ctx.cell_of(e)))
     actions: List[Action] = [target_action(nearest.id)]
     actions += [move_action(d) for d in dirs]
-    if strike:
+    if not is_fallback_ref and strike:
         actions.append(use_action(strike[1].id))
     return Candidate(kind=kind, target_id=nearest.id, actions=actions,
                      score=scorer.score(ctx, actions))
@@ -133,8 +144,21 @@ class BruteForceExplorer:
 
     def enumerate(self):
         enemies = self._ctx.hostile_targets()
+        # Fallback: если врагов нет, но есть живые токены — двигаемся к ближайшему.
+        # Иначе план пустой и токен просто стоит (баг крыс/лошадей).
         if not enemies:
-            return
+            try:
+                src_disp = self._ctx.src.disposition
+            except (ValueError, AttributeError):
+                return  # нет src-токена — играть нечего
+            others = [t for t in self._ctx.tokens
+                      if t.id != self._ctx.src_id and t.is_alive
+                      and t.disposition != src_disp]
+            if others:
+                ref = min(others, key=lambda e: cell_distance(self._ctx.src_cell, self._ctx.cell_of(e)))
+                enemies = [ref]
+            else:
+                return  # никого нет — действительно играть нечего
         t = tuning()          # коэффициенты на весь перебор: файл не дёргать на каждую клетку
         cells = reachable_paths(self._pf, self._ctx.src_cell,
                                 self._ctx.src_id, self._ctx.speed_steps)
@@ -155,8 +179,20 @@ class RandomExplorer:
 
     def enumerate(self):
         enemies = self._ctx.hostile_targets()
+        # Fallback: если врагов нет, но есть живые токены — двигаемся к ближайшему.
         if not enemies:
-            return
+            try:
+                src_disp = self._ctx.src.disposition
+            except (ValueError, AttributeError):
+                return  # нет src-токена — играть нечего
+            others = [t for t in self._ctx.tokens
+                      if t.id != self._ctx.src_id and t.is_alive
+                      and t.disposition != src_disp]
+            if others:
+                ref = min(others, key=lambda e: cell_distance(self._ctx.src_cell, self._ctx.cell_of(e)))
+                enemies = [ref]
+            else:
+                return  # никого нет — действительно играть нечего
         t = tuning()          # тот же набор чисел на всю случайную прогулку
         while True:
             cell, dirs = self._ctx.src_cell, []

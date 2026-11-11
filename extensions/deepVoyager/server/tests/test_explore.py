@@ -74,7 +74,18 @@ def test_random_yields_legal_bounded_walks():
 
 
 def test_explore_sources_empty_without_hostiles():
+    """Без врагов генерируем fallback-кандидаты к ближайшему живому токену (баг #2)."""
     npcs = [make_npc("A", 0, 0, disposition=-1), make_npc("N", 450, 0, disposition=0)]
     ctx = BattleContext.from_payload({**make_scene_payload(npcs=npcs), "token": None})
-    assert list(BruteForceExplorer(ctx).enumerate()) == []
-    assert list(itertools.islice(RandomExplorer(ctx).enumerate(), 1)) == []
+
+    # Fallback: нет врагов → двигаемся к ближайшему живому (нейтралу N)
+    brute = list(BruteForceExplorer(ctx).enumerate())
+    assert len(brute) > 0
+    for c in brute:
+        assert any(a.action == ACTION_TARGET for a in c.actions)
+        # атаки нет — врагов нет, только move+target к нейтралу
+        use_actions = [a for a in c.actions if a.action == ACTION_USE]
+        assert len(use_actions) == 0
+
+    random_candidates = list(itertools.islice(RandomExplorer(ctx).enumerate(), 1))
+    assert len(random_candidates) > 0

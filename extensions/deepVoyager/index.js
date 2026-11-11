@@ -142,7 +142,7 @@ export function init() {
                 try {
                     if (action === 'target') {
                         target(token, conf);
-                        await new Promise(resolve => setTimeout(resolve, 200));
+                        await new Promise(resolve => setTimeout(resolve, 300));
                     }
 
                 }catch (e) {
@@ -224,7 +224,7 @@ export function init() {
                     }
                     if (action === 'target') {
                         target(token, conf);
-                        await new Promise(resolve => setTimeout(resolve, 200));
+                        await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     if (action === 'use') {
                         if(!limit.use) continue

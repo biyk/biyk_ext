@@ -18,12 +18,13 @@ def adjacent_target_ctx():
 
 
 def test_brute_prefers_orthogonal_adjacent_over_truncated_diagonal():
-    # quin-обрезка даёт 3×downright + атака (+4.24); перебор — ортогонального
-    # соседa цели на дистанции 1.0 (+4.66), это и есть оптимум хода
+    # С Chebyshev distance: до цели (4,4) от (0,0) = 4 клетки;
+    # путь 3×downright → (3,3), остаток 1 клетка до цели
+    # approach = (4-1)*1 = 3 очка, атака sure = 30, итого ~33.0
     ctx = adjacent_target_ctx()
     best = max(BruteForceExplorer(ctx).enumerate(), key=lambda c: c.score)
-    assert best.score > 34.3
-    assert best.score == pytest.approx(30 + 5.657 - 1.0, abs=0.02)
+    assert best.score > 32.0
+    assert best.score == pytest.approx(30.0 + 3.0, abs=0.1)
 
 
 def test_brute_moves_bounded_and_never_on_enemy_cell():

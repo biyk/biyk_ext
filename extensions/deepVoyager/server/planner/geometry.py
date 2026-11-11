@@ -37,8 +37,8 @@ def apply_moves(start: Cell, directions: Iterable[str]) -> Cell:
 
 
 def cell_distance(a: Cell, b: Cell) -> float:
-    """Расстояние по прямой между центрами клеток, в клетках сетки."""
-    return math.dist(a, b)
+    """Расстояние между клетками в шагах (Chebyshev distance): каждый шаг = 1 клетка."""
+    return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
 
 
 def within_reach(a: Cell, b: Cell, reach_cells: float) -> bool:

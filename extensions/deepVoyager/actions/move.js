@@ -129,8 +129,11 @@ export async function move(token = null, conf) {
     // Canvas-позиция (token.x/y) в Foundry 11 проставляется только при сбросе render-флагов,
     // поэтому каждый шаг одного хода считался от одной и той же устаревшей точки: 5 шагов
     // политики превращались в 1 реальную клетку, а токен мог «телепортироваться» назад.
-    const baseX = token.document.x;
-    const baseY = token.document.y;
+    // ВАЖНО: Foundry хранит точные координаты, которые могут "плыть" после нескольких update().
+    // Принудительно округляем до сетки перед каждым шагом, чтобы избежать накопления ошибки.
+    const baseX = Math.round(token.document.x / step) * step;
+    const baseY = Math.round(token.document.y / step) * step;
+    log.info(`move ${token.name}: START base=(${baseX},${baseY}) dir=${direction} dx=${dx} dy=${dy}`);
     const newX = baseX + dx;
     const newY = baseY + dy;
     const newBounds = new PIXI.Rectangle(newX, newY, token.w, token.h);
@@ -180,9 +183,15 @@ export async function move(token = null, conf) {
 
     // Перемещаем и сразу синхронизируем PIXI-позицию: следующий шаг того же хода (и любой,
     // кто читает token.x/y) обязан видеть новые координаты, а не устаревшие.
+    log.info(`move ${token.name}: BEFORE doc=(${token.document.x},${token.document.y}) canvas=(${token.x},${token.y}) dir=${direction}`);
     await token.document.update({ x: newX, y: newY }, { animate: true });
-    token.position.set(newX, newY);
-    await new Promise(resolve => setTimeout(resolve, 150)); // синхронизация
+    // Foundry 11: после update() canvas position отстаёт до следующего render cycle.
+    // Читаем актуальные координаты из документа, а не вычисляем сами — это гарантирует
+    // точное совпадение с сеткой независимо от внутренних snap-алгоритмов Foundry.
+    const docPos = { x: token.document.x, y: token.document.y };
+    token.position.set(docPos.x, docPos.y);
+    log.info(`move ${token.name}: AFTER doc=(${docPos.x},${docPos.y}) canvas=(${token.x},${token.y}) expected=(${newX},${newY})`);
+    await new Promise(resolve => setTimeout(resolve, 600)); // синхронизация
 
     return true;
 }

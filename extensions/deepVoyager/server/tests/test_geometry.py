@@ -27,9 +27,11 @@ def test_dir_vectors_cover_eight_directions():
     }
 
 
-def test_cell_distance_is_euclidean():
+def test_cell_distance_is_chebyshev():
+    # Chebyshev: каждый шаг (включая диагональ) = 1 клетка
     assert cell_distance((0, 0), (0, 9)) == 9.0
-    assert cell_distance((0, 0), (1, 1)) == pytest.approx(1.41421, abs=1e-4)
+    assert cell_distance((0, 0), (1, 1)) == 1.0      # диагональ = 1 шаг
+    assert cell_distance((0, 0), (3, 4)) == 4.0     # max(3,4)
 
 
 def test_within_reach_includes_diagonal_neighbours():

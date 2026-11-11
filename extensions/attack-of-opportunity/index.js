@@ -97,8 +97,9 @@ export function init() {
         for (let potentialAttacker of canvas.tokens.placeables) {
             if (potentialAttacker.id === movingToken.id) continue;
             const attackerDisposition = potentialAttacker.document.disposition;
-            if (attackerDisposition === 1 || attackerDisposition === 0) {
-                if (movingDisposition !== -1) continue;
+            // Не атакуем союзников: если атакующий и цель имеют одинаковый disposition — пропускаем.
+            if ((attackerDisposition !== 0 && attackerDisposition === movingDisposition)) {
+                continue;
             }
             if (!potentialAttacker.actor || potentialAttacker.actor.system.attributes.hp.value <= 0) continue;
 
